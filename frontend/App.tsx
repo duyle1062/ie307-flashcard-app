@@ -3,8 +3,9 @@ import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator, StyleSheet, Text } from "react-native";
 import { initDatabase } from "./src/database";
 
-import AuthStack from "./src/navigation/AuthStack";
 import { NavigationContainer } from "@react-navigation/native";
+import { AuthProvider } from "./src/context/AuthContext";
+import RootNavigator from "./src/navigation/RootNavigator";
 
 export default function App(): React.ReactElement {
   const [isDbReady, setIsDbReady] = useState<boolean>(false);
@@ -39,10 +40,12 @@ export default function App(): React.ReactElement {
   }
 
   return (
-    <NavigationContainer>
-      <StatusBar style="auto" />
-      <AuthStack />
-    </NavigationContainer>
+    <AuthProvider>
+      <NavigationContainer>
+        <StatusBar style="auto" />
+        <RootNavigator />
+      </NavigationContainer>
+    </AuthProvider>
   );
 }
 
