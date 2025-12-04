@@ -1,5 +1,4 @@
 export const Colors = {
-  primary: "#1B3B6F",
   white: "#FFFFFF",
   gray: "#BEBEBE",
   silver: "#F8F8F8",
@@ -8,5 +7,13 @@ export const Colors = {
   red: "#FF4D4D",
   green: "#4CAF50",
   blue: "#62CFF4",
-  button: "#2E82DB"
+  primary: "#895129",
+  background: "#FDF5E6",
+  button: "#895129",
+  title: "#4E342E",
+  body: "#795548",
+  // color used for subtle dotted background shapes (easy to theme)
+  dot: "#8951291A",
+  // header, sidebar, ...
+  surface: "#F5E0C3",
 };
