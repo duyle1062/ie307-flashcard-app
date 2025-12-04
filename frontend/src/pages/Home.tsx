@@ -71,6 +71,12 @@ export default function Home({ navigation }: Props) {
     >
       <Text style={styles.cardTitle}>{item.title}</Text>
       <View style={styles.statusRow}>
+        <Text
+          style={[
+            styles.statusText,
+            { color: getStatusColor(item.new, "new") },
+          ]}
+        >
         <Text style={[ styles.statusText, { color: getStatusColor(item.new, "new") }, ]}>
           {item.new}
         </Text>
