@@ -9,11 +9,9 @@ export const Colors = {
   blue: "#62CFF4",
   primary: "#895129",
   background: "#FDF5E6",
-  button: "#895129",
   title: "#4E342E",
   body: "#795548",
-  // color used for subtle dotted background shapes (easy to theme)
   dot: "#8951291A",
-  // header, sidebar, ...
   surface: "#F5E0C3",
+  modalbg: "#0000004d",
 };
