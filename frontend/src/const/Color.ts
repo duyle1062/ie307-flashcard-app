@@ -1,19 +1,31 @@
 export const Colors = {
   white: "#FFFFFF",
-  gray: "#BEBEBE",
   silver: "#F8F8F8",
   black: "#000000",
   midnightBlue: "#191970",
-  red: "#FF4D4D",
+
+  // Status Colors
+  red: "#f51e1eff",
+  gray: "#969595ff",
   green: "#4CAF50",
-  blue: "#62CFF4",
-  primary: "#895129",
+  blue: "#2980B9",
+
+  // UI Structure Colors
   background: "#FDF5E6",
-  button: "#895129",
-  title: "#4E342E",
-  body: "#795548",
-  // color used for subtle dotted background shapes (easy to theme)
-  dot: "#8951291A",
-  // header, sidebar, ...
   surface: "#F5E0C3",
+  // color used for subtle dotted background shapes
+  dot: "#8951291A",
+
+  // Brand Colors
+  primary: "#895129",
+  secondary: "#B58900",
+  
+  // Text Colors
+  title: "#4E342E",
+  text: "#4E342E",  // Văn bản chính
+  subText: "#795548", // Văn bản phụ
+  button: "#895129",
+
+  gold: "#C69C08",  // Card Borde
+  border: "#D7CCC8", // Borders Viền nhạt
 };
