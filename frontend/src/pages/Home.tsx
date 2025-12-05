@@ -20,9 +20,10 @@ import UserMenuModal from "../components/UserMenuModal";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import Feather from "@expo/vector-icons/Feather";
 import AntDesign from "@expo/vector-icons/AntDesign";
-
 import { useAuth } from "../context/AuthContext";
 import { useNavigation } from "@react-navigation/native";
+import { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { AppStackParamList } from "../navigation/AppStack";
 
 type Collection = {
   id: string;
@@ -32,7 +33,9 @@ type Collection = {
   review: number;
 };
 
-export default function Home() {
+type Props = NativeStackScreenProps<AppStackParamList, "Home">;
+
+export default function Home({ navigation }: Props) {
   const { logout } = useAuth();
   const [search, setSearch] = useState<string>("");
   const [showMenu, setShowMenu] = useState<boolean>(false);
@@ -58,36 +61,27 @@ export default function Home() {
   };
 
   const renderItem = ({ item }: { item: Collection }) => (
-    <View style={styles.card}>
+    <TouchableOpacity 
+      style={styles.card}
+      activeOpacity={0.7}
+      onPress={() => navigation.navigate("Study", { 
+        deckId: item.id, 
+        title: item.title 
+      })}
+    >
       <Text style={styles.cardTitle}>{item.title}</Text>
-
       <View style={styles.statusRow}>
-        <Text
-          style={[
-            styles.statusText,
-            { color: getStatusColor(item.new, "new") },
-          ]}
-        >
+        <Text style={[ styles.statusText, { color: getStatusColor(item.new, "new") }, ]}>
           {item.new}
         </Text>
-        <Text
-          style={[
-            styles.statusText,
-            { color: getStatusColor(item.learning, "learning") },
-          ]}
-        >
+        <Text style={[ styles.statusText, { color: getStatusColor(item.learning, "learning") }, ]}>
           {item.learning}
         </Text>
-        <Text
-          style={[
-            styles.statusText,
-            { color: getStatusColor(item.review, "review") },
-          ]}
-        >
+        <Text style={[ styles.statusText, { color: getStatusColor(item.review, "review") }, ]}>
           {item.review}
         </Text>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 
   return (

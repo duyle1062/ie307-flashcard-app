@@ -1,9 +1,11 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Home from "../pages/Home";
 import UserProfile from "../pages/UserProfile";
+import Study from "../pages/Study";
 
 export type AppStackParamList = {
   Home: undefined;
+  Study: { deckId: string; title: string };
   UserProfile: undefined;
 };
 
@@ -19,6 +21,7 @@ export default function AppStack() {
     >
       <Stack.Screen name="Home" component={Home} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
+      <Stack.Screen name="Study" component={Study} />
     </Stack.Navigator>
   );
 }
