@@ -10,14 +10,18 @@ import {
 } from "react-native";
 
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import { Colors } from "../const/Color";
 import { Shadows } from "../const/Shadow";
+
 import DottedBackground from "../components/DottedBackground";
+import UserMenuModal from "../components/UserMenuModal";
+
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import Feather from "@expo/vector-icons/Feather";
-import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { useAuth } from "../context/AuthContext";
+import { useNavigation } from "@react-navigation/native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AppStackParamList } from "../navigation/AppStack";
 
@@ -37,6 +41,8 @@ export default function Home({ navigation }: Props) {
   const [showMenu, setShowMenu] = useState<boolean>(false);
   // Lấy thông số tai thỏ (notch)
   const insets = useSafeAreaInsets();
+
+  const navigation = useNavigation<any>();
 
   const [collections, setCollections] = useState<Collection[]>([
     { id: "1", title: "Text A", new: 0, learning: 0, review: 0 },
@@ -81,92 +87,68 @@ export default function Home({ navigation }: Props) {
   return (
     <View style={styles.container}>
       <DottedBackground />
-      <View style={[
-          styles.headerSection, 
-          { paddingTop: insets.top + 10 } // Cộng thêm 10px cho thoáng
-      ]}>
+      <View
+        style={[
+          styles.headerSection,
+          { paddingTop: insets.top + 10 }, // Cộng thêm 10px cho thoáng
+        ]}
+      >
         <View style={{ paddingHorizontal: 20 }}>
-            <View style={styles.topHeaderRow}>
-              <TouchableOpacity>
-                <Feather name="menu" size={26} color={Colors.primary} />
-              </TouchableOpacity>
-              <View style={styles.streak}>
-                <AntDesign name="fire" size={24} color="orange" />
-                <Text style={styles.streakText}>3</Text>
-              </View>
-              <View style={styles.headerRight}>
-                <TouchableOpacity style={{ marginRight: 18 }}>
-                  <Feather name="refresh-ccw" size={22} color={Colors.primary} />
-                </TouchableOpacity>
-
-                <TouchableOpacity onPress={() => setShowMenu(true)}>
-                  <FontAwesome name="user-circle" size={26} color={Colors.primary} />
-                </TouchableOpacity>
-              </View>
+          <View style={styles.topHeaderRow}>
+            <TouchableOpacity>
+              <Feather name="menu" size={26} color={Colors.primary} />
+            </TouchableOpacity>
+            <View style={styles.streak}>
+              <AntDesign name="fire" size={24} color="orange" />
+              <Text style={styles.streakText}>3</Text>
             </View>
+            <View style={styles.headerRight}>
+              <TouchableOpacity style={{ marginRight: 18 }}>
+                <Feather name="refresh-ccw" size={22} color={Colors.primary} />
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => setShowMenu(true)}>
+                <FontAwesome
+                  name="user-circle"
+                  size={26}
+                  color={Colors.primary}
+                />
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </View>
 
-          <Modal
-            visible={showMenu}
-            transparent
-            animationType="fade"
-            onRequestClose={() => setShowMenu(false)}
-          >
-            <TouchableOpacity
-              style={styles.overlay}
-              activeOpacity={1}
-              onPressOut={() => setShowMenu(false)}
-            >
-              <View style={styles.popupMenu}>
-                <TouchableOpacity style={styles.menuItem}>
-                  <Feather name="user" size={18} color={Colors.black} />
-                  <Text style={styles.menuText}>Account</Text>
-                </TouchableOpacity>
+      <UserMenuModal
+        visible={showMenu}
+        onClose={() => setShowMenu(false)}
+        onLogout={logout}
+        onAccountPress={() => navigation.navigate("UserProfile")}
+      />
 
-                <TouchableOpacity style={styles.menuItem}>
-                  <MaterialIcons name="lock-reset" size={18} color={Colors.black} />
-                  <Text style={styles.menuText}>Change Password</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.menuItem}
-                  onPress={() => {
-                    logout();
-                    setShowMenu(false);
-                  }}
-                >
-                  <AntDesign name="logout" size={18} color={Colors.black} />
-                  <Text style={styles.menuText}>Sign Out</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          </Modal>
-
-          <View style={styles.searchBar}>
-            <Feather name="search" size={18} color={Colors.gray} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search"
-              placeholderTextColor={Colors.gray}
-              value={search}
-              onChangeText={setSearch}
-            />
-          </View>
-        
-
-        <FlatList
-          data={collections}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-          style={{ flex: 1 }}
-          contentContainerStyle={{ 
-            paddingBottom: 120,  
-            paddingHorizontal: 20, 
-            paddingTop: 10 
-          }}
+      <View style={styles.searchBar}>
+        <Feather name="search" size={18} color={Colors.gray} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search"
+          placeholderTextColor={Colors.gray}
+          value={search}
+          onChangeText={setSearch}
         />
+      </View>
+
+      <FlatList
+        data={collections}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.id}
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingBottom: 120,
+          paddingHorizontal: 20,
+          paddingTop: 10,
+        }}
+      />
 
       <TouchableOpacity style={styles.addButton}>
         <AntDesign name="plus" size={26} color={Colors.primary} />
@@ -180,25 +162,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  
+
   safeArea: {
     flex: 1,
     paddingTop: 10,
   },
 
   headerSection: {
-    backgroundColor: '#F5E0C3', 
-    borderBottomWidth: 1,               
-    borderBottomColor: '#E0C09E',      
-    paddingBottom: 15,                  
-    zIndex: 1,                          
+    backgroundColor: Colors.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0C09E",
+    paddingBottom: 15,
+    zIndex: 1,
   },
 
   topHeaderRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 15, 
+    marginBottom: 15,
   },
 
   header: {
@@ -232,7 +214,7 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     marginTop: 20,
     marginHorizontal: 20,
-    ...Shadows.medium   
+    ...Shadows.medium,
   },
 
   searchInput: {
@@ -288,33 +270,5 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 6,
     zIndex: 10,
-  },
-
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    justifyContent: "flex-end",
-    alignItems: "flex-end",
-  },
-
-  popupMenu: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    backgroundColor: Colors.white,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-  },
-
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 13,
-  },
-
-  menuText: {
-    marginLeft: 10,
-    fontSize: 15,
-    color: Colors.black,
   },
 });

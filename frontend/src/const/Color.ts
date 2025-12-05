@@ -12,6 +12,9 @@ export const Colors = {
 
   // UI Structure Colors
   background: "#FDF5E6",
+  body: "#795548",
+  modalbg: "#0000004d",
+  
   surface: "#F5E0C3",
   // color used for subtle dotted background shapes
   dot: "#8951291A",
