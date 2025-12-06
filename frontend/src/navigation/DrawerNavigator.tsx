@@ -1,0 +1,77 @@
+import { createDrawerNavigator } from "@react-navigation/drawer";
+import { Colors } from "../const/Color";
+
+import Feather from "@expo/vector-icons/Feather";
+
+import Home from "../pages/Home";
+import Statistical from "../pages/Statistical";
+import Setting from "../pages/Setting";
+import DownloadExample from "../pages/DownloadExample";
+
+import { DrawerParamList } from "./types";
+
+const Drawer = createDrawerNavigator<DrawerParamList>();
+
+export default function DrawerNavigator() {
+  return (
+    <Drawer.Navigator
+      screenOptions={{
+        headerShown: true,
+        drawerActiveTintColor: Colors.primary,
+        drawerInactiveTintColor: Colors.subText,
+        drawerStyle: { backgroundColor: Colors.background },
+        headerStyle: {
+          backgroundColor: Colors.surface,
+          borderBottomColor: Colors.tertiary,
+          borderBottomWidth: 1,
+        },
+        headerTintColor: Colors.primary,
+      }}
+    >
+      <Drawer.Screen
+        name="Home"
+        component={Home}
+        options={{
+          title: "All Collections",
+          headerShown: false,
+          drawerIcon: ({ color, size }) => (
+            <Feather name="list" size={size} color={color} />
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        name="Statistical"
+        component={Statistical}
+        options={{
+          title: "Statistical",
+          drawerIcon: ({ color, size }) => (
+            <Feather name="bar-chart-2" size={size} color={color} />
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        name="Setting"
+        component={Setting}
+        options={{
+          title: "Setting",
+          drawerIcon: ({ color, size }) => (
+            <Feather name="settings" size={size} color={color} />
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        name="DownloadExample"
+        component={DownloadExample}
+        options={{
+          title: "Download CSV example",
+          drawerIcon: ({ color, size }) => (
+            <Feather name="download" size={size} color={color} />
+          ),
+        }}
+      />
+    </Drawer.Navigator>
+  );
+}

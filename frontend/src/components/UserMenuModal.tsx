@@ -1,6 +1,8 @@
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
+
 import Feather from "@expo/vector-icons/Feather";
 import AntDesign from "@expo/vector-icons/AntDesign";
+
 import { Colors } from "../const/Color";
 
 interface UserMenuModalProps {

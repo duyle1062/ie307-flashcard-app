@@ -5,21 +5,21 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Insets
+  Insets,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { AppStackParamList } from "../navigation/AppStack";
+import { AppStackParamList } from "../navigation/types";
 
 import { Colors } from "../const/Color";
 import { Shadows } from "../const/Shadow";
+
 import DottedBackground from "../components/DottedBackground";
 
 import Feather from "@expo/vector-icons/Feather";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Entypo from "@expo/vector-icons/Entypo";
 
-// --- TYPES ---
 type CardData = {
   id: string;
   frontText: string;
@@ -33,7 +33,6 @@ type Counts = {
   review: number;
 };
 
-// Props cho Header
 interface StudyHeaderProps {
   insets: Insets;
   counts: Counts;
@@ -42,7 +41,6 @@ interface StudyHeaderProps {
   onUndo: () => void;
 }
 
-// Props cho Action Buttons
 interface ActionButtonsProps {
   insets: Insets;
   isFlipped: boolean;
@@ -50,12 +48,11 @@ interface ActionButtonsProps {
   onRate: (difficulty: "again" | "hard" | "good" | "easy") => void;
 }
 
-// --- MOCK DATA ---
 const MOCK_CARDS: CardData[] = [
   {
     id: "1",
     frontText: "身体",
-    backText: "しんたい\n(thân thể)\n\nTHÂN THỂ", 
+    backText: "しんたい\n(thân thể)\n\nTHÂN THỂ",
     type: "new",
   },
   {
@@ -68,22 +65,23 @@ const MOCK_CARDS: CardData[] = [
     id: "3",
     frontText: "Multi-line Test",
     // Test trường hợp text dài và nhiều dòng
-    backText: "Dòng 1: Ví dụ về xuống dòng.\nDòng 2: React Native tự render cái này.\n\nDòng 4: Cách một dòng trống cũng ok. aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    backText:
+      "Dòng 1: Ví dụ về xuống dòng.\nDòng 2: React Native tự render cái này.\n\nDòng 4: Cách một dòng trống cũng ok. aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     type: "review",
   },
 ];
 
 type Props = NativeStackScreenProps<AppStackParamList, "Study">;
 
-// ======================= MAIN COMPONENT =======================
 export default function Study({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
 
-  // --- STATE ---
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [counts, setCounts] = useState({ new: 20, learning: 15, review: 50 });
-  const [history, setHistory] = useState<{ index: number; counts: typeof counts }[]>([]);
+  const [history, setHistory] = useState<
+    { index: number; counts: typeof counts }[]
+  >([]);
 
   const currentCard = MOCK_CARDS[currentIndex % MOCK_CARDS.length];
   const isFirstCard = history.length === 0 && currentIndex === 0;
@@ -93,20 +91,24 @@ export default function Study({ navigation, route }: Props) {
 
   const handleNextCard = (difficulty: "again" | "hard" | "good" | "easy") => {
     // 1. Save History
-    setHistory((prev) => [...prev, { index: currentIndex, counts: { ...counts } }]);
+    setHistory((prev) => [
+      ...prev,
+      { index: currentIndex, counts: { ...counts } },
+    ]);
 
     // 2. Update Counts (Mock Logic)
     setCounts((prev) => {
       const newCounts = { ...prev };
       if (currentCard.type === "new" && newCounts.new > 0) newCounts.new--;
-      else if (currentCard.type === "learning" && newCounts.learning > 0) newCounts.learning--;
-      else if (currentCard.type === "review" && newCounts.review > 0) newCounts.review--;
-      
-      if (difficulty === 'again') newCounts.learning++;
+      else if (currentCard.type === "learning" && newCounts.learning > 0)
+        newCounts.learning--;
+      else if (currentCard.type === "review" && newCounts.review > 0)
+        newCounts.review--;
+
+      if (difficulty === "again") newCounts.learning++;
       return newCounts;
     });
 
-    // 3. Navigate
     setIsFlipped(false);
     setCurrentIndex((prev) => prev + 1);
   };
@@ -125,7 +127,7 @@ export default function Study({ navigation, route }: Props) {
       <DottedBackground />
 
       {/* 1. Header Section */}
-      <StudyHeader 
+      <StudyHeader
         insets={insets}
         onBack={() => navigation.goBack()}
         onUndo={handleUndo}
@@ -135,14 +137,11 @@ export default function Study({ navigation, route }: Props) {
 
       {/* 2. Main Card Area (Responsive) */}
       <View style={styles.cardArea}>
-        <FlashCard 
-          data={currentCard} 
-          isFlipped={isFlipped} 
-        />
+        <FlashCard data={currentCard} isFlipped={isFlipped} />
       </View>
 
       {/* 3. Bottom Actions */}
-      <ActionButtons 
+      <ActionButtons
         insets={insets}
         isFlipped={isFlipped}
         onFlip={handleFlip}
@@ -164,37 +163,53 @@ const StudyHeader = ({ insets, onBack, onUndo, canUndo, counts }: any) => (
 
       <View style={{ flex: 1 }} />
 
-      <TouchableOpacity 
-        onPress={onUndo} 
-        disabled={!canUndo} 
+      <TouchableOpacity
+        onPress={onUndo}
+        disabled={!canUndo}
         style={[styles.iconBtn, !canUndo && { opacity: 0.3 }]}
       >
-        <MaterialCommunityIcons name="arrow-u-left-top" size={24} color={Colors.title} />
+        <MaterialCommunityIcons
+          name="arrow-u-left-top"
+          size={24}
+          color={Colors.title}
+        />
       </TouchableOpacity>
-      
+
       <TouchableOpacity style={styles.iconBtn}>
         <Entypo name="dots-three-vertical" size={20} color={Colors.title} />
       </TouchableOpacity>
     </View>
 
     <View style={styles.statusBarStripe}>
-      <Text style={styles.statusLabel}>New: <Text style={{color: Colors.blue}}>{counts.new}</Text></Text>
-      <Text style={styles.statusLabel}>Learn: <Text style={{color: Colors.red}}>{counts.learning}</Text></Text>
-      <Text style={styles.statusLabel}>Review: <Text style={{color: Colors.green}}>{counts.review}</Text></Text>
+      <Text style={styles.statusLabel}>
+        New: <Text style={{ color: Colors.blue }}>{counts.new}</Text>
+      </Text>
+      <Text style={styles.statusLabel}>
+        Learn: <Text style={{ color: Colors.red }}>{counts.learning}</Text>
+      </Text>
+      <Text style={styles.statusLabel}>
+        Review: <Text style={{ color: Colors.green }}>{counts.review}</Text>
+      </Text>
     </View>
   </View>
 );
 
 // --- FLASH CARD COMPONENT ---
-const FlashCard = ({ data, isFlipped }: { data: CardData; isFlipped: boolean }) => (
+const FlashCard = ({
+  data,
+  isFlipped,
+}: {
+  data: CardData;
+  isFlipped: boolean;
+}) => (
   <View style={styles.cardWrapper}>
     {/* ScrollView allows content to be larger than the card height */}
-    <ScrollView 
+    <ScrollView
       contentContainerStyle={styles.cardScrollContent}
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.textFront}>{data.frontText}</Text>
-      
+
       {isFlipped && (
         <View style={styles.backContent}>
           <View style={styles.divider} />
@@ -214,143 +229,179 @@ const ActionButtons = ({ insets, isFlipped, onFlip, onRate }: any) => (
       </TouchableOpacity>
     ) : (
       <View style={styles.ratingContainer}>
-        <RatingButton label="Again" time="< 1m" color={Colors.red} onPress={() => onRate('again')} />
-        <RatingButton label="Hard" time="2d" color={Colors.gray} onPress={() => onRate('hard')} />
-        <RatingButton label="Good" time="4d" color={Colors.green} onPress={() => onRate('good')} />
-        <RatingButton label="Easy" time="7d" color={Colors.blue} onPress={() => onRate('easy')} />
+        <RatingButton
+          label="Again"
+          time="< 1m"
+          color={Colors.red}
+          onPress={() => onRate("again")}
+        />
+        <RatingButton
+          label="Hard"
+          time="2d"
+          color={Colors.gray}
+          onPress={() => onRate("hard")}
+        />
+        <RatingButton
+          label="Good"
+          time="4d"
+          color={Colors.green}
+          onPress={() => onRate("good")}
+        />
+        <RatingButton
+          label="Easy"
+          time="7d"
+          color={Colors.blue}
+          onPress={() => onRate("easy")}
+        />
       </View>
     )}
   </View>
 );
 
 const RatingButton = ({ label, time, color, onPress }: any) => (
-  <TouchableOpacity style={[styles.ratingBtn, { backgroundColor: color }]} onPress={onPress}>
+  <TouchableOpacity
+    style={[styles.ratingBtn, { backgroundColor: color }]}
+    onPress={onPress}
+  >
     <Text style={styles.ratingLabel}>{label}</Text>
     <Text style={styles.ratingTime}>{time}</Text>
   </TouchableOpacity>
 );
 
-// ======================= STYLES =======================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
   },
-  
-  // --- Header ---
+
   headerContainer: {
     backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     zIndex: 10,
   },
+
   topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 10,
     height: 50,
   },
-  iconBtn: { padding: 10 },
+
+  iconBtn: {
+    padding: 10,
+  },
+
   statusBarStripe: {
-    flexDirection: 'row',
+    flexDirection: "row",
     backgroundColor: Colors.surface,
     paddingVertical: 8,
     paddingHorizontal: 20,
     gap: 20,
   },
+
   statusLabel: {
     fontSize: 14,
     color: Colors.subText,
-    fontWeight: '600',
+    fontWeight: "600",
   },
 
   cardArea: {
-    flex: 1, 
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: 20,
     paddingHorizontal: 20,
   },
+
   cardWrapper: {
-    width: '100%',
-    height: '100%', // Card sẽ fill đầy cardArea nhưng chừa padding ra
-    maxHeight: 600, // (Optional) Giới hạn chiều cao tối đa nếu muốn card không quá dài trên iPad
+    width: "100%",
+    height: "100%",
+    maxHeight: 600,
     backgroundColor: Colors.white,
     borderRadius: 24,
     borderWidth: 2,
     borderColor: Colors.gold,
     ...Shadows.medium,
-    overflow: 'hidden', // Đảm bảo nội dung scroll không bị tràn ra bo góc
+    overflow: "hidden",
   },
+
   cardScrollContent: {
-    flexGrow: 1, // Quan trọng: Nếu nội dung ngắn, nó sẽ giãn ra để căn giữa nhờ justifyContent center
-    justifyContent: 'center', 
-    alignItems: 'center',
+    flexGrow: 1,
+    justifyContent: "center",
+    alignItems: "center",
     padding: 24,
   },
 
-  // --- Text Typography ---
   textFront: {
-    fontSize: 42, 
-    color: Colors.text,
-    textAlign: 'center',
-    fontWeight: '400',
-  },
-  backContent: {
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  divider: {
-    height: 1,
-    width: '100%',
-    backgroundColor: '#eee',
-    marginVertical: 20,
-  },
-  textBack: {
-    fontSize: 28, 
-    color: Colors.text,
-    textAlign: 'center',
-    lineHeight: 40, 
+    fontSize: 42,
+    color: Colors.title,
+    textAlign: "center",
+    fontWeight: "400",
   },
 
-  // --- Bottom Actions ---
+  backContent: {
+    width: "100%",
+    alignItems: "center",
+    marginTop: 10,
+  },
+
+  divider: {
+    height: 1,
+    width: "100%",
+    backgroundColor: "#eee",
+    marginVertical: 20,
+  },
+
+  textBack: {
+    fontSize: 28,
+    color: Colors.title,
+    textAlign: "center",
+    lineHeight: 40,
+  },
+
   bottomContainer: {
     paddingHorizontal: 20,
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
+
   showAnswerBtn: {
     backgroundColor: Colors.primary,
     paddingVertical: 16,
     borderRadius: 30,
-    alignItems: 'center',
+    alignItems: "center",
     ...Shadows.medium,
   },
+
   showAnswerText: {
     color: Colors.white,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
+
   ratingContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     gap: 10,
   },
+
   ratingBtn: {
     flex: 1,
     paddingVertical: 12,
     borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     ...Shadows.light,
   },
+
   ratingLabel: {
     color: Colors.white,
     fontSize: 14,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
+
   ratingTime: {
-    color: 'rgba(255,255,255,0.8)',
+    color: "rgba(255,255,255,0.8)",
     fontSize: 11,
     marginTop: 2,
   },

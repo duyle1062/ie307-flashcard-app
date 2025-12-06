@@ -101,7 +101,7 @@ export default function UserProfile() {
             {/* Chart Section */}
             <Text style={styles.label}>Chart / Progress</Text>
             <View style={styles.chartPlaceholder}>
-              <Text style={{ color: Colors.body }}>Biểu đồ .....</Text>
+              <Text style={{ color: Colors.subText }}>Biểu đồ .....</Text>
             </View>
           </View>
         </ScrollView>
@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
   streakLabel: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.body,
+    color: Colors.subText,
   },
 
   label: {
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     fontSize: 16,
-    color: Colors.body,
+    color: Colors.subText,
   },
 
   collectionButton: {
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
 
   dropdownText: {
     fontSize: 15,
-    color: Colors.body,
+    color: Colors.subText,
   },
 
   chartPlaceholder: {
