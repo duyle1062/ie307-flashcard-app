@@ -1,13 +1,8 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import Home from "../pages/Home";
+import DrawerNavigator from "./DrawerNavigator";
 import UserProfile from "../pages/UserProfile";
 import Study from "../pages/Study";
-
-export type AppStackParamList = {
-  Home: undefined;
-  Study: { deckId: string; title: string };
-  UserProfile: undefined;
-};
+import { AppStackParamList } from "./types";
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
@@ -19,7 +14,7 @@ export default function AppStack() {
         headerShown: false,
       }}
     >
-      <Stack.Screen name="Home" component={Home} />
+      <Stack.Screen name="Drawer" component={DrawerNavigator} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
       <Stack.Screen name="Study" component={Study} />
     </Stack.Navigator>
