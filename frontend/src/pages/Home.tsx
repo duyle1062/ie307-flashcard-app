@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, StyleSheet, Alert } from "react-native";
+import { View, StyleSheet, Alert, Text } from "react-native";
 import { DrawerActions } from "@react-navigation/native";
 import { Colors } from "../const/Color";
 
@@ -12,10 +12,6 @@ import FloatingAddButton from "../components/FloatingAddButton";
 import CollectionActionModal from "../components/CollectionActionModal";
 
 import { useAuth } from "../context/AuthContext";
-import { AppStackParamList } from "../navigation/types";
-import { NativeStackScreenProps } from "@react-navigation/native-stack";
-
-type Props = NativeStackScreenProps<AppStackParamList, "Drawer">;
 
 export default function Home({ navigation }: any) {
   const { logout } = useAuth();
@@ -99,6 +95,10 @@ export default function Home({ navigation }: any) {
     { id: "12", title: "Text C", new: 25, learning: 25, review: 50 },
   ]);
 
+  const filteredCollections = collections.filter((item) =>
+    item.title.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
     <View style={styles.container}>
       <DottedBackground />
@@ -129,11 +129,17 @@ export default function Home({ navigation }: any) {
 
       <SearchBar value={search} onChangeText={setSearch} />
 
-      <CollectionList
-        data={collections}
-        onPressItem={handlePressCollection}
-        onLongPressItem={handleLongPressCollection}
-      />
+      {filteredCollections.length > 0 ? (
+        <CollectionList
+          data={filteredCollections}
+          onPressItem={handlePressCollection}
+          onLongPressItem={handleLongPressCollection}
+        />
+      ) : (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>No collection found</Text>
+        </View>
+      )}
 
       <FloatingAddButton onPress={() => {}} />
     </View>
@@ -144,5 +150,17 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+
+  emptyContainer: {
+    flex: 1,
+    alignItems: "center",
+    marginTop: 50,
+  },
+
+  emptyText: {
+    fontSize: 16,
+    color: Colors.subText,
+    fontStyle: "italic",
   },
 });
