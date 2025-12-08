@@ -2,6 +2,10 @@ import React, { useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator, StyleSheet, Text } from "react-native";
 import { initDatabase } from "./src/database";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { NavigationContainer } from "@react-navigation/native";
+import { AuthProvider } from "./src/context/AuthContext";
+import RootNavigator from "./src/navigation/RootNavigator";
 
 export default function App(): React.ReactElement {
   const [isDbReady, setIsDbReady] = useState<boolean>(false);
@@ -36,12 +40,14 @@ export default function App(): React.ReactElement {
   }
 
   return (
-    <View style={styles.container}>
-      <StatusBar style="auto" />
-      <Text style={styles.title}>Flashcard App</Text>
-      <Text style={styles.subtitle}>Database Initialized Successfully!</Text>
-      {dbError && <Text style={styles.error}>Warning: {dbError.message}</Text>}
-    </View>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <NavigationContainer>
+          <StatusBar style="auto" />
+          <RootNavigator />
+        </NavigationContainer>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }
 
@@ -52,24 +58,26 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#fff",
   },
+
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
     backgroundColor: "#fff",
     padding: 20,
   },
+
   title: {
     fontSize: 28,
     fontWeight: "bold",
     color: "#4A90E2",
     marginBottom: 10,
   },
+
   subtitle: {
     fontSize: 18,
     color: "#2E7D32",
     marginBottom: 20,
   },
+
   error: {
     fontSize: 14,
     color: "#D32F2F",
