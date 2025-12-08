@@ -10,24 +10,15 @@
     "allowSyntheticDefaultImports": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
-    "lib": [
-      "es2017"
-    ],
+    "lib": ["es2017"],
     "target": "esnext",
     "module": "esnext",
     "baseUrl": ".",
     "ignoreDeprecations": "6.0",
     "paths": {
-      "@/*": [
-        "src/*"
-      ]
+      "@/*": ["src/*"]
     }
   },
-  "include": [
-    "**/*.ts",
-    "**/*.tsx"
-, "index.js"  ],
-  "exclude": [
-    "node_modules"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", "index.js"],
+  "exclude": ["node_modules"]
 }

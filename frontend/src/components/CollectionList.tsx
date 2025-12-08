@@ -20,11 +20,13 @@ export type Collection = {
 interface CollectionListProps {
   data: Collection[];
   onPressItem: (item: Collection) => void;
+  onLongPressItem: (item: Collection) => void;
 }
 
 const CollectionList: React.FC<CollectionListProps> = ({
   data,
   onPressItem,
+  onLongPressItem,
 }) => {
   const getStatusColor = (
     value: number,
@@ -41,6 +43,8 @@ const CollectionList: React.FC<CollectionListProps> = ({
       style={styles.card}
       onPress={() => onPressItem(item)}
       activeOpacity={0.7}
+      onLongPress={() => onLongPressItem(item)}
+      delayLongPress={500}
     >
       <Text style={styles.cardTitle}>{item.title}</Text>
       <View style={styles.statusRow}>
