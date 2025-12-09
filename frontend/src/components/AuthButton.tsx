@@ -1,16 +1,26 @@
-import { TouchableOpacity, Text, StyleSheet } from "react-native";
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { Colors } from "../const/Color";
 
 export default function AuthButton({
   title,
   onPress,
+  disabled = false,
 }: {
   title: string;
   onPress?: () => void;
+  disabled?: boolean;
 }) {
   return (
-    <TouchableOpacity style={styles.btn} onPress={onPress}>
-      <Text style={styles.btnText}>{title}</Text>
+    <TouchableOpacity 
+      style={[styles.btn, disabled && styles.btnDisabled]} 
+      onPress={onPress}
+      disabled={disabled}
+    >
+      {disabled ? (
+        <ActivityIndicator color={Colors.white} />
+      ) : (
+        <Text style={styles.btnText}>{title}</Text>
+      )}
     </TouchableOpacity>
   );
 }
@@ -23,6 +33,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginVertical: 15,
     alignItems: "center",
+  },
+
+  btnDisabled: {
+    opacity: 0.6,
   },
 
   btnText: {

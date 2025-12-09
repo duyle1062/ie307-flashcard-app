@@ -24,8 +24,9 @@ export default function Login() {
   const [password, setPassword] = useState<string>("");
 
   const { login } = useAuth();
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert(
         "Missing Information",
@@ -34,7 +35,9 @@ export default function Login() {
       return;
     }
 
-    login(email, password);
+    setLoading(true);
+    const success = await login(email, password);
+    setLoading(false);
   };
 
   return (
@@ -69,7 +72,11 @@ export default function Login() {
         <Text style={styles.forgotPasswordText}>Forgot password?</Text>
       </TouchableOpacity>
 
-      <AuthButton title="Log in" onPress={handleLogin} />
+      <AuthButton 
+        title={loading ? "Logging in..." : "Log in"} 
+        onPress={handleLogin}
+        disabled={loading}
+      />
 
       <View style={styles.dividerContainer}>
         <View style={styles.line} />

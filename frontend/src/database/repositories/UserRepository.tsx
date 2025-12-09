@@ -12,7 +12,7 @@ import { User } from "../types";
 export const getUserById = async (userId: string): Promise<User | null> => {
   try {
     const result = await executeQuery(
-      "SELECT * FROM users WHERE id = ? AND deleted_at IS NULL",
+      "SELECT * FROM users WHERE id = ?",
       [userId]
     );
 
@@ -32,7 +32,7 @@ export const getUserById = async (userId: string): Promise<User | null> => {
 export const getUserByEmail = async (email: string): Promise<User | null> => {
   try {
     const result = await executeQuery(
-      "SELECT * FROM users WHERE email = ? AND deleted_at IS NULL",
+      "SELECT * FROM users WHERE email = ?",
       [email]
     );
 
@@ -53,15 +53,26 @@ export const upsertUser = async (
   userData: Partial<User> & { id: string }
 ): Promise<User | null> => {
   try {
-    const existing = await getUserById(userData.id);
+    // Check if user exists by ID first
+    let existing = await getUserById(userData.id);
+    
+    // If not found by ID, check by email (for cases where email exists from previous registration)
+    if (!existing && userData.email) {
+      const existingByEmail = await getUserByEmail(userData.email);
+      if (existingByEmail) {
+        // Email exists with different ID, delete old record and insert new one
+        console.log(`⚠️ Email ${userData.email} exists with different ID, updating...`);
+        await executeQuery("DELETE FROM users WHERE email = ?", [userData.email]);
+      }
+    }
 
     if (existing) {
-      // Update existing user
+      // Update existing user by ID
       await executeQuery(
         `UPDATE users SET 
           email = ?, 
-          display_name = ?, 
-          profile_picture_url = ?,
+          name = ?, 
+          picture = ?,
           streak_days = ?,
           last_active_date = ?,
           daily_new_cards_limit = ?,
@@ -70,8 +81,8 @@ export const upsertUser = async (
         WHERE id = ?`,
         [
           userData.email ?? existing.email,
-          userData.display_name ?? existing.display_name,
-          userData.profile_picture_url ?? existing.profile_picture_url,
+          userData.display_name ?? existing.name,
+          userData.profile_picture_url ?? existing.picture,
           userData.streak_days ?? existing.streak_days,
           userData.last_active_date ?? existing.last_active_date,
           userData.daily_new_cards_limit ?? existing.daily_new_cards_limit,
@@ -86,7 +97,7 @@ export const upsertUser = async (
       // Insert new user
       await executeQuery(
         `INSERT INTO users (
-          id, email, display_name, profile_picture_url,
+          id, email, name, picture,
           streak_days, last_active_date, 
           daily_new_cards_limit, daily_review_cards_limit,
           created_at, updated_at
@@ -173,10 +184,10 @@ export const updateUserProfile = async (
       "users",
       userId,
       {
-        display_name: displayName,
-        profile_picture_url: profilePictureUrl,
+        name: displayName,
+        picture: profilePictureUrl,
       },
-      ["display_name", "profile_picture_url"]
+      ["name", "picture"]
     );
 
     return await getUserById(userId);

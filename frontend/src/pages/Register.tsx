@@ -24,6 +24,7 @@ import AuthSocial from "../components/AuthSocial";
 import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
+  const [loading, setLoading] = useState(false);
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
 
@@ -33,7 +34,7 @@ export default function Register() {
 
   const { register } = useAuth();
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
       Alert.alert("Missing Information", "Please fill in all fields.");
       return;
@@ -54,16 +55,13 @@ export default function Register() {
       );
       return;
     }
-
-    const success = register(email, password);
+    setLoading(true); // Bắt đầu loading
+    const success = await register(email, password);
+    setLoading(false);
 
     if (success) {
-      Alert.alert("Success", "Your account has been created successfully!", [
-        {
-          text: "OK",
-          onPress: () => navigation.navigate("Login"),
-        },
-      ]);
+      // User đã được authenticate và tự động login, AuthContext sẽ navigate sang AppStack
+      // Không cần navigate manually vì isAuthenticated đã true
     }
   };
 
@@ -108,7 +106,11 @@ export default function Register() {
         />
       </View>
 
-      <AuthButton title="Sign up" onPress={handleRegister} />
+      <AuthButton 
+        title={loading ? "Creating account..." : "Sign up"} 
+        onPress={handleRegister}
+        disabled={loading}
+      />
 
       <View style={styles.dividerContainer}>
         <View style={styles.line} />
