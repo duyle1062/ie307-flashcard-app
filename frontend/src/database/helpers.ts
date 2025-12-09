@@ -68,7 +68,7 @@ export const insertWithSync = async (
   const insertSql = `INSERT INTO ${tableName} (${columns.join(
     ", "
   )}) VALUES (${placeholders})`;
-  const syncSql = `INSERT INTO sync_queue (id, table_name, record_id, operation, data, created_at) VALUES (?, ?, ?, ?, ?, ?)`;
+  const syncSql = `INSERT INTO sync_queue (id, entity_type, entity_id, operation, data, created_at) VALUES (?, ?, ?, ?, ?, ?)`;
 
   try {
     await executeTransaction([
@@ -106,7 +106,7 @@ export const updateWithSync = async (
   const values = [...Object.values(updates), recordId];
 
   const updateSql = `UPDATE ${tableName} SET ${setClause}, updated_at = datetime('now') WHERE id = ?`;
-  const syncSql = `INSERT INTO sync_queue (id, table_name, record_id, operation, data, created_at) VALUES (?, ?, ?, ?, ?, ?)`;
+  const syncSql = `INSERT INTO sync_queue (id, entity_type, entity_id, operation, data, created_at) VALUES (?, ?, ?, ?, ?, ?)`;
 
   try {
     await executeTransaction([
@@ -137,7 +137,7 @@ export const softDeleteWithSync = async (
   recordId: string
 ): Promise<void> => {
   const deleteSql = `UPDATE ${tableName} SET deleted_at = datetime('now') WHERE id = ?`;
-  const syncSql = `INSERT INTO sync_queue (id, table_name, record_id, operation, data, created_at) VALUES (?, ?, ?, ?, ?, ?)`;
+  const syncSql = `INSERT INTO sync_queue (id, entity_type, entity_id, operation, data, created_at) VALUES (?, ?, ?, ?, ?, ?)`;
 
   try {
     await executeTransaction([
@@ -182,8 +182,8 @@ export const hasLocalChanges = async (): Promise<boolean> => {
 export const getUnsyncedChanges = async (): Promise<
   Array<{
     id: string;
-    table_name: string;
-    record_id: string;
+    entity_type: string;
+    entity_id: string;
     operation: SyncOperation;
     data: string;
     created_at: string;
@@ -196,8 +196,8 @@ export const getUnsyncedChanges = async (): Promise<
 
     const changes: Array<{
       id: string;
-      table_name: string;
-      record_id: string;
+      entity_type: string;
+      entity_id: string;
       operation: SyncOperation;
       data: string;
       created_at: string;
