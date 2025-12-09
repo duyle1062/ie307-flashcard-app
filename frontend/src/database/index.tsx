@@ -49,6 +49,9 @@ export { DB_NAME, DB_VERSION, CREATE_TABLES, CREATE_INDEXES } from "./schema";
 // Repositories
 export * from "./repositories";
 
+// Migration utilities
+export { migrateDatabase, needsMigration } from "./migration";
+
 // Spaced Repetition System
 export { onAnswer, getTodaysQueue, checkDailyLimits } from "./spacedRepetition";
 

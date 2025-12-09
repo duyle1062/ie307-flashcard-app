@@ -8,19 +8,23 @@ export type CardStatus = "new" | "learning" | "review";
 // Sync queue operation enum
 export type SyncOperation = "INSERT" | "UPDATE" | "DELETE";
 
-// User model
+// User model (matches SQLite schema)
 export interface User {
   id: string;
+  name: string; // SQLite column name
   email: string;
-  display_name: string;
-  profile_picture_url?: string;
+  password_hash?: string;
+  google_id?: string;
+  picture?: string; // SQLite column name
   streak_days: number;
   last_active_date?: string;
   daily_new_cards_limit: number;
   daily_review_cards_limit: number;
   created_at: string;
   updated_at: string;
-  deleted_at?: string;
+  // Alias properties for backward compatibility with Firebase
+  display_name?: string;
+  profile_picture_url?: string;
 }
 
 // Collection model
