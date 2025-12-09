@@ -89,8 +89,8 @@ export interface UsageLog {
 // Sync queue model
 export interface SyncQueue {
   id: string;
-  table_name: string;
-  record_id: string;
+  entity_type: string;
+  entity_id: string;
   operation: SyncOperation;
   data: string; // JSON string
   created_at: string;

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   TextInput,
   ScrollView,
+  Alert,
+  ActivityIndicator,
 } from "react-native";
 
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -16,12 +18,23 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import { Colors } from "../const/Color";
 import { Shadows } from "../const/Shadow";
 import DottedBackground from "@/components/DottedBackground";
+import { useAuth } from "../context/AuthContext";
+import { getUserById, updateUserProfile } from "../database/repositories/UserRepository";
+import { getCurrentUserId } from "../database/storage";
+import { User } from "../database/types";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "../config/firebaseConfig";
 
 export default function UserProfile() {
   const navigation = useNavigation();
+  const { user: firebaseUser } = useAuth();
 
-  const [name, setName] = useState("Nguyen Van A");
-  const [email, setEmail] = useState("nguyenvana@example.com");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [userData, setUserData] = useState<User | null>(null);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [streakDays, setStreakDays] = useState(0);
   const [showCollections, setShowCollections] = useState(false);
 
   const mockCollections = [
@@ -29,6 +42,106 @@ export default function UserProfile() {
     "Collection B - Intermediate",
     "Collection C - Advanced",
   ];
+
+  // Fetch user data on component mount
+  useEffect(() => {
+    loadUserData();
+  }, []);
+
+  const loadUserData = async () => {
+    try {
+      setIsLoading(true);
+      const userId = await getCurrentUserId();
+      
+      if (!userId) {
+        Alert.alert("Error", "User not logged in");
+        navigation.goBack();
+        return;
+      }
+
+      const user = await getUserById(userId);
+      
+      if (user) {
+        setUserData(user);
+        setName(user.name || user.display_name || "");
+        setEmail(user.email);
+        setStreakDays(user.streak_days || 0);
+      } else {
+        Alert.alert("Error", "User data not found");
+      }
+    } catch (error) {
+      console.error("Error loading user data:", error);
+      Alert.alert("Error", "Failed to load user data");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateProfile = async () => {
+    if (!userData) {
+      Alert.alert("Error", "User data not available");
+      return;
+    }
+
+    if (!name.trim()) {
+      Alert.alert("Error", "Name cannot be empty");
+      return;
+    }
+
+    try {
+      setIsUpdating(true);
+
+      // Step 1: Update SQLite (Local DB) - Offline-first approach
+      const updatedUser = await updateUserProfile(
+        userData.id,
+        name.trim(),
+        userData.picture
+      );
+
+      if (updatedUser) {
+        setUserData(updatedUser);
+        console.log("✅ Local DB updated successfully");
+
+        // Step 2: Sync to Firestore (Cloud DB)
+        try {
+          const userDocRef = doc(db, "users", userData.id);
+          await updateDoc(userDocRef, {
+            name: name.trim(),
+            display_name: name.trim(),
+            updated_at: new Date().toISOString(),
+          });
+          console.log("✅ Firestore synced successfully");
+          Alert.alert("Success", "Profile updated successfully!");
+        } catch (firestoreError) {
+          console.error("❌ Firestore sync failed:", firestoreError);
+          // Local update succeeded, but cloud sync failed
+          // The sync_queue will handle this later
+          Alert.alert(
+            "Partial Success",
+            "Profile updated locally. Cloud sync will happen when online."
+          );
+        }
+      } else {
+        Alert.alert("Error", "Failed to update profile");
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      Alert.alert("Error", "Failed to update profile");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.primary} />
+          <Text style={styles.loadingText}>Loading user data...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -54,7 +167,7 @@ export default function UserProfile() {
               </View>
 
               <View style={styles.streakContainer}>
-                <Text style={styles.streakLabel}>Streak: 128 days</Text>
+                <Text style={styles.streakLabel}>Streak: {streakDays} days</Text>
                 <AntDesign name="fire" size={24} color="orange" />
               </View>
             </View>
@@ -65,13 +178,15 @@ export default function UserProfile() {
               style={styles.input}
               value={name}
               onChangeText={setName}
+              placeholder="Enter your name"
+              editable={!isUpdating}
             />
 
             <Text style={styles.label}>Email</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, styles.disabledInput]}
               value={email}
-              onChangeText={setEmail}
+              editable={false}
               keyboardType="email-address"
             />
 
@@ -106,8 +221,16 @@ export default function UserProfile() {
           </View>
         </ScrollView>
 
-        <TouchableOpacity style={styles.updateButton}>
-          <Text style={styles.updateButtonText}>UPDATE</Text>
+        <TouchableOpacity 
+          style={[styles.updateButton, isUpdating && styles.disabledButton]}
+          onPress={handleUpdateProfile}
+          disabled={isUpdating}
+        >
+          {isUpdating ? (
+            <ActivityIndicator size="small" color={Colors.white} />
+          ) : (
+            <Text style={styles.updateButtonText}>UPDATE</Text>
+          )}
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -117,6 +240,18 @@ export default function UserProfile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: Colors.subText,
   },
 
   header: {
@@ -202,6 +337,11 @@ const styles = StyleSheet.create({
     color: Colors.subText,
   },
 
+  disabledInput: {
+    backgroundColor: Colors.silver,
+    color: Colors.subText,
+  },
+
   collectionButton: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -252,6 +392,11 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: "center",
     marginTop: 20,
+  },
+
+  disabledButton: {
+    backgroundColor: Colors.gray,
+    opacity: 0.6,
   },
 
   updateButtonText: {

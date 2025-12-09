@@ -20,6 +20,9 @@ export const initDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
     console.log("Database opened successfully");
     await createTables();
     await createIndexes();
+    
+    // Run migrations
+    await migrateSyncQueueTable();
 
     console.log("Database initialization complete");
     return database;
@@ -136,6 +139,67 @@ export const executeTransaction = async (
     });
   } catch (error) {
     console.error("Error executing transaction:", error);
+    throw error;
+  }
+};
+
+/**
+ * Migrate sync_queue table to use new column names
+ */
+export const migrateSyncQueueTable = async (): Promise<void> => {
+  const db = getDatabase();
+
+  try {
+    console.log("Migrating sync_queue table...");
+
+    // Check if old columns exist
+    const tableInfo = await db.getAllAsync("PRAGMA table_info(sync_queue)");
+    const hasOldColumns = tableInfo.some(
+      (col: any) => col.name === "table_name" || col.name === "record_id"
+    );
+
+    if (hasOldColumns) {
+      console.log("Old column names detected, migrating...");
+
+      // SQLite doesn't support ALTER TABLE RENAME COLUMN directly in older versions
+      // So we need to: 1) Create new table, 2) Copy data, 3) Drop old, 4) Rename new
+
+      await db.execAsync(`
+        CREATE TABLE IF NOT EXISTS sync_queue_new (
+          id TEXT PRIMARY KEY,
+          entity_type TEXT NOT NULL,
+          entity_id TEXT NOT NULL,
+          operation TEXT NOT NULL CHECK (operation IN ('INSERT', 'UPDATE', 'DELETE')),
+          data TEXT,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+
+      // Copy data from old table to new table (if old table has data)
+      await db.execAsync(`
+        INSERT INTO sync_queue_new (id, entity_type, entity_id, operation, data, created_at)
+        SELECT id, table_name, record_id, operation, data, created_at
+        FROM sync_queue
+        WHERE EXISTS (SELECT 1 FROM sync_queue LIMIT 1);
+      `);
+
+      // Drop old table
+      await db.execAsync("DROP TABLE sync_queue");
+
+      // Rename new table to sync_queue
+      await db.execAsync("ALTER TABLE sync_queue_new RENAME TO sync_queue");
+
+      // Recreate index
+      await db.execAsync(
+        "CREATE INDEX IF NOT EXISTS idx_sync_queue_entity ON sync_queue(entity_type, entity_id);"
+      );
+
+      console.log("✅ sync_queue table migrated successfully");
+    } else {
+      console.log("sync_queue table already has correct column names");
+    }
+  } catch (error) {
+    console.error("Error migrating sync_queue table:", error);
     throw error;
   }
 };
