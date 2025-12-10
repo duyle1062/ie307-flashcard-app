@@ -5,6 +5,7 @@ import {
   softDeleteWithSync,
   generateUUID,
 } from "../helpers";
+import { getCurrentUserId } from "../storage";
 import { Card, CardStatus } from "../types";
 
 /**
@@ -66,10 +67,17 @@ export const createCard = async (
   try {
     const id = generateUUID();
     const now = new Date().toISOString();
+    
+    // Get user_id from collection
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      throw new Error("User not logged in");
+    }
 
     await insertWithSync("cards", {
       id,
       collection_id: collectionId,
+      user_id: userId,
       front,
       back,
       hint,
