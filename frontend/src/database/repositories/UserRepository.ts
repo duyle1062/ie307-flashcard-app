@@ -53,20 +53,13 @@ export const upsertUser = async (
   userData: Partial<User> & { id: string }
 ): Promise<User | null> => {
   try {
-    // Check if user exists by ID first
-    let existing = await getUserById(userData.id);
+    // Check if user exists by ID (simple check to avoid race conditions)
+    const existingCheck = await executeQuery(
+      "SELECT id FROM users WHERE id = ?",
+      [userData.id]
+    );
     
-    // If not found by ID, check by email (for cases where email exists from previous registration)
-    if (!existing && userData.email) {
-      const existingByEmail = await getUserByEmail(userData.email);
-      if (existingByEmail) {
-        // Email exists with different ID, delete old record and insert new one
-        console.log(`⚠️ Email ${userData.email} exists with different ID, updating...`);
-        await executeQuery("DELETE FROM users WHERE email = ?", [userData.email]);
-      }
-    }
-
-    if (existing) {
+    if (existingCheck.rows.length > 0) {
       // Update existing user by ID
       await executeQuery(
         `UPDATE users SET 
@@ -80,20 +73,31 @@ export const upsertUser = async (
           updated_at = datetime('now')
         WHERE id = ?`,
         [
-          userData.email ?? existing.email,
-          userData.display_name ?? existing.name,
-          userData.profile_picture_url ?? existing.picture,
-          userData.streak_days ?? existing.streak_days,
-          userData.last_active_date ?? existing.last_active_date,
-          userData.daily_new_cards_limit ?? existing.daily_new_cards_limit,
-          userData.daily_review_cards_limit ??
-            existing.daily_review_cards_limit,
+          userData.email,
+          userData.display_name,
+          userData.profile_picture_url,
+          userData.streak_days ?? 0,
+          userData.last_active_date,
+          userData.daily_new_cards_limit ?? 25,
+          userData.daily_review_cards_limit ?? 50,
           userData.id,
         ]
       );
-
-      return await getUserById(userData.id);
     } else {
+      // Check if email already exists (handle email conflict)
+      if (userData.email) {
+        const emailCheck = await executeQuery(
+          "SELECT id FROM users WHERE email = ?",
+          [userData.email]
+        );
+        
+        if (emailCheck.rows.length > 0) {
+          // Email exists with different ID, delete old record
+          console.log(`⚠️ Email ${userData.email} exists with different ID, replacing...`);
+          await executeQuery("DELETE FROM users WHERE email = ?", [userData.email]);
+        }
+      }
+      
       // Insert new user
       await executeQuery(
         `INSERT INTO users (
@@ -113,9 +117,9 @@ export const upsertUser = async (
           userData.daily_review_cards_limit ?? 50,
         ]
       );
-
-      return await getUserById(userData.id);
     }
+
+    return await getUserById(userData.id);
   } catch (error) {
     console.error("Error upserting user:", error);
     throw error;

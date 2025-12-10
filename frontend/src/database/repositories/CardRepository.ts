@@ -271,10 +271,14 @@ export const upsertCard = async (
   cardData: Partial<Card> & { id: string }
 ): Promise<Card | null> => {
   try {
-    const existing = await getCardById(cardData.id);
+    // Check if card exists (including soft-deleted ones)
+    const existingCheck = await executeQuery(
+      "SELECT id FROM cards WHERE id = ?",
+      [cardData.id]
+    );
 
-    if (existing) {
-      // Update existing card
+    if (existingCheck.rows.length > 0) {
+      // Update existing card (including soft-deleted ones)
       await executeQuery(
         `UPDATE cards SET 
           front = ?, 
@@ -284,16 +288,18 @@ export const upsertCard = async (
           interval = ?,
           ef = ?,
           due_date = ?,
+          deleted_at = ?,
           updated_at = ?
         WHERE id = ?`,
         [
-          cardData.front ?? existing.front,
-          cardData.back ?? existing.back,
-          cardData.hint ?? existing.hint,
-          cardData.status ?? existing.status,
-          cardData.interval ?? existing.interval,
-          cardData.ef ?? existing.ef,
-          cardData.due_date ?? existing.due_date,
+          cardData.front,
+          cardData.back,
+          cardData.hint,
+          cardData.status ?? "new",
+          cardData.interval ?? 0,
+          cardData.ef ?? 2.5,
+          cardData.due_date,
+          cardData.deleted_at ?? null,
           cardData.updated_at ?? new Date().toISOString(),
           cardData.id,
         ]
@@ -302,13 +308,14 @@ export const upsertCard = async (
       // Insert new card
       await executeQuery(
         `INSERT INTO cards (
-          id, collection_id, front, back, hint,
-          status, interval, ef, due_date,
+          id, collection_id, user_id, front, back, hint,
+          status, interval, ef, due_date, deleted_at,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           cardData.id,
           cardData.collection_id,
+          cardData.user_id,
           cardData.front,
           cardData.back,
           cardData.hint,
@@ -316,6 +323,7 @@ export const upsertCard = async (
           cardData.interval ?? 0,
           cardData.ef ?? 2.5,
           cardData.due_date ?? new Date().toISOString().split("T")[0],
+          cardData.deleted_at ?? null,
           cardData.created_at ?? new Date().toISOString(),
           cardData.updated_at ?? new Date().toISOString(),
         ]

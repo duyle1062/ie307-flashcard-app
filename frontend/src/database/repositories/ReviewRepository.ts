@@ -224,10 +224,14 @@ export const upsertReview = async (
   reviewData: Partial<Review> & { id: string }
 ): Promise<Review | null> => {
   try {
-    const existing = await getReviewById(reviewData.id);
+    // Check if review exists (simple check)
+    const existingCheck = await executeQuery(
+      "SELECT id FROM reviews WHERE id = ?",
+      [reviewData.id]
+    );
 
-    if (!existing) {
-      // Insert new review (reviews are immutable, so we only insert)
+    if (existingCheck.rows.length === 0) {
+      // Insert new review (reviews are immutable, so we only insert if not exists)
       await executeQuery(
         `INSERT INTO reviews (
           id, user_id, card_id, rating,
@@ -247,6 +251,7 @@ export const upsertReview = async (
         ]
       );
     }
+    // If exists, skip (reviews are immutable, no update needed)
 
     return await getReviewById(reviewData.id);
   } catch (error) {

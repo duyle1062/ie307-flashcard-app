@@ -23,6 +23,7 @@ export const initDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
     // Run migrations BEFORE creating indexes
     await migrateSyncQueueTable();
     await migrateCardsAddUserId();
+    await migrateToDeletedAt();
     
     // Create indexes AFTER migrations (so new columns exist)
     await createIndexes();
@@ -243,6 +244,120 @@ export const migrateCardsAddUserId = async (): Promise<void> => {
     }
   } catch (error) {
     console.error("Error migrating cards table:", error);
+    throw error;
+  }
+};
+
+/**
+ * Migrate collections and cards tables from is_deleted to deleted_at
+ */
+export const migrateToDeletedAt = async (): Promise<void> => {
+  const db = getDatabase();
+
+  try {
+    console.log("Migrating to deleted_at column...");
+
+    // Migrate collections table
+    const collectionsInfo = await db.getAllAsync("PRAGMA table_info(collections)");
+    const hasDeletedAt = collectionsInfo.some((col: any) => col.name === "deleted_at");
+    const hasIsDeleted = collectionsInfo.some((col: any) => col.name === "is_deleted");
+
+    if (!hasDeletedAt && hasIsDeleted) {
+      console.log("Migrating collections table...");
+      
+      // Add deleted_at column
+      await db.execAsync("ALTER TABLE collections ADD COLUMN deleted_at TEXT");
+      
+      // Check if is_public exists, if not add it
+      const hasIsPublic = collectionsInfo.some((col: any) => col.name === "is_public");
+      if (!hasIsPublic) {
+        await db.execAsync("ALTER TABLE collections ADD COLUMN is_public INTEGER DEFAULT 0");
+      }
+      
+      // No need to migrate data since we're starting fresh with this feature
+      // Drop old is_deleted column by recreating table
+      await db.execAsync(`
+        CREATE TABLE collections_new (
+          id TEXT PRIMARY KEY,
+          user_id TEXT NOT NULL,
+          name TEXT NOT NULL,
+          description TEXT,
+          is_public INTEGER DEFAULT 0,
+          deleted_at TEXT,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+      `);
+      
+      await db.execAsync(`
+        INSERT INTO collections_new (id, user_id, name, description, is_public, deleted_at, created_at, updated_at)
+        SELECT id, user_id, name, description, 0, NULL, created_at, updated_at
+        FROM collections;
+      `);
+      
+      await db.execAsync("DROP TABLE collections");
+      await db.execAsync("ALTER TABLE collections_new RENAME TO collections");
+      
+      console.log("✅ Collections table migrated to deleted_at");
+    } else if (hasDeletedAt) {
+      console.log("Collections table already has deleted_at column");
+      
+      // Check if is_public exists for existing tables with deleted_at
+      const hasIsPublic = collectionsInfo.some((col: any) => col.name === "is_public");
+      if (!hasIsPublic) {
+        console.log("Adding is_public column to collections table...");
+        await db.execAsync("ALTER TABLE collections ADD COLUMN is_public INTEGER DEFAULT 0");
+        console.log("✅ Added is_public column to collections");
+      }
+    }
+
+    // Migrate cards table
+    const cardsInfo = await db.getAllAsync("PRAGMA table_info(cards)");
+    const cardsHasDeletedAt = cardsInfo.some((col: any) => col.name === "deleted_at");
+    const cardsHasIsDeleted = cardsInfo.some((col: any) => col.name === "is_deleted");
+
+    if (!cardsHasDeletedAt && cardsHasIsDeleted) {
+      console.log("Migrating cards table...");
+      
+      // Add deleted_at column
+      await db.execAsync("ALTER TABLE cards ADD COLUMN deleted_at TEXT");
+      
+      // Recreate table without is_deleted
+      await db.execAsync(`
+        CREATE TABLE cards_new (
+          id TEXT PRIMARY KEY,
+          collection_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          front TEXT NOT NULL,
+          back TEXT NOT NULL,
+          status TEXT DEFAULT 'new' CHECK (status IN ('new', 'learning', 'review')),
+          interval INTEGER DEFAULT 0,
+          ef REAL DEFAULT 2.5,
+          due_date TEXT,
+          deleted_at TEXT,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+      `);
+      
+      await db.execAsync(`
+        INSERT INTO cards_new (id, collection_id, user_id, front, back, status, interval, ef, due_date, deleted_at, created_at, updated_at)
+        SELECT id, collection_id, user_id, front, back, status, interval, ef, due_date, NULL, created_at, updated_at
+        FROM cards;
+      `);
+      
+      await db.execAsync("DROP TABLE cards");
+      await db.execAsync("ALTER TABLE cards_new RENAME TO cards");
+      
+      console.log("✅ Cards table migrated to deleted_at");
+    } else if (cardsHasDeletedAt) {
+      console.log("Cards table already has deleted_at column");
+    }
+  } catch (error) {
+    console.error("Error migrating to deleted_at:", error);
     throw error;
   }
 };
