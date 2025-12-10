@@ -19,11 +19,13 @@ export const initDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
 
     console.log("Database opened successfully");
     await createTables();
-    await createIndexes();
     
-    // Run migrations
+    // Run migrations BEFORE creating indexes
     await migrateSyncQueueTable();
     await migrateCardsAddUserId();
+    
+    // Create indexes AFTER migrations (so new columns exist)
+    await createIndexes();
 
     console.log("Database initialization complete");
     return database;
