@@ -23,6 +23,7 @@ export const initDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
     
     // Run migrations
     await migrateSyncQueueTable();
+    await migrateCardsAddUserId();
 
     console.log("Database initialization complete");
     return database;
@@ -200,6 +201,46 @@ export const migrateSyncQueueTable = async (): Promise<void> => {
     }
   } catch (error) {
     console.error("Error migrating sync_queue table:", error);
+    throw error;
+  }
+};
+
+/**
+ * Migrate cards table to add user_id column
+ */
+export const migrateCardsAddUserId = async (): Promise<void> => {
+  const db = getDatabase();
+
+  try {
+    console.log("Migrating cards table to add user_id...");
+
+    // Check if user_id column exists
+    const tableInfo = await db.getAllAsync("PRAGMA table_info(cards)");
+    const hasUserId = tableInfo.some((col: any) => col.name === "user_id");
+
+    if (!hasUserId) {
+      console.log("Adding user_id column to cards table...");
+      
+      // Add user_id column (allow NULL temporarily for migration)
+      await db.execAsync("ALTER TABLE cards ADD COLUMN user_id TEXT");
+      
+      // Populate user_id from collections.user_id for existing cards
+      await db.execAsync(`
+        UPDATE cards
+        SET user_id = (
+          SELECT collections.user_id 
+          FROM collections 
+          WHERE collections.id = cards.collection_id
+        )
+        WHERE user_id IS NULL
+      `);
+      
+      console.log("✅ Cards table migrated successfully");
+    } else {
+      console.log("Cards table already has user_id column");
+    }
+  } catch (error) {
+    console.error("Error migrating cards table:", error);
     throw error;
   }
 };

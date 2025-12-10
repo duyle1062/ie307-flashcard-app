@@ -22,12 +22,12 @@ import { useAuth } from "../context/AuthContext";
 import { getUserById, updateUserProfile } from "../database/repositories/UserRepository";
 import { getCurrentUserId } from "../database/storage";
 import { User } from "../database/types";
-import { doc, updateDoc } from "firebase/firestore";
-import { db } from "../config/firebaseConfig";
+import { useSync } from "../hooks/useSync";
 
 export default function UserProfile() {
   const navigation = useNavigation();
   const { user: firebaseUser } = useAuth();
+  const { forceSync } = useSync();
 
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -91,7 +91,7 @@ export default function UserProfile() {
     try {
       setIsUpdating(true);
 
-      // Step 1: Update SQLite (Local DB) - Offline-first approach
+      // ✅ BEST PRACTICE: Update local first (adds to sync_queue automatically)
       const updatedUser = await updateUserProfile(
         userData.id,
         name.trim(),
@@ -102,31 +102,24 @@ export default function UserProfile() {
         setUserData(updatedUser);
         console.log("✅ Local DB updated successfully");
 
-        // Step 2: Sync to Firestore (Cloud DB)
-        try {
-          const userDocRef = doc(db, "users", userData.id);
-          await updateDoc(userDocRef, {
-            name: name.trim(),
-            display_name: name.trim(),
-            updated_at: new Date().toISOString(),
-          });
-          console.log("✅ Firestore synced successfully");
-          Alert.alert("Success", "Profile updated successfully!");
-        } catch (firestoreError) {
-          console.error("❌ Firestore sync failed:", firestoreError);
-          // Local update succeeded, but cloud sync failed
-          // The sync_queue will handle this later
+        // ✅ Trigger sync via SyncService (handles retry & conflict resolution)
+        const syncResult = await forceSync();
+
+        if (syncResult?.success) {
+          Alert.alert("Thành công!", "Hồ sơ của bạn đã được cập nhật");
+        } else if (syncResult?.errors && syncResult.errors.length > 0) {
+          // Sync failed but data is saved locally
           Alert.alert(
-            "Partial Success",
-            "Profile updated locally. Cloud sync will happen when online."
+            "Đã lưu local",
+            "Thay đổi sẽ được đồng bộ khi có kết nối mạng"
           );
         }
       } else {
-        Alert.alert("Error", "Failed to update profile");
+        Alert.alert("Lỗi", "Không thể cập nhật hồ sơ");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating profile:", error);
-      Alert.alert("Error", "Failed to update profile");
+      Alert.alert("Lỗi", "Không thể cập nhật hồ sơ: " + error.message);
     } finally {
       setIsUpdating(false);
     }
