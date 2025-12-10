@@ -8,7 +8,7 @@ import Header from "../components/Header";
 import UserMenuModal from "../components/UserMenuModal";
 import SearchBar from "../components/SearchBar";
 import CollectionList, { Collection } from "../components/CollectionList";
-import FloatingAddButton from "../components/FloatingAddButton";
+import FloatingAddButton from "@/components/FloatingAddButton";
 import CollectionActionModal from "../components/CollectionActionModal";
 
 import { useAuth } from "../context/AuthContext";
@@ -141,7 +141,11 @@ export default function Home({ navigation }: any) {
         </View>
       )}
 
-      <FloatingAddButton onPress={() => {}} />
+      <FloatingAddButton
+        onCreateCollection={(name) => console.log("Create Collection: ", name)}
+        onCreateCard={(data) => console.log("Create card:", data)}
+        onImport={() => console.log("Import Collection")}
+      />
     </View>
   );
 }
