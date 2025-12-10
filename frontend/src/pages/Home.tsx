@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { View, StyleSheet, Alert, Text } from "react-native";
 import { DrawerActions } from "@react-navigation/native";
 import { Colors } from "../const/Color";
@@ -12,15 +12,154 @@ import FloatingAddButton from "@/components/FloatingAddButton";
 import CollectionActionModal from "../components/CollectionActionModal";
 
 import { useAuth } from "../context/AuthContext";
+import { useSync } from "../hooks/useSync";
+import {
+  getCollectionsByUserId,
+  createCollection,
+  deleteCollection,
+} from "../database/repositories/CollectionRepository";
 
 export default function Home({ navigation }: any) {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
+  const { checkAndSyncIfNeeded, forceSync, syncStatus } = useSync();
   const [search, setSearch] = useState<string>("");
   const [showMenu, setShowMenu] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [selectedCollection, setSelectedCollection] =
     useState<Collection | null>(null);
+
+  // Collections state - will be loaded from local DB
+  const [collections, setCollections] = useState<Collection[]>([]);
+
+  /**
+   * Load collections from local DB
+   */
+  const loadCollections = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      setIsLoading(true);
+      const dbCollections = await getCollectionsByUserId(user.uid);
+      
+      // Transform to UI format with mock status values for now
+      const transformedCollections: Collection[] = dbCollections.map((col) => ({
+        id: col.id,
+        title: col.name,
+        new: 0, // TODO: Calculate from cards
+        learning: 0, // TODO: Calculate from cards
+        review: 0, // TODO: Calculate from cards
+      }));
+
+      setCollections(transformedCollections);
+    } catch (error) {
+      console.error("Error loading collections:", error);
+      Alert.alert("Error", "Failed to load collections");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user]);
+
+  /**
+   * Load collections on mount
+   */
+  useEffect(() => {
+    loadCollections();
+  }, [loadCollections]);
+
+  /**
+   * Handle manual sync (triggered by refresh button)
+   */
+  const handleManualSync = async () => {
+    if (!user) {
+      Alert.alert("Error", "User not authenticated");
+      return;
+    }
+
+    if (syncStatus.isRunning) {
+      console.log("⏳ Sync already in progress, skipping...");
+      return;
+    }
+
+    try {
+      console.log("🔄 Manual sync triggered by user");
+      const result = await forceSync();
+      
+      if (result?.success) {
+        // Reload collections after sync
+        await loadCollections();
+        
+        Alert.alert(
+          "Sync Complete",
+          `Synced ${result.pushedCount} local changes and pulled ${result.pulledCount} updates from cloud.`
+        );
+      } else if (result) {
+        Alert.alert(
+          "Sync Failed",
+          result.errors.length > 0 ? result.errors[0] : "Unknown error"
+        );
+      }
+    } catch (error) {
+      console.error("Error during manual sync:", error);
+      Alert.alert("Sync Error", "Failed to sync data");
+    }
+  };
+
+  /**
+   * Handle create collection
+   */
+  const handleCreateCollection = async (name: string) => {
+    if (!user) {
+      Alert.alert("Error", "User not authenticated");
+      return;
+    }
+
+    try {
+      // Create collection in local DB (will auto-add to sync_queue)
+      const newCollection = await createCollection(user.uid, name);
+      
+      if (newCollection) {
+        console.log("✅ Collection created:", newCollection.name);
+        
+        // Reload collections to show the new one
+        await loadCollections();
+        
+        // ✅ Check if queue threshold reached and auto-sync if needed
+        await checkAndSyncIfNeeded();
+        
+        Alert.alert("Success", `Collection "${name}" created successfully`);
+      }
+    } catch (error) {
+      console.error("Error creating collection:", error);
+      Alert.alert("Error", "Failed to create collection");
+    }
+  };
+
+  /**
+   * Handle delete collection (soft delete)
+   */
+  const handleDeleteCollection = async (collectionId: string, collectionName: string) => {
+    try {
+      // Soft delete in local DB (will auto-add to sync_queue)
+      const success = await deleteCollection(collectionId);
+      
+      if (success) {
+        console.log("✅ Collection soft-deleted:", collectionName);
+        
+        // Reload collections to remove the deleted one
+        await loadCollections();
+        
+        // ✅ Check if queue threshold reached and auto-sync if needed
+        await checkAndSyncIfNeeded();
+        
+        Alert.alert("Success", `Collection "${collectionName}" deleted`);
+      }
+    } catch (error) {
+      console.error("Error deleting collection:", error);
+      Alert.alert("Error", "Failed to delete collection");
+    }
+  };
 
   const handlePressCollection = (item: Collection) => {
     navigation.navigate("Study", {
@@ -62,38 +201,24 @@ export default function Home({ navigation }: any) {
 
   const onDelete = () => {
     handleCloseActionModal();
+    
+    if (!selectedCollection) return;
+    
     Alert.alert(
       "Delete Collection",
-      `Are you sure you want to delete "${selectedCollection?.title}"?`,
+      `Are you sure you want to delete "${selectedCollection.title}"?`,
       [
         { text: "Cancel", style: "cancel" },
         {
           text: "Delete",
           style: "destructive",
           onPress: () => {
-            setCollections((prev) =>
-              prev.filter((c) => c.id !== selectedCollection?.id)
-            );
+            handleDeleteCollection(selectedCollection.id, selectedCollection.title);
           },
         },
       ]
     );
   };
-
-  const [collections, setCollections] = useState<Collection[]>([
-    { id: "1", title: "Text A", new: 0, learning: 0, review: 0 },
-    { id: "2", title: "Text B", new: 25, learning: 0, review: 50 },
-    { id: "3", title: "Text C", new: 25, learning: 25, review: 50 },
-    { id: "4", title: "Text A", new: 0, learning: 0, review: 0 },
-    { id: "5", title: "Text B", new: 25, learning: 0, review: 50 },
-    { id: "6", title: "Text C", new: 25, learning: 25, review: 50 },
-    { id: "7", title: "Text A", new: 0, learning: 0, review: 0 },
-    { id: "8", title: "Text B", new: 25, learning: 0, review: 50 },
-    { id: "9", title: "Text C", new: 25, learning: 25, review: 50 },
-    { id: "10", title: "Text A", new: 0, learning: 0, review: 0 },
-    { id: "11", title: "Text B", new: 25, learning: 0, review: 50 },
-    { id: "12", title: "Text C", new: 25, learning: 25, review: 50 },
-  ]);
 
   const filteredCollections = collections.filter((item) =>
     item.title.toLowerCase().includes(search.toLowerCase())
@@ -107,6 +232,9 @@ export default function Home({ navigation }: any) {
         streak={3}
         onAvatarPress={() => setShowMenu(true)}
         onMenuPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+        onRefreshPress={handleManualSync}
+        isSyncing={syncStatus.isRunning}
+        pendingChanges={syncStatus.pendingChanges}
       />
 
       <UserMenuModal
@@ -142,7 +270,7 @@ export default function Home({ navigation }: any) {
       )}
 
       <FloatingAddButton
-        onCreateCollection={(name) => console.log("Create Collection: ", name)}
+        onCreateCollection={handleCreateCollection}
         onCreateCard={(data) => console.log("Create card:", data)}
         onImport={() => console.log("Import Collection")}
       />

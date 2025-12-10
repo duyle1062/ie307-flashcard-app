@@ -205,21 +205,27 @@ export const upsertCollection = async (
   collectionData: Partial<Collection> & { id: string }
 ): Promise<Collection | null> => {
   try {
-    const existing = await getCollectionById(collectionData.id);
+    // Check if collection exists (including soft-deleted ones)
+    const existingCheck = await executeQuery(
+      "SELECT id FROM collections WHERE id = ?",
+      [collectionData.id]
+    );
 
-    if (existing) {
-      // Update existing collection
+    if (existingCheck.rows.length > 0) {
+      // Update existing collection (including soft-deleted ones)
       await executeQuery(
         `UPDATE collections SET 
           name = ?, 
           description = ?, 
           is_public = ?,
+          deleted_at = ?,
           updated_at = ?
         WHERE id = ?`,
         [
-          collectionData.name ?? existing.name,
-          collectionData.description ?? existing.description,
-          collectionData.is_public ?? existing.is_public,
+          collectionData.name,
+          collectionData.description,
+          collectionData.is_public ?? 0,
+          collectionData.deleted_at ?? null,
           collectionData.updated_at ?? new Date().toISOString(),
           collectionData.id,
         ]
@@ -228,15 +234,16 @@ export const upsertCollection = async (
       // Insert new collection
       await executeQuery(
         `INSERT INTO collections (
-          id, user_id, name, description, is_public,
+          id, user_id, name, description, is_public, deleted_at,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           collectionData.id,
           collectionData.user_id,
           collectionData.name,
           collectionData.description,
           collectionData.is_public ?? 0,
+          collectionData.deleted_at ?? null,
           collectionData.created_at ?? new Date().toISOString(),
           collectionData.updated_at ?? new Date().toISOString(),
         ]

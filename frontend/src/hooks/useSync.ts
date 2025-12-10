@@ -91,6 +91,25 @@ export const useSync = () => {
   }, [user, refreshStatus]);
 
   /**
+   * Check if should sync based on queue threshold
+   * If queue >= 20 items, automatically trigger sync
+   * ✅ OPTIMIZED: Only called after mutations (create/update/delete)
+   */
+  const checkAndSyncIfNeeded = useCallback(async (): Promise<void> => {
+    if (!user) return;
+
+    try {
+      const shouldSync = await syncService.shouldSync();
+      if (shouldSync) {
+        console.log("🔔 Queue threshold reached (≥20 items), auto-syncing...");
+        await performSync();
+      }
+    } catch (error) {
+      console.error("Error checking sync threshold:", error);
+    }
+  }, [user, performSync]);
+
+  /**
    * Start optimized sync when user is logged in
    * ✅ Sync on app open (initial load)
    * ✅ Sync on app background (save session)
@@ -162,5 +181,6 @@ export const useSync = () => {
     performSync,
     forceSync,
     refreshStatus,
+    checkAndSyncIfNeeded, // Export để dùng sau mutations
   };
 };

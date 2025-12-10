@@ -6,6 +6,7 @@ export {
   dropAllTables,
   resetDatabase,
   migrateSyncQueueTable,
+  migrateToDeletedAt,
   executeSql,
   executeTransaction,
   executeQuery,

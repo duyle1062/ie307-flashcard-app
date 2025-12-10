@@ -29,7 +29,8 @@ export const CREATE_TABLES = {
       user_id TEXT NOT NULL,
       name TEXT NOT NULL,
       description TEXT,
-      is_deleted INTEGER DEFAULT 0,
+      is_public INTEGER DEFAULT 0,
+      deleted_at TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -47,7 +48,7 @@ export const CREATE_TABLES = {
       interval INTEGER DEFAULT 0,
       ef REAL DEFAULT 2.5,
       due_date TEXT,
-      is_deleted INTEGER DEFAULT 0,
+      deleted_at TEXT,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE,
@@ -97,12 +98,12 @@ export const CREATE_TABLES = {
 // Create indexes for better query performance
 export const CREATE_INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_collections_user_id ON collections(user_id);",
-  "CREATE INDEX IF NOT EXISTS idx_collections_is_deleted ON collections(is_deleted);",
+  "CREATE INDEX IF NOT EXISTS idx_collections_deleted_at ON collections(deleted_at);",
   "CREATE INDEX IF NOT EXISTS idx_cards_collection_id ON cards(collection_id);",
   "CREATE INDEX IF NOT EXISTS idx_cards_user_id ON cards(user_id);",
   "CREATE INDEX IF NOT EXISTS idx_cards_status ON cards(status);",
   "CREATE INDEX IF NOT EXISTS idx_cards_due_date ON cards(due_date);",
-  "CREATE INDEX IF NOT EXISTS idx_cards_is_deleted ON cards(is_deleted);",
+  "CREATE INDEX IF NOT EXISTS idx_cards_deleted_at ON cards(deleted_at);",
   "CREATE INDEX IF NOT EXISTS idx_reviews_card_id ON reviews(card_id);",
   "CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id);",
   "CREATE INDEX IF NOT EXISTS idx_reviews_date ON reviews(reviewed_at);",
