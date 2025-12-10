@@ -9,4 +9,5 @@ export type AppStackParamList = {
   Drawer: undefined;
   Study: { deckId: string; title: string };
   UserProfile: undefined;
+  ViewAllCards: { collectionId: string; collectionTitle: string };
 };

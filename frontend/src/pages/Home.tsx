@@ -47,7 +47,12 @@ export default function Home({ navigation }: any) {
 
   const onViewCards = () => {
     handleCloseActionModal();
-    console.log("View cards of:", selectedCollection?.title);
+    if (selectedCollection) {
+      navigation.navigate("ViewAllCards", {
+        collectionId: selectedCollection.id,
+        collectionTitle: selectedCollection.title,
+      });
+    }
   };
 
   const onRename = () => {
