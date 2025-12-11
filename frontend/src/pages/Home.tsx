@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { View, StyleSheet, Alert, Text } from "react-native";
 import { DrawerActions } from "@react-navigation/native";
+
 import { Colors } from "../const/Color";
 
 import DottedBackground from "../components/DottedBackground";
@@ -8,11 +9,13 @@ import Header from "../components/Header";
 import UserMenuModal from "../components/UserMenuModal";
 import SearchBar from "../components/SearchBar";
 import CollectionList, { Collection } from "../components/CollectionList";
-import FloatingAddButton from "@/components/FloatingAddButton";
+import FloatingAddButton from "../components/FloatingAddButton";
 import CollectionActionModal from "../components/CollectionActionModal";
 
 import { useAuth } from "../context/AuthContext";
+
 import { useSync } from "../hooks/useSync";
+
 import {
   getCollectionsByUserId,
   createCollection,
@@ -42,7 +45,7 @@ export default function Home({ navigation }: any) {
     try {
       setIsLoading(true);
       const dbCollections = await getCollectionsByUserId(user.uid);
-      
+
       // Transform to UI format with mock status values for now
       const transformedCollections: Collection[] = dbCollections.map((col) => ({
         id: col.id,
@@ -85,14 +88,14 @@ export default function Home({ navigation }: any) {
     try {
       console.log("🔄 Manual sync triggered by user");
       const result = await forceSync();
-      
+
       if (result?.success) {
         // Reload collections after sync
         await loadCollections();
-        
+
         Alert.alert(
           "Sync Complete",
-          `Synced ${result.pushedCount} local changes and pulled ${result.pulledCount} updates from cloud.`
+          `Synced ${result.pushedCount} local changes and pulled ${result.pulledCount} updates from cloud`
         );
       } else if (result) {
         Alert.alert(
@@ -118,16 +121,16 @@ export default function Home({ navigation }: any) {
     try {
       // Create collection in local DB (will auto-add to sync_queue)
       const newCollection = await createCollection(user.uid, name);
-      
+
       if (newCollection) {
-        console.log("✅ Collection created:", newCollection.name);
-        
+        console.log("Collection created:", newCollection.name);
+
         // Reload collections to show the new one
         await loadCollections();
-        
+
         // ✅ Check if queue threshold reached and auto-sync if needed
         await checkAndSyncIfNeeded();
-        
+
         Alert.alert("Success", `Collection "${name}" created successfully`);
       }
     } catch (error) {
@@ -139,20 +142,23 @@ export default function Home({ navigation }: any) {
   /**
    * Handle delete collection (soft delete)
    */
-  const handleDeleteCollection = async (collectionId: string, collectionName: string) => {
+  const handleDeleteCollection = async (
+    collectionId: string,
+    collectionName: string
+  ) => {
     try {
       // Soft delete in local DB (will auto-add to sync_queue)
       const success = await deleteCollection(collectionId);
-      
+
       if (success) {
-        console.log("✅ Collection soft-deleted:", collectionName);
-        
+        console.log("Collection soft-deleted:", collectionName);
+
         // Reload collections to remove the deleted one
         await loadCollections();
-        
+
         // ✅ Check if queue threshold reached and auto-sync if needed
         await checkAndSyncIfNeeded();
-        
+
         Alert.alert("Success", `Collection "${collectionName}" deleted`);
       }
     } catch (error) {
@@ -201,9 +207,9 @@ export default function Home({ navigation }: any) {
 
   const onDelete = () => {
     handleCloseActionModal();
-    
+
     if (!selectedCollection) return;
-    
+
     Alert.alert(
       "Delete Collection",
       `Are you sure you want to delete "${selectedCollection.title}"?`,
@@ -213,7 +219,10 @@ export default function Home({ navigation }: any) {
           text: "Delete",
           style: "destructive",
           onPress: () => {
-            handleDeleteCollection(selectedCollection.id, selectedCollection.title);
+            handleDeleteCollection(
+              selectedCollection.id,
+              selectedCollection.title
+            );
           },
         },
       ]

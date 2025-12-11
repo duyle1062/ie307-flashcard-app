@@ -1,5 +1,13 @@
-import React, { useEffect, useRef } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Animated, Alert } from "react-native";
+import { useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Animated,
+  Alert,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Colors } from "../const/Color";
@@ -26,10 +34,10 @@ const Header: React.FC<HeaderProps> = ({
   pendingChanges = 0,
 }) => {
   const insets = useSafeAreaInsets();
-  
+
   // Animation for pulse effect
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  
+
   useEffect(() => {
     if (pendingChanges > 0 && !isSyncing) {
       // Pulse animation when có pending changes
@@ -48,32 +56,32 @@ const Header: React.FC<HeaderProps> = ({
         ])
       );
       animation.start();
-      
+
       return () => animation.stop();
     } else {
       pulseAnim.setValue(1);
     }
   }, [pendingChanges, isSyncing, pulseAnim]);
-  
+
   const handleRefreshPress = () => {
     if (onRefreshPress) {
       onRefreshPress();
     }
   };
-  
+
   const handleRefreshLongPress = () => {
     if (pendingChanges > 0) {
       Alert.alert(
         "Pending Changes",
-        `You have ${pendingChanges} change${pendingChanges > 1 ? 's' : ''} waiting to sync.\n\nTap to sync now.`,
+        `You have ${pendingChanges} change${
+          pendingChanges > 1 ? "s" : ""
+        } waiting to sync.\n\nTap to sync now!`,
         [{ text: "OK" }]
       );
     } else {
-      Alert.alert(
-        "All Synced",
-        "All your changes are synced to cloud.",
-        [{ text: "OK" }]
-      );
+      Alert.alert("All Synced", "All your changes are synced to cloud", [
+        { text: "OK" },
+      ]);
     }
   };
 
@@ -111,7 +119,7 @@ const Header: React.FC<HeaderProps> = ({
                     size={22}
                     color={
                       pendingChanges > 0
-                        ? "#EF4444" // Red when có pending
+                        ? Colors.redLight // Red when có pending
                         : Colors.primary
                     }
                   />
@@ -128,9 +136,7 @@ const Header: React.FC<HeaderProps> = ({
               )}
 
               {/* Syncing indicator dot */}
-              {isSyncing && (
-                <View style={styles.syncingDot} />
-              )}
+              {isSyncing && <View style={styles.syncingDot} />}
             </TouchableOpacity>
 
             <TouchableOpacity onPress={onAvatarPress}>
@@ -193,7 +199,7 @@ const styles = StyleSheet.create({
     position: "absolute",
     top: -4,
     right: -4,
-    backgroundColor: "#EF4444",
+    backgroundColor: Colors.redLight,
     borderRadius: 10,
     minWidth: 20,
     height: 20,
@@ -217,7 +223,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "#10B981",
+    backgroundColor: Colors.lime,
   },
 });
 

@@ -2,8 +2,10 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useState } from "react";
 
 import { Colors } from "../const/Color";
+
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
 import type { AuthStackParamList } from "../navigation/AuthStack";
 
 import Fontisto from "@expo/vector-icons/Fontisto";
@@ -72,8 +74,8 @@ export default function Login() {
         <Text style={styles.forgotPasswordText}>Forgot password?</Text>
       </TouchableOpacity>
 
-      <AuthButton 
-        title={loading ? "Logging in..." : "Log in"} 
+      <AuthButton
+        title={loading ? "Logging in..." : "Log in"}
         onPress={handleLogin}
         disabled={loading}
       />

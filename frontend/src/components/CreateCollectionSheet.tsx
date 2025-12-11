@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Modal,
   View,
@@ -11,6 +11,7 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
 } from "react-native";
+
 import { Colors } from "../const/Color";
 import { Shadows } from "../const/Shadow";
 
@@ -105,9 +106,11 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
+
   modalBackdrop: {
     flex: 1,
   },
+
   modalContainer: {
     height: SCREEN_HEIGHT * 0.45,
     backgroundColor: Colors.white,
@@ -118,10 +121,12 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
     ...Shadows.strong,
   },
+
   modalContent: {
     flex: 1,
     justifyContent: "center",
   },
+
   modalTitle: {
     fontSize: 24,
     fontWeight: "700",
@@ -129,6 +134,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 32,
   },
+
   input: {
     width: "100%",
     borderWidth: 1.5,
@@ -140,11 +146,13 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     marginBottom: 32,
   },
+
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     gap: 16,
   },
+
   cancelButton: {
     flex: 1,
     backgroundColor: Colors.silver,
@@ -152,11 +160,13 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
   },
+
   cancelButtonText: {
     color: Colors.title,
     fontSize: 17,
     fontWeight: "600",
   },
+
   createButton: {
     flex: 1,
     backgroundColor: Colors.blue,
@@ -164,10 +174,12 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
   },
+
   createButtonDisabled: {
     backgroundColor: Colors.blueLight,
     opacity: 0.6,
   },
+
   createButtonText: {
     color: Colors.white,
     fontSize: 17,
