@@ -1,16 +1,17 @@
-import React from "react";
+import { useState } from "react";
 import { TouchableOpacity, StyleSheet, View, Text } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  useDerivedValue,
   withTiming,
   interpolate,
-  Extrapolate,
 } from "react-native-reanimated";
+
 import AntDesign from "@expo/vector-icons/AntDesign";
+
 import { Colors } from "../const/Color";
 import { Shadows } from "../const/Shadow";
+
 import CreateCollectionSheet from "./CreateCollectionSheet";
 import CreateCardSheet from "./CreateCardSheet";
 
@@ -37,6 +38,7 @@ const MENU_ITEMS = [
     right: -5,
   },
 ] as const;
+
 const RADIUS = 85;
 
 interface Props {
@@ -53,8 +55,8 @@ const FloatingAddButton: React.FC<Props> = ({
   collections = [],
 }) => {
   const isOpen = useSharedValue(0);
-  const [showCollectionSheet, setShowCollectionSheet] = React.useState(false);
-  const [showCardSheet, setShowCardSheet] = React.useState(false);
+  const [showCollectionSheet, setShowCollectionSheet] = useState(false);
+  const [showCardSheet, setShowCardSheet] = useState(false);
 
   const closeAll = () => {
     isOpen.value = withTiming(0, { duration: 280 });
@@ -62,28 +64,17 @@ const FloatingAddButton: React.FC<Props> = ({
     setShowCardSheet(false);
   };
 
-  const overlayStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(
-      isOpen.value > 0 || showCollectionSheet || showCardSheet ? 1 : 0,
-      [0, 1],
-      [0, 0.5]
-    ),
-    pointerEvents:
-      isOpen.value > 0 || showCollectionSheet || showCardSheet
-        ? "auto"
-        : "none",
-  }));
+  const overlayStyle = useAnimatedStyle(() => {
+    const isActive = isOpen.value > 0 || showCollectionSheet || showCardSheet;
+    return {
+      opacity: interpolate(isActive ? 1 : 0, [0, 1], [0, 0.5]),
+      pointerEvents: isActive ? "auto" : "none",
+    };
+  });
 
   const fabRotation = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${isOpen.value * 45}deg` }],
+    transform: [{ rotate: `${isOpen.value * 135}deg` }],
   }));
-
-  const iconName = useDerivedValue(() => {
-    if (isOpen.value === 1 || showCollectionSheet || showCardSheet) {
-      return "close";
-    }
-    return "plus";
-  });
 
   return (
     <>
@@ -131,23 +122,17 @@ const FloatingAddButton: React.FC<Props> = ({
               [0, 1],
               [0, RADIUS * Math.sin(angleRad)]
             );
-            const scale = interpolate(
-              isOpen.value,
-              [0, 1],
-              [0.6, 1],
-              Extrapolate.CLAMP
-            );
+            const scale = interpolate(isOpen.value, [0, 1], [0.6, 1], "clamp");
             const opacity = interpolate(
               isOpen.value,
               [0, 0.4],
               [0, 1],
-              Extrapolate.CLAMP
+              "clamp"
             );
 
             return {
               transform: [{ translateX }, { translateY }, { scale }],
               opacity,
-              display: showCollectionSheet || showCardSheet ? "none" : "flex",
             };
           });
 
@@ -195,11 +180,7 @@ const FloatingAddButton: React.FC<Props> = ({
           activeOpacity={0.85}
         >
           <Animated.View style={fabRotation}>
-            <AntDesign
-              name={iconName.value as any}
-              size={32}
-              color={Colors.white}
-            />
+            <AntDesign name="plus" size={32} color={Colors.white} />
           </Animated.View>
         </TouchableOpacity>
       </View>
@@ -213,12 +194,14 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.black,
     zIndex: 999,
   },
+
   container: {
     position: "absolute",
     bottom: 50,
     right: 20,
     zIndex: 1000,
   },
+
   mainButton: {
     width: 65,
     height: 65,
@@ -229,11 +212,13 @@ const styles = StyleSheet.create({
     ...Shadows.strong,
     elevation: 12,
   },
+
   menuItemWrapper: {
     position: "absolute",
     bottom: 32,
     right: 32,
   },
+
   menuButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -244,6 +229,7 @@ const styles = StyleSheet.create({
     minWidth: 160,
     ...Shadows.medium,
   },
+
   iconCircle: {
     width: 35,
     height: 35,
@@ -253,6 +239,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 4,
   },
+
   menuLabel: {
     fontSize: 15.5,
     color: Colors.title,

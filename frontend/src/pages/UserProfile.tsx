@@ -9,19 +9,27 @@ import {
   Alert,
   ActivityIndicator,
 } from "react-native";
-
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import AntDesign from "@expo/vector-icons/AntDesign";
+
 import { Colors } from "../const/Color";
 import { Shadows } from "../const/Shadow";
+
 import DottedBackground from "@/components/DottedBackground";
+
 import { useAuth } from "../context/AuthContext";
-import { getUserById, updateUserProfile } from "../database/repositories/UserRepository";
+import {
+  getUserById,
+  updateUserProfile,
+} from "../database/repositories/UserRepository";
 import { getCurrentUserId } from "../database/storage";
+
 import { User } from "../database/types";
+
 import { useSync } from "../hooks/useSync";
 
 export default function UserProfile() {
@@ -52,7 +60,7 @@ export default function UserProfile() {
     try {
       setIsLoading(true);
       const userId = await getCurrentUserId();
-      
+
       if (!userId) {
         Alert.alert("Error", "User not logged in");
         navigation.goBack();
@@ -60,7 +68,7 @@ export default function UserProfile() {
       }
 
       const user = await getUserById(userId);
-      
+
       if (user) {
         setUserData(user);
         setName(user.name || user.display_name || "");
@@ -100,7 +108,7 @@ export default function UserProfile() {
 
       if (updatedUser) {
         setUserData(updatedUser);
-        console.log("✅ Local DB updated successfully");
+        console.log("Local DB updated successfully");
 
         // ✅ Trigger sync via SyncService (handles retry & conflict resolution)
         const syncResult = await forceSync();
@@ -160,7 +168,9 @@ export default function UserProfile() {
               </View>
 
               <View style={styles.streakContainer}>
-                <Text style={styles.streakLabel}>Streak: {streakDays} days</Text>
+                <Text style={styles.streakLabel}>
+                  Streak: {streakDays} days
+                </Text>
                 <AntDesign name="fire" size={24} color="orange" />
               </View>
             </View>
@@ -214,7 +224,7 @@ export default function UserProfile() {
           </View>
         </ScrollView>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={[styles.updateButton, isUpdating && styles.disabledButton]}
           onPress={handleUpdateProfile}
           disabled={isUpdating}

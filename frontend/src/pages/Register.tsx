@@ -9,8 +9,10 @@ import {
 } from "react-native";
 
 import { Colors } from "../const/Color";
+
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+
 import type { AuthStackParamList } from "../navigation/AuthStack";
 
 import Fontisto from "@expo/vector-icons/Fontisto";
@@ -106,8 +108,8 @@ export default function Register() {
         />
       </View>
 
-      <AuthButton 
-        title={loading ? "Creating account..." : "Sign up"} 
+      <AuthButton
+        title={loading ? "Creating account..." : "Sign up"}
         onPress={handleRegister}
         disabled={loading}
       />

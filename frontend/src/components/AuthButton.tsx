@@ -1,4 +1,10 @@
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from "react-native";
+import {
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
+
 import { Colors } from "../const/Color";
 
 export default function AuthButton({
@@ -11,8 +17,8 @@ export default function AuthButton({
   disabled?: boolean;
 }) {
   return (
-    <TouchableOpacity 
-      style={[styles.btn, disabled && styles.btnDisabled]} 
+    <TouchableOpacity
+      style={[styles.btn, disabled && styles.btnDisabled]}
       onPress={onPress}
       disabled={disabled}
     >

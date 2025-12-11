@@ -7,7 +7,9 @@ export const Colors = {
   midnightBlue: "#191970",
 
   red: "#f51e1eff",
+  redLight: "#EF4444",
   gray: "#969595ff",
+  lime: "#10B981",
   green: "#4CAF50",
   blue: "#2980B9",
   blueLight: "#A0C4FF",

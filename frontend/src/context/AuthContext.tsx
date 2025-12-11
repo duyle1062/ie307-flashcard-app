@@ -1,17 +1,30 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { Alert } from "react-native";
-import { 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword, 
-  signOut, 
+
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
   onAuthStateChanged,
-  User as FirebaseUser 
+  User as FirebaseUser,
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+
 import { auth, db } from "../config/firebaseConfig";
-import { upsertUser, getUserById } from "../database/repositories/UserRepository";
-import { saveCurrentUserId, getCurrentUserId, clearAllData } from "../database/storage";
+
+import {
+  upsertUser,
+  getUserById,
+} from "../database/repositories/UserRepository";
+
+import {
+  saveCurrentUserId,
+  getCurrentUserId,
+  clearAllData,
+} from "../database/storage";
+
 import { logTableData } from "../utils/dbDebug";
+
 import { getDatabase } from "../database";
 
 type AuthContextType = {
@@ -38,10 +51,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return unsubscribe;
   }, []);
 
-  const register = async (email: string, password: string): Promise<boolean> => {
+  const register = async (
+    email: string,
+    password: string
+  ): Promise<boolean> => {
     try {
       // 1. Tạo tài khoản trên Firebase Auth
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const firebaseUser = userCredential.user;
 
       const userData = {
@@ -71,20 +91,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // 4. Lưu userId vào AsyncStorage (Lưu session vào AsyncStorage)
       await saveCurrentUserId(firebaseUser.uid);
 
-      console.log("✅ Registered successfully:", firebaseUser.uid);
-      
+      console.log("Registered successfully:", firebaseUser.uid);
+
       // 🐛 DEBUG: Log dữ liệu users sau khi register
       const sqliteDb = await getDatabase();
       await logTableData(sqliteDb, "users");
-      
-      // User tự động login và navigate vào app
-      
-      return true;
 
+      // User tự động login và navigate vào app
+
+      return true;
     } catch (error: any) {
       let msg = "Registration failed";
-      if (error.code === 'auth/email-already-in-use') msg = "Email already in use.";
-      if (error.code === 'auth/weak-password') msg = "Password is too weak.";
+      if (error.code === "auth/email-already-in-use")
+        msg = "Email already in use.";
+      if (error.code === "auth/weak-password") msg = "Password is too weak.";
       Alert.alert("Error", msg);
       return false;
     }
@@ -92,15 +112,19 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email,
+        password
+      );
       const firebaseUser = userCredential.user;
 
       // Sync user data từ Firestore về SQLite
       const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
-      
+
       if (userDoc.exists()) {
         const userData = userDoc.data();
-        
+
         // Upsert user vào SQLite (Tải user data từ Firestore)
         await upsertUser({
           id: firebaseUser.uid,
@@ -116,8 +140,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Lưu userId vào AsyncStorage
         await saveCurrentUserId(firebaseUser.uid);
 
-        console.log("✅ Login successful, data synced:", firebaseUser.uid);
-        
+        console.log("Login successful, data synced:", firebaseUser.uid);
+
         // 🐛 DEBUG: Log dữ liệu users sau khi login (Lưu session vào AsyncStorage)
         const sqliteDb = await getDatabase();
         await logTableData(sqliteDb, "users");
@@ -135,7 +159,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       await signOut(auth);
       // Clear local session data
       await clearAllData();
-      console.log("✅ Logout successful, local data cleared");
+      console.log("Logout successful, local data cleared");
     } catch (error) {
       console.error("Logout error:", error);
     }
@@ -144,13 +168,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Context Provider: Chia sẻ trạng thái auth cho toàn app
   return (
     <AuthContext.Provider
-      value={{ 
-        user, 
-        isAuthenticated: !!user, 
-        isLoading, 
-        register, 
-        login, 
-        logout 
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        register,
+        login,
+        logout,
       }}
     >
       {children}

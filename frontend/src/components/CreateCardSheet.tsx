@@ -1,5 +1,4 @@
-// CreateCardSheet.tsx
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Modal,
   View,
@@ -10,9 +9,11 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  SafeAreaView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
 import AntDesign from "@expo/vector-icons/AntDesign";
+
 import { Colors } from "../const/Color";
 import { Shadows } from "../const/Shadow";
 
@@ -153,7 +154,6 @@ const CreateCardSheet: React.FC<Props> = ({
                 />
               </View>
 
-              {/* Back Text */}
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Back Text</Text>
                 <TextInput
@@ -190,6 +190,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -199,9 +200,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+
   backButton: {
     padding: 8,
   },
+
   title: {
     fontSize: 20,
     fontWeight: "700",
@@ -212,25 +215,30 @@ const styles = StyleSheet.create({
     textAlign: "center",
     zIndex: -1,
   },
+
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
   },
+
   formCard: {
     backgroundColor: Colors.white,
     borderRadius: 20,
     padding: 24,
     ...Shadows.medium,
   },
+
   fieldContainer: {
     marginBottom: 24,
   },
+
   label: {
     fontSize: 15,
     fontWeight: "600",
     color: Colors.title,
     marginBottom: 8,
   },
+
   dropdownButton: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -242,13 +250,16 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     backgroundColor: Colors.background,
   },
+
   dropdownText: {
     fontSize: 17,
     color: Colors.title,
   },
+
   placeholder: {
     color: Colors.gray,
   },
+
   dropdownList: {
     marginTop: 8,
     borderWidth: 1.5,
@@ -258,14 +269,17 @@ const styles = StyleSheet.create({
     maxHeight: 200,
     ...Shadows.light,
   },
+
   dropdownItem: {
     paddingHorizontal: 18,
     paddingVertical: 14,
   },
+
   dropdownItemText: {
     fontSize: 16,
     color: Colors.title,
   },
+
   textInput: {
     borderWidth: 1.5,
     borderColor: Colors.border,
@@ -276,6 +290,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
     minHeight: 100,
   },
+
   createButton: {
     backgroundColor: Colors.blue,
     paddingVertical: 18,
@@ -283,10 +298,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 12,
   },
+
   createButtonDisabled: {
     backgroundColor: Colors.blueLight,
     opacity: 0.6,
   },
+
   createButtonText: {
     color: Colors.white,
     fontSize: 18,
