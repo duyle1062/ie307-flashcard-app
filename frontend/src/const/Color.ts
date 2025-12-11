@@ -16,6 +16,7 @@ export const Colors = {
 
   background: "#FDF5E6",
   surface: "#F5E0C3",
+  header: "#FAE8D0",
   modalbg: "#0000004d",
 
   dot: "#8951291A",
