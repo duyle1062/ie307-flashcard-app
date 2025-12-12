@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -6,11 +6,13 @@ import {
   TouchableOpacity,
   ScrollView,
   Insets,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { AppStackParamList } from "../navigation/types";
-
+import { AppStackParamList } from "../navigation/AppNavigator";
+import { getCardsByCollectionId } from "../database/repositories/CardRepository";
+import { Card } from "../database/types";
 import { Colors } from "../const/Color";
 import { Shadows } from "../const/Shadow";
 
@@ -75,7 +77,10 @@ type Props = NativeStackScreenProps<AppStackParamList, "Study">;
 
 export default function Study({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
+  const { deckId } = route.params;
 
+  const [cards, setCards] = useState<Card[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [counts, setCounts] = useState({ new: 20, learning: 15, review: 50 });
@@ -83,7 +88,36 @@ export default function Study({ navigation, route }: Props) {
     { index: number; counts: typeof counts }[]
   >([]);
 
-  const currentCard = MOCK_CARDS[currentIndex % MOCK_CARDS.length];
+  // Load cards from database
+  useEffect(() => {
+    loadCards();
+  }, [deckId]);
+
+  const loadCards = async () => {
+    try {
+      setIsLoading(true);
+      const dbCards = await getCardsByCollectionId(deckId);
+      setCards(dbCards);
+    } catch (error) {
+      console.error("Error loading cards:", error);
+      Alert.alert("Error", "Failed to load cards");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Transform Card to CardData format for UI
+  const currentCard: CardData | undefined = cards[currentIndex % cards.length]
+    ? {
+        id: cards[currentIndex % cards.length].id,
+        frontText: cards[currentIndex % cards.length].front,
+        backText: cards[currentIndex % cards.length].back,
+        type: cards[currentIndex % cards.length].status as
+          | "new"
+          | "learning"
+          | "review",
+      }
+    : undefined;
   const isFirstCard = history.length === 0 && currentIndex === 0;
 
   // --- LOGIC HANDLERS ---
@@ -121,6 +155,57 @@ export default function Study({ navigation, route }: Props) {
     setIsFlipped(false);
     setHistory((prev) => prev.slice(0, -1));
   };
+
+  // Loading state
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <DottedBackground />
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
+        >
+          <Text style={{ fontSize: 16, color: Colors.title }}>
+            Loading cards...
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // Empty state
+  if (cards.length === 0) {
+    return (
+      <View style={styles.container}>
+        <DottedBackground />
+        <StudyHeader
+          insets={insets}
+          onBack={() => navigation.goBack()}
+          onUndo={handleUndo}
+          canUndo={false}
+          counts={counts}
+        />
+        <View
+          style={{
+            flex: 1,
+            justifyContent: "center",
+            alignItems: "center",
+            padding: 20,
+          }}
+        >
+          <Text
+            style={{ fontSize: 18, color: Colors.title, textAlign: "center" }}
+          >
+            No cards in this collection yet.
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // No current card
+  if (!currentCard) {
+    return null;
+  }
 
   return (
     <View style={styles.container}>

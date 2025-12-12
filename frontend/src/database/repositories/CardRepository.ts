@@ -18,7 +18,7 @@ import { Card, CardStatus } from "../types";
 export const getCardById = async (cardId: string): Promise<Card | null> => {
   try {
     const result = await executeQuery(
-      "SELECT * FROM cards WHERE id = ? AND deleted_at IS NULL",
+      "SELECT * FROM cards WHERE id = ? AND is_deleted = 0",
       [cardId]
     );
 
@@ -40,7 +40,7 @@ export const getCardsByCollectionId = async (
 ): Promise<Card[]> => {
   try {
     const result = await executeQuery(
-      "SELECT * FROM cards WHERE collection_id = ? AND deleted_at IS NULL ORDER BY created_at DESC",
+      "SELECT * FROM cards WHERE collection_id = ? AND is_deleted = 0 ORDER BY created_at DESC",
       [collectionId]
     );
 
@@ -61,30 +61,22 @@ export const getCardsByCollectionId = async (
 export const createCard = async (
   collectionId: string,
   front: string,
-  back: string,
-  hint?: string
+  back: string
 ): Promise<Card | null> => {
   try {
     const id = generateUUID();
     const now = new Date().toISOString();
-    
-    // Get user_id from collection
-    const userId = await getCurrentUserId();
-    if (!userId) {
-      throw new Error("User not logged in");
-    }
 
     await insertWithSync("cards", {
       id,
       collection_id: collectionId,
-      user_id: userId,
       front,
       back,
-      hint,
       status: "new",
       interval: 0,
       ef: 2.5,
       due_date: now.split("T")[0],
+      is_deleted: 0,
       created_at: now,
       updated_at: now,
     });
@@ -102,15 +94,10 @@ export const createCard = async (
 export const updateCard = async (
   cardId: string,
   front: string,
-  back: string,
-  hint?: string
+  back: string
 ): Promise<Card | null> => {
   try {
-    await updateWithSync("cards", cardId, { front, back, hint }, [
-      "front",
-      "back",
-      "hint",
-    ]);
+    await updateWithSync("cards", cardId, { front, back }, ["front", "back"]);
 
     return await getCardById(cardId);
   } catch (error) {
@@ -171,7 +158,7 @@ export const getDueCards = async (collectionId?: string): Promise<Card[]> => {
 
     let query = `
       SELECT * FROM cards 
-      WHERE due_date <= ? AND deleted_at IS NULL
+      WHERE due_date <= ? AND is_deleted = 0
     `;
     const params: any[] = [today];
 
@@ -205,7 +192,7 @@ export const getNewCards = async (
   try {
     let query = `
       SELECT * FROM cards 
-      WHERE status = 'new' AND deleted_at IS NULL
+      WHERE status = 'new' AND is_deleted = 0
     `;
     const params: any[] = [];
 
@@ -240,7 +227,7 @@ export const getCardsByStatus = async (
   try {
     let query = `
       SELECT * FROM cards 
-      WHERE status = ? AND deleted_at IS NULL
+      WHERE status = ? AND is_deleted = 0
     `;
     const params: any[] = [status];
 
@@ -282,24 +269,22 @@ export const upsertCard = async (
       await executeQuery(
         `UPDATE cards SET 
           front = ?, 
-          back = ?, 
-          hint = ?,
+          back = ?,
           status = ?,
           interval = ?,
           ef = ?,
           due_date = ?,
-          deleted_at = ?,
+          is_deleted = ?,
           updated_at = ?
         WHERE id = ?`,
         [
           cardData.front,
           cardData.back,
-          cardData.hint,
           cardData.status ?? "new",
           cardData.interval ?? 0,
           cardData.ef ?? 2.5,
           cardData.due_date,
-          cardData.deleted_at ?? null,
+          cardData.is_deleted ?? 0,
           cardData.updated_at ?? new Date().toISOString(),
           cardData.id,
         ]
@@ -308,22 +293,20 @@ export const upsertCard = async (
       // Insert new card
       await executeQuery(
         `INSERT INTO cards (
-          id, collection_id, user_id, front, back, hint,
-          status, interval, ef, due_date, deleted_at,
+          id, collection_id, front, back,
+          status, interval, ef, due_date, is_deleted,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           cardData.id,
           cardData.collection_id,
-          cardData.user_id,
           cardData.front,
           cardData.back,
-          cardData.hint,
           cardData.status ?? "new",
           cardData.interval ?? 0,
           cardData.ef ?? 2.5,
           cardData.due_date ?? new Date().toISOString().split("T")[0],
-          cardData.deleted_at ?? null,
+          cardData.is_deleted ?? 0,
           cardData.created_at ?? new Date().toISOString(),
           cardData.updated_at ?? new Date().toISOString(),
         ]

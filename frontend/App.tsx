@@ -8,7 +8,10 @@ import { AuthProvider } from "./src/context/AuthContext";
 import RootNavigator from "./src/navigation/RootNavigator";
 
 // Disable Reanimated strict mode warnings
-import { configureReanimatedLogger, ReanimatedLogLevel } from 'react-native-reanimated';
+import {
+  configureReanimatedLogger,
+  ReanimatedLogLevel,
+} from "react-native-reanimated";
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
   strict: false, // Disable strict mode warnings
@@ -25,10 +28,10 @@ export default function App(): React.ReactElement {
   const initializeDatabase = async (): Promise<void> => {
     try {
       console.log("Initializing database...");
-      
+
       // 🔥 UNCOMMENT dòng này để clear toàn bộ DB (chỉ dùng 1 lần)
       // await resetDatabase();
-      
+
       await initDatabase();
       console.log("Database initialized successfully");
       setIsDbReady(true);

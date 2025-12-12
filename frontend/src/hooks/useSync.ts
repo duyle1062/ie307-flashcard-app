@@ -12,6 +12,7 @@ import { AppState, AppStateStatus } from "react-native";
 import { syncService, SyncStatus, SyncResult } from "../services/syncService";
 import { useAuth } from "../context/AuthContext";
 import NetInfo from "@react-native-community/netinfo";
+import { seedDatabase } from "../database/seed";
 
 export const useSync = () => {
   const { user } = useAuth();
@@ -120,7 +121,12 @@ export const useSync = () => {
 
     // Initial sync when app opens
     console.log("🚀 App opened, performing initial sync...");
-    performSync();
+    performSync().then(() => {
+      // Seed database after sync (so user data is available)
+      seedDatabase(user.uid).catch((error) => {
+        console.error("Failed to seed database:", error);
+      });
+    });
 
     // Handle AppState changes (Active <-> Background)
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
@@ -133,7 +139,10 @@ export const useSync = () => {
       }
     };
 
-    const appStateSubscription = AppState.addEventListener("change", handleAppStateChange);
+    const appStateSubscription = AppState.addEventListener(
+      "change",
+      handleAppStateChange
+    );
 
     // Refresh status periodically (chỉ UI, không trigger sync)
     const statusInterval = setInterval(refreshStatus, 30000);
@@ -158,14 +167,14 @@ export const useSync = () => {
       // Chỉ sync khi network QUAY LẠI (từ offline → online)
       if (state.isConnected && wasOffline) {
         console.log("📶 Network reconnected, syncing in 2s...");
-        
+
         // Debounce: Đợi 2s trước khi sync (tránh nhiều trigger liên tiếp)
         if (syncTimeout) clearTimeout(syncTimeout);
         syncTimeout = setTimeout(() => {
           performSync();
         }, 2000);
       }
-      
+
       // Track offline state
       wasOffline = !state.isConnected;
     });

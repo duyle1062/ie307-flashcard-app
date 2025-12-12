@@ -100,7 +100,7 @@ export const countNewCardsStudiedToday = async (
        WHERE r.user_id = ? 
        AND DATE(r.reviewed_at) = ?
        AND r.old_interval = 0
-       AND c.deleted_at IS NULL`,
+       AND c.is_deleted = 0`,
       [userId, today]
     );
 
@@ -130,7 +130,7 @@ export const countReviewCardsStudiedToday = async (
        WHERE r.user_id = ? 
        AND DATE(r.reviewed_at) = ?
        AND r.old_interval > 0
-       AND c.deleted_at IS NULL`,
+       AND c.is_deleted = 0`,
       [userId, today]
     );
 
