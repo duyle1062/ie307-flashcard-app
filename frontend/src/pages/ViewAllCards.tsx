@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   View,
   StyleSheet,
@@ -10,8 +10,10 @@ import {
   SafeAreaView,
   Pressable,
   ScrollView,
+  Alert,
 } from "react-native";
 import { Card } from "../database/types";
+import { getCardsByCollectionId } from "../database/repositories/CardRepository";
 import { Colors } from "../const/Color";
 import DottedBackground from "../components/DottedBackground";
 import Feather from "@expo/vector-icons/Feather";
@@ -39,6 +41,7 @@ const MOCK_CARDS: Card[] = [
     interval: 3,
     ef: 2.5,
     status: "review",
+    is_deleted: 0,
   },
   {
     id: "2",
@@ -51,6 +54,7 @@ const MOCK_CARDS: Card[] = [
     interval: 0,
     ef: 2.5,
     status: "new",
+    is_deleted: 0,
   },
   {
     id: "3",
@@ -63,6 +67,7 @@ const MOCK_CARDS: Card[] = [
     interval: 1,
     ef: 2.3,
     status: "learning",
+    is_deleted: 0,
   },
   {
     id: "4",
@@ -75,6 +80,7 @@ const MOCK_CARDS: Card[] = [
     interval: 5,
     ef: 2.6,
     status: "review",
+    is_deleted: 0,
   },
   {
     id: "5",
@@ -87,6 +93,7 @@ const MOCK_CARDS: Card[] = [
     interval: 0,
     ef: 2.5,
     status: "new",
+    is_deleted: 0,
   },
 ];
 
@@ -94,10 +101,29 @@ export default function ViewAllCards({ route, navigation }: ViewAllCardsProps) {
   const { collectionId, collectionTitle } = route.params;
 
   // State
-  const [cards, setCards] = useState<Card[]>(MOCK_CARDS);
+  const [cards, setCards] = useState<Card[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
   const [sortType, setSortType] = useState<SortType>("due_date");
   const [currentPage, setCurrentPage] = useState(0);
+
+  // Load cards from database
+  useEffect(() => {
+    loadCards();
+  }, [collectionId]);
+
+  const loadCards = async () => {
+    try {
+      setIsLoading(true);
+      const dbCards = await getCardsByCollectionId(collectionId);
+      setCards(dbCards);
+    } catch (error) {
+      console.error("Error loading cards:", error);
+      Alert.alert("Error", "Failed to load cards");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const [detailsCard, setDetailsCard] = useState<Card | null>(null);
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);

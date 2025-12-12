@@ -12,8 +12,6 @@ export const CREATE_TABLES = {
       name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
       password_hash TEXT,
-      google_id TEXT UNIQUE,
-      picture TEXT,
       streak_days INTEGER DEFAULT 0,
       last_active_date TEXT,
       daily_new_cards_limit INTEGER DEFAULT 25,
@@ -29,8 +27,7 @@ export const CREATE_TABLES = {
       user_id TEXT NOT NULL,
       name TEXT NOT NULL,
       description TEXT,
-      is_public INTEGER DEFAULT 0,
-      deleted_at TEXT,
+      is_deleted INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -41,18 +38,16 @@ export const CREATE_TABLES = {
     CREATE TABLE IF NOT EXISTS cards (
       id TEXT PRIMARY KEY,
       collection_id TEXT NOT NULL,
-      user_id TEXT NOT NULL,
       front TEXT NOT NULL,
       back TEXT NOT NULL,
       status TEXT DEFAULT 'new' CHECK (status IN ('new', 'learning', 'review')),
       interval INTEGER DEFAULT 0,
       ef REAL DEFAULT 2.5,
       due_date TEXT,
-      deleted_at TEXT,
+      is_deleted INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE,
-      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
     );
   `,
 
@@ -98,12 +93,11 @@ export const CREATE_TABLES = {
 // Create indexes for better query performance
 export const CREATE_INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_collections_user_id ON collections(user_id);",
-  "CREATE INDEX IF NOT EXISTS idx_collections_deleted_at ON collections(deleted_at);",
+  "CREATE INDEX IF NOT EXISTS idx_collections_is_deleted ON collections(is_deleted);",
   "CREATE INDEX IF NOT EXISTS idx_cards_collection_id ON cards(collection_id);",
-  "CREATE INDEX IF NOT EXISTS idx_cards_user_id ON cards(user_id);",
   "CREATE INDEX IF NOT EXISTS idx_cards_status ON cards(status);",
   "CREATE INDEX IF NOT EXISTS idx_cards_due_date ON cards(due_date);",
-  "CREATE INDEX IF NOT EXISTS idx_cards_deleted_at ON cards(deleted_at);",
+  "CREATE INDEX IF NOT EXISTS idx_cards_is_deleted ON cards(is_deleted);",
   "CREATE INDEX IF NOT EXISTS idx_reviews_card_id ON reviews(card_id);",
   "CREATE INDEX IF NOT EXISTS idx_reviews_user_id ON reviews(user_id);",
   "CREATE INDEX IF NOT EXISTS idx_reviews_date ON reviews(reviewed_at);",

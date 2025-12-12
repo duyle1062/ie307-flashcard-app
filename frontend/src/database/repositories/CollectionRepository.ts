@@ -19,7 +19,7 @@ export const getCollectionById = async (
 ): Promise<Collection | null> => {
   try {
     const result = await executeQuery(
-      "SELECT * FROM collections WHERE id = ? AND deleted_at IS NULL",
+      "SELECT * FROM collections WHERE id = ? AND is_deleted = 0",
       [collectionId]
     );
 
@@ -41,7 +41,7 @@ export const getCollectionsByUserId = async (
 ): Promise<Collection[]> => {
   try {
     const result = await executeQuery(
-      "SELECT * FROM collections WHERE user_id = ? AND deleted_at IS NULL ORDER BY created_at DESC",
+      "SELECT * FROM collections WHERE user_id = ? AND is_deleted = 0 ORDER BY created_at DESC",
       [userId]
     );
 
@@ -72,7 +72,7 @@ export const createCollection = async (
       user_id: userId,
       name,
       description,
-      is_public: 0,
+      is_deleted: 0,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     });
@@ -90,18 +90,13 @@ export const createCollection = async (
 export const updateCollection = async (
   collectionId: string,
   name: string,
-  description?: string,
-  isPublic?: boolean
+  description?: string
 ): Promise<Collection | null> => {
   try {
     const updates: Record<string, any> = {
       name,
       description,
     };
-
-    if (isPublic !== undefined) {
-      updates.is_public = isPublic ? 1 : 0;
-    }
 
     await updateWithSync(
       "collections",
@@ -142,14 +137,14 @@ export const getCollectionWithStats = async (
     const result = await executeQuery(
       `SELECT 
         c.*,
-        COUNT(CASE WHEN cd.deleted_at IS NULL THEN 1 END) as total_cards,
-        COUNT(CASE WHEN cd.status = 'new' AND cd.deleted_at IS NULL THEN 1 END) as new_cards,
-        COUNT(CASE WHEN cd.status = 'learning' AND cd.deleted_at IS NULL THEN 1 END) as learning_cards,
-        COUNT(CASE WHEN cd.status = 'review' AND cd.deleted_at IS NULL THEN 1 END) as review_cards,
-        COUNT(CASE WHEN cd.due_date <= date('now') AND cd.deleted_at IS NULL THEN 1 END) as due_cards
+        COUNT(CASE WHEN cd.is_deleted = 0 THEN 1 END) as total_cards,
+        COUNT(CASE WHEN cd.status = 'new' AND cd.is_deleted = 0 THEN 1 END) as new_cards,
+        COUNT(CASE WHEN cd.status = 'learning' AND cd.is_deleted = 0 THEN 1 END) as learning_cards,
+        COUNT(CASE WHEN cd.status = 'review' AND cd.is_deleted = 0 THEN 1 END) as review_cards,
+        COUNT(CASE WHEN cd.due_date <= date('now') AND cd.is_deleted = 0 THEN 1 END) as due_cards
       FROM collections c
       LEFT JOIN cards cd ON c.id = cd.collection_id
-      WHERE c.id = ? AND c.deleted_at IS NULL
+      WHERE c.id = ? AND c.is_deleted = 0
       GROUP BY c.id`,
       [collectionId]
     );
@@ -174,14 +169,14 @@ export const getCollectionsWithStats = async (
     const result = await executeQuery(
       `SELECT 
         c.*,
-        COUNT(CASE WHEN cd.deleted_at IS NULL THEN 1 END) as total_cards,
-        COUNT(CASE WHEN cd.status = 'new' AND cd.deleted_at IS NULL THEN 1 END) as new_cards,
-        COUNT(CASE WHEN cd.status = 'learning' AND cd.deleted_at IS NULL THEN 1 END) as learning_cards,
-        COUNT(CASE WHEN cd.status = 'review' AND cd.deleted_at IS NULL THEN 1 END) as review_cards,
-        COUNT(CASE WHEN cd.due_date <= date('now') AND cd.deleted_at IS NULL THEN 1 END) as due_cards
+        COUNT(CASE WHEN cd.is_deleted = 0 THEN 1 END) as total_cards,
+        COUNT(CASE WHEN cd.status = 'new' AND cd.is_deleted = 0 THEN 1 END) as new_cards,
+        COUNT(CASE WHEN cd.status = 'learning' AND cd.is_deleted = 0 THEN 1 END) as learning_cards,
+        COUNT(CASE WHEN cd.status = 'review' AND cd.is_deleted = 0 THEN 1 END) as review_cards,
+        COUNT(CASE WHEN cd.due_date <= date('now') AND cd.is_deleted = 0 THEN 1 END) as due_cards
       FROM collections c
       LEFT JOIN cards cd ON c.id = cd.collection_id
-      WHERE c.user_id = ? AND c.deleted_at IS NULL
+      WHERE c.user_id = ? AND c.is_deleted = 0
       GROUP BY c.id
       ORDER BY c.created_at DESC`,
       [userId]
@@ -216,16 +211,14 @@ export const upsertCollection = async (
       await executeQuery(
         `UPDATE collections SET 
           name = ?, 
-          description = ?, 
-          is_public = ?,
-          deleted_at = ?,
+          description = ?,
+          is_deleted = ?,
           updated_at = ?
         WHERE id = ?`,
         [
           collectionData.name,
           collectionData.description,
-          collectionData.is_public ?? 0,
-          collectionData.deleted_at ?? null,
+          collectionData.is_deleted ?? 0,
           collectionData.updated_at ?? new Date().toISOString(),
           collectionData.id,
         ]
@@ -234,16 +227,15 @@ export const upsertCollection = async (
       // Insert new collection
       await executeQuery(
         `INSERT INTO collections (
-          id, user_id, name, description, is_public, deleted_at,
+          id, user_id, name, description, is_deleted,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           collectionData.id,
           collectionData.user_id,
           collectionData.name,
           collectionData.description,
-          collectionData.is_public ?? 0,
-          collectionData.deleted_at ?? null,
+          collectionData.is_deleted ?? 0,
           collectionData.created_at ?? new Date().toISOString(),
           collectionData.updated_at ?? new Date().toISOString(),
         ]

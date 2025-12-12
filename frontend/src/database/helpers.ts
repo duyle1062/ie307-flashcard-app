@@ -136,7 +136,7 @@ export const softDeleteWithSync = async (
   tableName: string,
   recordId: string
 ): Promise<void> => {
-  const deleteSql = `UPDATE ${tableName} SET deleted_at = datetime('now') WHERE id = ?`;
+  const deleteSql = `UPDATE ${tableName} SET is_deleted = 1, updated_at = datetime('now') WHERE id = ?`;
   const syncSql = `INSERT INTO sync_queue (id, entity_type, entity_id, operation, data, created_at) VALUES (?, ?, ?, ?, ?, ?)`;
 
   try {

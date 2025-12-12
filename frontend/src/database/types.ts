@@ -11,20 +11,15 @@ export type SyncOperation = "INSERT" | "UPDATE" | "DELETE";
 // User model (matches SQLite schema)
 export interface User {
   id: string;
-  name: string; // SQLite column name
+  name: string;
   email: string;
   password_hash?: string;
-  google_id?: string;
-  picture?: string; // SQLite column name
   streak_days: number;
   last_active_date?: string;
   daily_new_cards_limit: number;
   daily_review_cards_limit: number;
   created_at: string;
   updated_at: string;
-  // Alias properties for backward compatibility with Firebase
-  display_name?: string;
-  profile_picture_url?: string;
 }
 
 // Collection model
@@ -33,10 +28,9 @@ export interface Collection {
   user_id: string;
   name: string;
   description?: string;
-  is_public: number; // SQLite uses 0/1 for boolean
+  is_deleted: number; // SQLite uses 0/1 for boolean
   created_at: string;
   updated_at: string;
-  deleted_at?: string;
 }
 
 // Collection with statistics
@@ -54,14 +48,13 @@ export interface Card {
   collection_id: string;
   front: string;
   back: string;
-  hint?: string;
   status: CardStatus;
   interval: number;
   ef: number;
   due_date: string;
+  is_deleted: number; // SQLite uses 0/1 for boolean
   created_at: string;
   updated_at: string;
-  deleted_at?: string;
 }
 
 // Review model
@@ -111,7 +104,7 @@ export interface SQLResultSet {
 export interface SQLTransaction {
   executeSql(
     sqlStatement: string,
-    arguments?: any[],
+    args?: any[],
     callback?: (transaction: SQLTransaction, resultSet: SQLResultSet) => void,
     errorCallback?: (transaction: SQLTransaction, error: SQLError) => boolean
   ): void;

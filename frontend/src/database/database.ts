@@ -1,6 +1,7 @@
 import * as SQLite from "expo-sqlite";
 import { CREATE_TABLES, CREATE_INDEXES, DB_NAME } from "./schema";
 import { SQLResultSet, SQLTransaction } from "./types";
+import { seedDatabase } from "./seed";
 
 let database: SQLite.SQLiteDatabase | null = null;
 
@@ -19,12 +20,11 @@ export const initDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
 
     console.log("Database opened successfully");
     await createTables();
-    
+
     // Run migrations BEFORE creating indexes
     await migrateSyncQueueTable();
-    await migrateCardsAddUserId();
-    await migrateToDeletedAt();
-    
+    await migrateToIsDeleted();
+
     // Create indexes AFTER migrations (so new columns exist)
     await createIndexes();
 
@@ -209,155 +209,134 @@ export const migrateSyncQueueTable = async (): Promise<void> => {
 };
 
 /**
- * Migrate cards table to add user_id column
+ * Migrate to new schema: deleted_at -> is_deleted, remove user_id from cards
  */
-export const migrateCardsAddUserId = async (): Promise<void> => {
+export const migrateToIsDeleted = async (): Promise<void> => {
   const db = getDatabase();
 
   try {
-    console.log("Migrating cards table to add user_id...");
+    console.log("Migrating to is_deleted schema...");
 
-    // Check if user_id column exists
-    const tableInfo = await db.getAllAsync("PRAGMA table_info(cards)");
-    const hasUserId = tableInfo.some((col: any) => col.name === "user_id");
+    // Check collections table
+    const collectionsInfo = await db.getAllAsync(
+      "PRAGMA table_info(collections)"
+    );
+    const collectionsHasIsDeleted = collectionsInfo.some(
+      (col: any) => col.name === "is_deleted"
+    );
+    const collectionsHasDeletedAt = collectionsInfo.some(
+      (col: any) => col.name === "deleted_at"
+    );
 
-    if (!hasUserId) {
-      console.log("Adding user_id column to cards table...");
-      
-      // Add user_id column (allow NULL temporarily for migration)
-      await db.execAsync("ALTER TABLE cards ADD COLUMN user_id TEXT");
-      
-      // Populate user_id from collections.user_id for existing cards
-      await db.execAsync(`
-        UPDATE cards
-        SET user_id = (
-          SELECT collections.user_id 
-          FROM collections 
-          WHERE collections.id = cards.collection_id
-        )
-        WHERE user_id IS NULL
-      `);
-      
-      console.log("✅ Cards table migrated successfully");
-    } else {
-      console.log("Cards table already has user_id column");
-    }
-  } catch (error) {
-    console.error("Error migrating cards table:", error);
-    throw error;
-  }
-};
+    if (!collectionsHasIsDeleted || collectionsHasDeletedAt) {
+      console.log("Migrating collections table to is_deleted...");
 
-/**
- * Migrate collections and cards tables from is_deleted to deleted_at
- */
-export const migrateToDeletedAt = async (): Promise<void> => {
-  const db = getDatabase();
+      // Clean up any leftover temp table from failed migration
+      await db.execAsync("DROP TABLE IF EXISTS collections_new");
 
-  try {
-    console.log("Migrating to deleted_at column...");
-
-    // Migrate collections table
-    const collectionsInfo = await db.getAllAsync("PRAGMA table_info(collections)");
-    const hasDeletedAt = collectionsInfo.some((col: any) => col.name === "deleted_at");
-    const hasIsDeleted = collectionsInfo.some((col: any) => col.name === "is_deleted");
-
-    if (!hasDeletedAt && hasIsDeleted) {
-      console.log("Migrating collections table...");
-      
-      // Add deleted_at column
-      await db.execAsync("ALTER TABLE collections ADD COLUMN deleted_at TEXT");
-      
-      // Check if is_public exists, if not add it
-      const hasIsPublic = collectionsInfo.some((col: any) => col.name === "is_public");
-      if (!hasIsPublic) {
-        await db.execAsync("ALTER TABLE collections ADD COLUMN is_public INTEGER DEFAULT 0");
-      }
-      
-      // No need to migrate data since we're starting fresh with this feature
-      // Drop old is_deleted column by recreating table
       await db.execAsync(`
         CREATE TABLE collections_new (
           id TEXT PRIMARY KEY,
           user_id TEXT NOT NULL,
           name TEXT NOT NULL,
           description TEXT,
-          is_public INTEGER DEFAULT 0,
-          deleted_at TEXT,
+          is_deleted INTEGER DEFAULT 0,
           created_at TEXT DEFAULT CURRENT_TIMESTAMP,
           updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
           FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
         );
       `);
-      
-      await db.execAsync(`
-        INSERT INTO collections_new (id, user_id, name, description, is_public, deleted_at, created_at, updated_at)
-        SELECT id, user_id, name, description, 0, NULL, created_at, updated_at
-        FROM collections;
-      `);
-      
+
+      // Build the INSERT query based on which columns exist
+      if (collectionsHasDeletedAt) {
+        // Old schema with deleted_at
+        await db.execAsync(`
+          INSERT INTO collections_new (id, user_id, name, description, is_deleted, created_at, updated_at)
+          SELECT id, user_id, name, description, 
+                 CASE WHEN deleted_at IS NOT NULL THEN 1 ELSE 0 END, 
+                 created_at, updated_at
+          FROM collections;
+        `);
+      } else {
+        // New schema or fresh install - just copy data
+        await db.execAsync(`
+          INSERT INTO collections_new (id, user_id, name, description, is_deleted, created_at, updated_at)
+          SELECT id, user_id, name, description, 
+                 COALESCE(is_deleted, 0),
+                 created_at, updated_at
+          FROM collections;
+        `);
+      }
+
       await db.execAsync("DROP TABLE collections");
       await db.execAsync("ALTER TABLE collections_new RENAME TO collections");
-      
-      console.log("✅ Collections table migrated to deleted_at");
-    } else if (hasDeletedAt) {
-      console.log("Collections table already has deleted_at column");
-      
-      // Check if is_public exists for existing tables with deleted_at
-      const hasIsPublic = collectionsInfo.some((col: any) => col.name === "is_public");
-      if (!hasIsPublic) {
-        console.log("Adding is_public column to collections table...");
-        await db.execAsync("ALTER TABLE collections ADD COLUMN is_public INTEGER DEFAULT 0");
-        console.log("✅ Added is_public column to collections");
-      }
+
+      console.log("✅ Collections table migrated to is_deleted");
     }
 
-    // Migrate cards table
+    // Check cards table
     const cardsInfo = await db.getAllAsync("PRAGMA table_info(cards)");
-    const cardsHasDeletedAt = cardsInfo.some((col: any) => col.name === "deleted_at");
-    const cardsHasIsDeleted = cardsInfo.some((col: any) => col.name === "is_deleted");
+    const cardsHasIsDeleted = cardsInfo.some(
+      (col: any) => col.name === "is_deleted"
+    );
+    const cardsHasDeletedAt = cardsInfo.some(
+      (col: any) => col.name === "deleted_at"
+    );
+    const cardsHasUserId = cardsInfo.some((col: any) => col.name === "user_id");
 
-    if (!cardsHasDeletedAt && cardsHasIsDeleted) {
-      console.log("Migrating cards table...");
-      
-      // Add deleted_at column
-      await db.execAsync("ALTER TABLE cards ADD COLUMN deleted_at TEXT");
-      
-      // Recreate table without is_deleted
+    if (!cardsHasIsDeleted || cardsHasDeletedAt || cardsHasUserId) {
+      console.log(
+        "Migrating cards table to is_deleted and removing user_id..."
+      );
+
+      // Clean up any leftover temp table from failed migration
+      await db.execAsync("DROP TABLE IF EXISTS cards_new");
+
       await db.execAsync(`
         CREATE TABLE cards_new (
           id TEXT PRIMARY KEY,
           collection_id TEXT NOT NULL,
-          user_id TEXT NOT NULL,
           front TEXT NOT NULL,
           back TEXT NOT NULL,
           status TEXT DEFAULT 'new' CHECK (status IN ('new', 'learning', 'review')),
           interval INTEGER DEFAULT 0,
           ef REAL DEFAULT 2.5,
           due_date TEXT,
-          deleted_at TEXT,
+          is_deleted INTEGER DEFAULT 0,
           created_at TEXT DEFAULT CURRENT_TIMESTAMP,
           updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
-          FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE,
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+          FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
         );
       `);
-      
-      await db.execAsync(`
-        INSERT INTO cards_new (id, collection_id, user_id, front, back, status, interval, ef, due_date, deleted_at, created_at, updated_at)
-        SELECT id, collection_id, user_id, front, back, status, interval, ef, due_date, NULL, created_at, updated_at
-        FROM cards;
-      `);
-      
+
+      // Build the INSERT query based on which columns exist
+      if (cardsHasDeletedAt) {
+        // Old schema with deleted_at
+        await db.execAsync(`
+          INSERT INTO cards_new (id, collection_id, front, back, status, interval, ef, due_date, is_deleted, created_at, updated_at)
+          SELECT id, collection_id, front, back, status, interval, ef, due_date,
+                 CASE WHEN deleted_at IS NOT NULL THEN 1 ELSE 0 END,
+                 created_at, updated_at
+          FROM cards;
+        `);
+      } else {
+        // New schema or fresh install - just copy data
+        await db.execAsync(`
+          INSERT INTO cards_new (id, collection_id, front, back, status, interval, ef, due_date, is_deleted, created_at, updated_at)
+          SELECT id, collection_id, front, back, status, interval, ef, due_date, 
+                 COALESCE(is_deleted, 0),
+                 created_at, updated_at
+          FROM cards;
+        `);
+      }
+
       await db.execAsync("DROP TABLE cards");
       await db.execAsync("ALTER TABLE cards_new RENAME TO cards");
-      
-      console.log("✅ Cards table migrated to deleted_at");
-    } else if (cardsHasDeletedAt) {
-      console.log("Cards table already has deleted_at column");
+
+      console.log("✅ Cards table migrated to is_deleted");
     }
   } catch (error) {
-    console.error("Error migrating to deleted_at:", error);
+    console.error("Error migrating to is_deleted:", error);
     throw error;
   }
 };
