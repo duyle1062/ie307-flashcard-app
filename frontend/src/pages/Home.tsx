@@ -21,6 +21,7 @@ import {
   createCollection,
   deleteCollection,
 } from "../database/repositories/CollectionRepository";
+import { createCard } from "../database/repositories/CardRepository";
 
 export default function Home({ navigation }: any) {
   const { user, logout } = useAuth();
@@ -167,6 +168,31 @@ export default function Home({ navigation }: any) {
     }
   };
 
+  /**
+   * Handle create card
+   */
+  const handleCreateCard = async (data: {
+    collectionId: string;
+    front: string;
+    back: string;
+  }) => {
+    try {
+      const card = await createCard(data.collectionId, data.front, data.back);
+
+      if (card) {
+        console.log("Card created:", card.id);
+
+        // ✅ Check if queue threshold reached and auto-sync if needed
+        await checkAndSyncIfNeeded();
+
+        Alert.alert("Success", "Card created successfully");
+      }
+    } catch (error) {
+      console.error("Error creating card:", error);
+      Alert.alert("Error", "Failed to create card");
+    }
+  };
+
   const handlePressCollection = (item: Collection) => {
     navigation.navigate("Study", {
       deckId: item.id,
@@ -285,8 +311,12 @@ export default function Home({ navigation }: any) {
 
       <FloatingAddButton
         onCreateCollection={handleCreateCollection}
-        onCreateCard={(data) => console.log("Create card:", data)}
+        onCreateCard={handleCreateCard}
         onImport={() => console.log("Import Collection")}
+        collections={collections.map((col) => ({
+          id: col.id,
+          name: col.title,
+        }))}
       />
     </View>
   );

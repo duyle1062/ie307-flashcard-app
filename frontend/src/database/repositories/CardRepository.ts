@@ -97,7 +97,20 @@ export const updateCard = async (
   back: string
 ): Promise<Card | null> => {
   try {
-    await updateWithSync("cards", cardId, { front, back }, ["front", "back"]);
+    // ⚠️ IMPORTANT: Fetch card first to get collection_id
+    // Firestore rules need collection_id to verify ownership
+    const existingCard = await getCardById(cardId);
+    if (!existingCard) {
+      throw new Error("Card not found");
+    }
+
+    // Include collection_id in update data for Firestore sync
+    await updateWithSync(
+      "cards",
+      cardId,
+      { front, back, collection_id: existingCard.collection_id },
+      ["front", "back"]
+    );
 
     return await getCardById(cardId);
   } catch (error) {
@@ -117,6 +130,13 @@ export const updateCardSRS = async (
   dueDate: string
 ): Promise<Card | null> => {
   try {
+    // ⚠️ IMPORTANT: Fetch card first to get collection_id
+    // Firestore rules need collection_id to verify ownership
+    const existingCard = await getCardById(cardId);
+    if (!existingCard) {
+      throw new Error("Card not found");
+    }
+
     await updateWithSync(
       "cards",
       cardId,
@@ -125,6 +145,7 @@ export const updateCardSRS = async (
         interval,
         ef,
         due_date: dueDate,
+        collection_id: existingCard.collection_id,
       },
       ["status", "interval", "ef", "due_date"]
     );
@@ -141,7 +162,17 @@ export const updateCardSRS = async (
  */
 export const deleteCard = async (cardId: string): Promise<boolean> => {
   try {
-    await softDeleteWithSync("cards", cardId);
+    // ⚠️ IMPORTANT: Fetch card first to get collection_id
+    // Firestore rules need collection_id to verify ownership
+    const existingCard = await getCardById(cardId);
+    if (!existingCard) {
+      throw new Error("Card not found");
+    }
+
+    // Include collection_id in delete data for Firestore sync
+    await softDeleteWithSync("cards", cardId, {
+      collection_id: existingCard.collection_id,
+    });
     return true;
   } catch (error) {
     console.error("Error deleting card:", error);
