@@ -1,277 +1,240 @@
-# Flashcard App
+# Flashcard App - Frontend
 
-A modern flashcard application with spaced repetition built using React Native (Expo) and Spring Boot.
+React Native mobile application built with Expo SDK 54 with SQLite local database and Firebase backend.
 
-## 🚀 Features
+## 🚀 Quick Start
 
-- 📱 **Cross-platform** mobile app (iOS & Android)
-- 🔐 **Google OAuth** authentication
-- 🎴 Create and manage **flashcard collections**
-- 🧠 **Spaced repetition algorithm** (SM-2) for efficient learning
-- 📊 **Progress tracking** and statistics
-- 💾 **Offline-first** architecture with local SQLite storage
-- ☁️ **Cloud sync** across devices (when online)
-- 🔄 **Automatic sync queue** for offline changes
-
-## 📁 Project Structure
-
-```
-ie307-flashcard-app/
-├── frontend/          # React Native (Expo SDK 54) mobile app
-└── backend/           # Spring Boot REST API
-```
-
-## 🛠️ Tech Stack
-
-### Frontend
-
-- **React Native** with Expo SDK 54
-- **TypeScript** for type safety
-- **Expo SQLite** for offline storage
-- **React Navigation** for navigation
-- **AsyncStorage** for local data persistence
-- **Expo Auth Session** (Google OAuth)
-- **Axios** for API calls
-- **Spaced Repetition Algorithm** (SM-2)
-
-### Backend
-
-- **Spring Boot** 3.2.0
-- **Spring Security** with JWT
-- **Spring Data JPA**
-- **PostgreSQL** (Neon cloud database)
-- **Lombok** for boilerplate reduction
-- **Maven** for dependency management
-- **Google OAuth2** integration
-
-## 📋 Prerequisites
-
-- Node.js 18+ and npm
-- Java 17+
-- Maven 3.6+
-- Git
-- Google Cloud Console project (for OAuth) - optional for development
-
-## � Quick Start (After Cloning)
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/duyle1062/ie307-flashcard-app.git
-cd ie307-flashcard-app
-```
-
-### 2. Install Backend Dependencies
-
-```bash
-cd backend
-# Maven will automatically download dependencies when you run:
-mvn clean install
-```
-
-### 3. Install Frontend Dependencies
-
-```bash
-cd ../frontend
+```powershell
+# Install dependencies
 npm install
-```
 
-### 4. Configure Environment Variables
+# Setup Firebase (IMPORTANT!)
+# See QUICKSTART.md for 3-minute setup guide
 
-**Backend:**
-
-```bash
-cd backend
-# Create .env file (or edit application.properties directly)
-```
-
-**Frontend:**
-
-```bash
-cd frontend
-cp .env.example .env
-# Edit .env with your configuration (optional for development)
-```
-
-### 5. Start the Application
-
-**Start Backend (Terminal 1):**
-
-```bash
-cd backend
-mvn spring-boot:run
-```
-
-**Start Frontend (Terminal 2):**
-
-```bash
-cd frontend
+# Start development server
 npx expo start
+
+# Run on platforms
+# Press 'a' for Android
+# Press 'i' for iOS
+# Press 'w' for web (limited support)
 ```
 
-The backend will run on `http://localhost:8080` and Expo will open Metro bundler.
+## 📚 Documentation
 
----
+**Start here:**
+- 📖 [QUICKSTART.md](./QUICKSTART.md) - 3-minute Firebase setup
+- ✅ [CHECKLIST.md](./CHECKLIST.md) - Verify your implementation
 
-## �🔧 Detailed Setup Instructions
+**Deep dive:**
+- 🔥 [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) - Detailed Firebase configuration
+- 🏗️ [AUTH_FLOW.md](./AUTH_FLOW.md) - Authentication architecture
+- 📋 [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) - What's implemented
 
-### 1. Google OAuth Configuration
+## 📱 Features
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing one
-3. Enable Google+ API
-4. Create OAuth 2.0 credentials:
-   - **Web client** (for backend)
-   - **iOS client** (for iOS app)
-   - **Android client** (for Android app)
-5. Add authorized redirect URIs:
-   - For development: `http://localhost:8080/api/auth/google/callback`
-   - For Expo: Add your Expo redirect URI
+### ✅ Implemented
+- ✅ Email/Password authentication (Firebase)
+- ✅ User registration & login
+- ✅ Persistent sessions (auto-login)
+- ✅ SQLite local database (offline-first)
+- ✅ User data sync (Firebase ↔ SQLite)
+- ✅ Flashcard deck management
+- ✅ Spaced repetition study system
+- ✅ Progress tracking
 
-### 2. Backend Setup
+### 🔜 Coming Soon
+- 🔜 Google OAuth
+- 🔜 Facebook OAuth
+- 🔜 Password reset
+- 🔜 Email verification
+- 🔜 Profile picture upload
 
-```powershell
-cd backend
+## 🏗️ Project Structure
 
-# Copy and configure application.properties
-# Edit src/main/resources/application.properties:
-# - Set your Google OAuth client ID and secret
-# - Configure JWT secret key
-# - Set database configuration
-
-# Run the application
-mvn spring-boot:run
+```
+src/
+├── config/
+│   └── firebaseConfig.ts    # Firebase initialization
+├── context/
+│   └── AuthContext.tsx       # Authentication state
+├── database/
+│   ├── database.tsx          # SQLite setup
+│   ├── repositories/         # Database queries
+│   │   ├── UserRepository.tsx
+│   │   ├── CollectionRepository.tsx
+│   │   ├── CardRepository.tsx
+│   │   └── ReviewRepository.tsx
+│   └── storage.tsx           # AsyncStorage helpers
+├── navigation/
+│   ├── RootNavigator.tsx     # Auth routing
+│   ├── AuthStack.tsx         # Login/Register screens
+│   └── AppStack.tsx          # Main app screens
+├── pages/
+│   ├── Login.tsx             # Login screen
+│   ├── Register.tsx          # Registration screen
+│   ├── Home.tsx              # Home screen
+│   └── Study.tsx             # Study screen
+└── components/
+    ├── AuthButton.tsx        # Authentication button
+    ├── AuthInput.tsx         # Input with validation
+    └── AuthSocial.tsx        # OAuth buttons (prepared)
 ```
 
-The backend will start at `http://localhost:8080`
+## 🔧 Configuration
 
-### 3. Frontend Setup
+### 1. Firebase Setup
 
-```powershell
-cd frontend
+Follow [QUICKSTART.md](./QUICKSTART.md) for 3-minute setup:
 
-# Copy environment variables
+1. Create Firebase project
+2. Enable Authentication (Email/Password)
+3. Enable Firestore Database
+4. Copy config to `.env`
+
+### 2. Environment Variables
+
+```bash
 cp .env.example .env
-
-# Edit .env file and add:
-# - Google OAuth client IDs (web, iOS, Android)
-# - Backend API URL
-# - Expo project ID
-
-# Install dependencies (already done)
-# npm install
-
-# Start the development server
-npx expo start
 ```
 
-### 4. Running the App
-
-- Press `a` for Android emulator
-- Press `i` for iOS simulator (macOS only)
-- Scan QR code with Expo Go app for physical device
-
-## 🔑 Environment Variables
-
-### Frontend (.env)
+Then fill in your Firebase credentials:
 
 ```env
-EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB=your-web-client-id
-EXPO_PUBLIC_GOOGLE_CLIENT_ID_IOS=your-ios-client-id
-EXPO_PUBLIC_GOOGLE_CLIENT_ID_ANDROID=your-android-client-id
-EXPO_PUBLIC_API_URL=http://localhost:8080/api
+EXPO_PUBLIC_FIREBASE_API_KEY=your_api_key
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your-app.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your-app.appspot.com
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
+EXPO_PUBLIC_FIREBASE_APP_ID=1:123:web:abc
 ```
 
-### Backend (application.properties)
+## 📦 Dependencies
 
-```properties
-spring.security.oauth2.client.registration.google.client-id=your-google-client-id
-spring.security.oauth2.client.registration.google.client-secret=your-google-client-secret
-jwt.secret=your-jwt-secret-key-minimum-256-bits
+**Core:**
+- `expo` - SDK 54
+- `react-navigation` - Navigation library
+- `firebase` - Backend & authentication
+- `@react-native-async-storage/async-storage` - Local storage
+- `expo-sqlite` - Local database
+
+**Authentication:**
+- Firebase Authentication (Email/Password)
+- Future: Google OAuth, Facebook OAuth
+
+**Database:**
+- SQLite (local, offline-first)
+- Firestore (cloud, sync)
+
+## 🔐 Authentication Flow
+
+```
+User Register/Login
+        ↓
+Firebase Authentication
+        ↓
+Create/Fetch user from Firestore
+        ↓
+Sync to SQLite local database
+        ↓
+Save session to AsyncStorage
+        ↓
+Navigate to App
 ```
 
-## 📱 Development
+See [AUTH_FLOW.md](./AUTH_FLOW.md) for detailed architecture.
 
-### Frontend Development
+## 🧪 Testing
+
+**Manual Testing:**
+1. Register new account
+2. Check Firebase Console > Authentication
+3. Check Firestore Database > users collection
+4. Login with registered account
+5. Close and reopen app (auto-login test)
+6. Logout test
+
+See [CHECKLIST.md](./CHECKLIST.md) for full testing checklist.
+
+## 🏗️ Building
 
 ```powershell
-cd frontend
-npx expo start --clear  # Clear cache and start
+# Development build
+npx expo start
+
+# Production build (requires EAS)
+npx eas build --platform android
+npx eas build --platform ios
 ```
 
-### Backend Development
+## 🆘 Troubleshooting
 
-```powershell
-cd backend
-mvn spring-boot:run
+**App won't start:**
+```bash
+rm -rf node_modules
+npm install
+npx expo start -c
 ```
 
-### Accessing H2 Console
+**Firebase errors:**
+- Check `.env` file exists and has correct values
+- Verify Firebase project is active
+- Check Authentication is enabled in Firebase Console
 
-Navigate to `http://localhost:8080/h2-console` with:
+**SQLite errors:**
+- Check `expo-sqlite` plugin in `app.json`
+- Try clearing app data
 
-- JDBC URL: `jdbc:h2:mem:flashcarddb`
-- Username: `sa`
-- Password: (leave empty)
+**Common Issues:**
+- "Email already in use" → Use different email
+- "Weak password" → Use 8+ characters
+- Auto-login not working → Check AsyncStorage permissions
 
-## 🏗️ Building for Production
+See [CHECKLIST.md](./CHECKLIST.md) for detailed verification.
 
-### Frontend
+## 📝 Environment Variables
 
-```powershell
-cd frontend
-npx expo build:android  # For Android
-npx expo build:ios      # For iOS (requires macOS)
-```
+See `.env.example` for all required environment variables.
 
-### Backend
+Required variables:
+- `EXPO_PUBLIC_FIREBASE_API_KEY`
+- `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `EXPO_PUBLIC_FIREBASE_PROJECT_ID`
+- `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `EXPO_PUBLIC_FIREBASE_APP_ID`
 
-```powershell
-cd backend
-mvn clean package
-java -jar target/flashcard-backend-0.0.1-SNAPSHOT.jar --spring.profiles.active=prod
-```
+## 🔒 Security
 
-## 📚 API Documentation
+- ✅ Firebase credentials in `.env` (not committed)
+- ✅ Firestore Security Rules restrict data access
+- ✅ Password minimum 8 characters
+- ✅ Email validation
+- ✅ Secure password hashing (Firebase handled)
 
-### Authentication Endpoints
+## 🚀 Next Steps
 
-- `POST /api/auth/google` - Authenticate with Google OAuth
-- `GET /api/auth/me` - Get current user (requires authentication)
+1. ✅ Complete Firebase setup ([QUICKSTART.md](./QUICKSTART.md))
+2. ✅ Test authentication flow ([CHECKLIST.md](./CHECKLIST.md))
+3. 🔜 Implement Google OAuth
+4. 🔜 Add password reset feature
+5. 🔜 Add email verification
+6. 🔜 Implement card sync with Firestore
 
-### Deck Endpoints (Coming Soon)
+## 🐛 Known Issues
 
-- `GET /api/decks` - Get all user decks
-- `POST /api/decks` - Create new deck
-- `GET /api/decks/{id}` - Get deck details
-- `PUT /api/decks/{id}` - Update deck
-- `DELETE /api/decks/{id}` - Delete deck
-
-### Card Endpoints (Coming Soon)
-
-- `GET /api/decks/{deckId}/cards` - Get all cards in deck
-- `POST /api/decks/{deckId}/cards` - Create new card
-- `PUT /api/cards/{id}` - Update card
-- `DELETE /api/cards/{id}` - Delete card
-- `POST /api/cards/{id}/review` - Submit review result
+- OAuth buttons are placeholders (show "Coming Soon" alert)
+- Password reset not yet implemented
+- Email verification not yet implemented
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+1. Fork the repo
+2. Create feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit changes (`git commit -m 'Add AmazingFeature'`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
+5. Open Pull Request
 
 ## 📄 License
 
-This project is licensed under the MIT License.
-
-## 👥 Authors
-
-- Your Name - Initial work
-
-## 🙏 Acknowledgments
-
-- Inspired by Anki
-- Built with Expo and Spring Boot
+MIT
