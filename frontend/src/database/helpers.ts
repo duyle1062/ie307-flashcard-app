@@ -131,10 +131,12 @@ export const updateWithSync = async (
 
 /**
  * Soft delete a record and add to sync queue
+ * @param additionalData - Optional data to include in sync payload (e.g., collection_id for cards)
  */
 export const softDeleteWithSync = async (
   tableName: string,
-  recordId: string
+  recordId: string,
+  additionalData?: Record<string, any>
 ): Promise<void> => {
   const deleteSql = `UPDATE ${tableName} SET is_deleted = 1, updated_at = datetime('now') WHERE id = ?`;
   const syncSql = `INSERT INTO sync_queue (id, entity_type, entity_id, operation, data, created_at) VALUES (?, ?, ?, ?, ?, ?)`;
@@ -149,7 +151,7 @@ export const softDeleteWithSync = async (
           tableName,
           recordId,
           "DELETE",
-          JSON.stringify({ id: recordId }),
+          JSON.stringify({ id: recordId, ...additionalData }),
           getCurrentTimestamp(),
         ],
       },

@@ -1,5 +1,5 @@
 import { executeQuery } from "./database";
-import { generateUUID } from "./helpers";
+import { generateUUID, insertWithSync } from "./helpers";
 import * as Crypto from "expo-crypto";
 
 /**
@@ -81,19 +81,15 @@ export const seedDatabase = async (userId?: string): Promise<void> => {
 
     console.log("Creating collections...");
     for (const collection of collections) {
-      await executeQuery(
-        `INSERT INTO collections (id, user_id, name, description, is_deleted, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          collection.id,
-          collection.user_id,
-          collection.name,
-          collection.description,
-          collection.is_deleted,
-          collection.created_at,
-          collection.updated_at,
-        ]
-      );
+      await insertWithSync("collections", {
+        id: collection.id,
+        user_id: collection.user_id,
+        name: collection.name,
+        description: collection.description,
+        is_deleted: collection.is_deleted,
+        created_at: collection.created_at,
+        updated_at: collection.updated_at,
+      });
     }
     console.log("✅ Created 3 collections");
 
@@ -365,23 +361,19 @@ export const seedDatabase = async (userId?: string): Promise<void> => {
     for (const collectionData of cardsData) {
       for (const card of collectionData.cards) {
         const cardId = generateUUID();
-        await executeQuery(
-          `INSERT INTO cards (id, collection_id, front, back, status, interval, ef, due_date, is_deleted, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [
-            cardId,
-            collectionData.collection_id,
-            card.front,
-            card.back,
-            card.status,
-            card.interval,
-            card.ef,
-            card.due_date,
-            0,
-            new Date().toISOString(),
-            new Date().toISOString(),
-          ]
-        );
+        await insertWithSync("cards", {
+          id: cardId,
+          collection_id: collectionData.collection_id,
+          front: card.front,
+          back: card.back,
+          status: card.status,
+          interval: card.interval,
+          ef: card.ef,
+          due_date: card.due_date,
+          is_deleted: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
         totalCards++;
       }
     }

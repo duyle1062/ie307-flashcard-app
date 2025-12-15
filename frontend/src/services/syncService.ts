@@ -18,10 +18,7 @@ import {
   Timestamp,
   writeBatch,
 } from "firebase/firestore";
-import {
-  getUnsyncedChanges,
-  removeSyncQueueItems,
-} from "../database/helpers";
+import { getUnsyncedChanges, removeSyncQueueItems } from "../database/helpers";
 import { executeQuery } from "../database/database";
 import {
   saveLastSyncTimestamp,
@@ -123,7 +120,9 @@ class SyncService {
         return { pushedCount, failedCount, errors };
       }
 
-      console.log(`🔄 Pushing ${unsyncedChanges.length} changes via WriteBatch...`);
+      console.log(
+        `🔄 Pushing ${unsyncedChanges.length} changes via WriteBatch...`
+      );
 
       // Process in batches of 500 (Firestore WriteBatch limit)
       for (let i = 0; i < unsyncedChanges.length; i += SYNC_CONFIG.BATCH_SIZE) {
@@ -135,6 +134,12 @@ class SyncService {
           // Add all operations to batch
           for (const change of batchItems) {
             const { entity_type, entity_id, operation, data } = change;
+            console.log(
+              `📤 Syncing: ${entity_type}:${entity_id.substring(
+                0,
+                8
+              )}... Operation: ${operation}`
+            );
             const parsedData = data ? JSON.parse(data) : {};
 
             const collectionName = this.getFirestoreCollection(entity_type);
@@ -150,20 +155,32 @@ class SyncService {
               case "INSERT":
               case "UPDATE":
                 // Sử dụng set với merge để đảm bảo idempotency
-                batch.set(docRef, {
+                // ⚠️ IMPORTANT: Cards don't have user_id (new schema)
+                // Cards are owned through collection_id → collections.user_id
+                const updateData: any = {
                   ...parsedData,
-                  user_id: userId,
                   updated_at: serverTimestamp(),
-                }, { merge: true });
+                };
+
+                // Only add user_id for entities that have it (not cards)
+                if (entity_type !== "cards") {
+                  updateData.user_id = userId;
+                }
+
+                batch.set(docRef, updateData, { merge: true });
                 successfulIds.push(change.id);
                 break;
 
               case "DELETE":
-                // Soft delete
-                batch.set(docRef, {
-                  deleted_at: serverTimestamp(),
+                // Soft delete - use is_deleted flag (new schema)
+                // ⚠️ IMPORTANT: Include parsedData (contains collection_id for cards)
+                const deleteData: any = {
+                  ...parsedData, // Keep collection_id and other metadata
+                  is_deleted: 1,
                   updated_at: serverTimestamp(),
-                }, { merge: true });
+                };
+
+                batch.set(docRef, deleteData, { merge: true });
                 successfulIds.push(change.id);
                 break;
 
@@ -175,15 +192,18 @@ class SyncService {
 
           // Commit entire batch in one network request
           await batch.commit();
-          
+
           // Remove successfully synced items from queue
           if (successfulIds.length > 0) {
             await removeSyncQueueItems(successfulIds);
           }
-          
-          pushedCount += successfulIds.length;
-          console.log(`✅ Batch ${Math.floor(i / SYNC_CONFIG.BATCH_SIZE) + 1} pushed: ${successfulIds.length} items`);
 
+          pushedCount += successfulIds.length;
+          console.log(
+            `✅ Batch ${Math.floor(i / SYNC_CONFIG.BATCH_SIZE) + 1} pushed: ${
+              successfulIds.length
+            } items`
+          );
         } catch (error: any) {
           console.error(`❌ Batch failed:`, error);
           errors.push(`Batch failed: ${error.message}`);
@@ -197,7 +217,9 @@ class SyncService {
         }
       }
 
-      console.log(`✅ Push complete: ${pushedCount} synced, ${failedCount} failed`);
+      console.log(
+        `✅ Push complete: ${pushedCount} synced, ${failedCount} failed`
+      );
     } catch (error: any) {
       console.error("❌ Push to cloud failed:", error);
       errors.push(`Push failed: ${error.message}`);
@@ -223,11 +245,11 @@ class SyncService {
     try {
       // Get last sync timestamp
       const lastSyncTime = await getLastSyncTimestamp();
-      const lastSyncDate = lastSyncTime
-        ? new Date(lastSyncTime)
-        : new Date(0); // Epoch if first sync
+      const lastSyncDate = lastSyncTime ? new Date(lastSyncTime) : new Date(0); // Epoch if first sync
 
-      console.log(`🔄 [DELTA SYNC] Pulling changes since: ${lastSyncDate.toISOString()}`);
+      console.log(
+        `🔄 [DELTA SYNC] Pulling changes since: ${lastSyncDate.toISOString()}`
+      );
 
       // Pull changes from each collection
       const collections = ["users", "collections", "cards", "reviews"];
@@ -252,7 +274,9 @@ class SyncService {
         await saveLastSyncTimestamp(Date.now());
       }
 
-      console.log(`✅ Pull complete: ${pulledCount} records synced, ${failedCount} failed`);
+      console.log(
+        `✅ Pull complete: ${pulledCount} records synced, ${failedCount} failed`
+      );
     } catch (error: any) {
       console.error("❌ Pull from cloud failed:", error);
       errors.push(`Pull failed: ${error.message}`);
@@ -272,7 +296,7 @@ class SyncService {
   ): Promise<number> {
     try {
       const collectionRef = collection(db, collectionName);
-      
+
       // Query for changes since last sync
       // Filter by user_id for collections, cards, reviews
       // For users, just get the current user's document
@@ -283,7 +307,7 @@ class SyncService {
         try {
           const userDocRef = doc(db, "users", userId);
           const userDoc = await getDoc(userDocRef);
-          
+
           if (userDoc.exists()) {
             const data = userDoc.data();
             const firestoreData = this.convertFirestoreData(data);
@@ -295,12 +319,23 @@ class SyncService {
         } catch (error: any) {
           // If permission error, skip silently (user document might not exist yet)
           if (error.code === "permission-denied") {
-            console.log(`⏭️  Skipping ${collectionName} pull (no read permission)`);
+            console.log(
+              `⏭️  Skipping ${collectionName} pull (no read permission)`
+            );
             return 0;
           }
           throw error;
         }
+      } else if (collectionName === "cards") {
+        // ⚠️ IMPORTANT: Cards don't have user_id field (new schema)
+        // Pull all cards updated since last sync
+        // Permission checking happens via Firestore rules (collection_id → collections.user_id)
+        q = query(
+          collectionRef,
+          where("updated_at", ">", Timestamp.fromDate(lastSyncDate))
+        );
       } else {
+        // For collections and reviews - they have user_id
         q = query(
           collectionRef,
           where("user_id", "==", userId),
@@ -313,7 +348,7 @@ class SyncService {
 
       for (const docSnapshot of querySnapshot.docs) {
         const data = docSnapshot.data();
-        
+
         // Convert Firestore Timestamp to ISO string
         const firestoreData = this.convertFirestoreData(data);
 
@@ -328,6 +363,15 @@ class SyncService {
 
       return count;
     } catch (error: any) {
+      // Handle permission errors gracefully for cards
+      // This can happen when cards collection is empty or rules can't be evaluated
+      if (error.code === "permission-denied" && collectionName === "cards") {
+        console.log(
+          `⏭️  Skipping ${collectionName} pull (no cards available or permission issue)`
+        );
+        return 0;
+      }
+
       console.error(`❌ Failed to pull ${collectionName}:`, error);
       throw error;
     }
@@ -362,7 +406,7 @@ class SyncService {
     cloudData: any
   ): Promise<void> {
     try {
-      // Get local data
+      // Get local data (including soft-deleted records)
       const localData = await this.getLocalRecord(collectionName, cloudData.id);
 
       // If no local data, just insert
@@ -377,14 +421,23 @@ class SyncService {
 
       if (cloudUpdatedAt >= localUpdatedAt) {
         // Cloud version is newer or same -> Accept cloud version
-        console.log(`🔄 Accepting cloud version for ${collectionName}:${cloudData.id}`);
+        // This includes accepting is_deleted = 1 from cloud
+        console.log(
+          `🔄 Accepting cloud version for ${collectionName}:${cloudData.id}`
+        );
         await this.upsertToLocal(collectionName, cloudData);
       } else {
         // Local version is newer -> Keep local, it will be pushed later
-        console.log(`⏭️  Keeping local version for ${collectionName}:${cloudData.id}`);
+        // This includes keeping local is_deleted = 1
+        console.log(
+          `⏭️  Keeping local version for ${collectionName}:${cloudData.id}`
+        );
       }
     } catch (error: any) {
-      console.error(`❌ Failed to resolve conflict for ${collectionName}:`, error);
+      console.error(
+        `❌ Failed to resolve conflict for ${collectionName}:`,
+        error
+      );
       throw error;
     }
   }
@@ -413,7 +466,10 @@ class SyncService {
   /**
    * Upsert data to local SQLite using repository functions
    */
-  private async upsertToLocal(collectionName: string, data: any): Promise<void> {
+  private async upsertToLocal(
+    collectionName: string,
+    data: any
+  ): Promise<void> {
     try {
       switch (collectionName) {
         case "users":
@@ -584,10 +640,5 @@ class SyncService {
 export const syncService = new SyncService();
 
 // Convenience exports
-export const {
-  sync,
-  getStatus,
-  startAutoSync,
-  stopAutoSync,
-  forceSync,
-} = syncService;
+export const { sync, getStatus, startAutoSync, stopAutoSync, forceSync } =
+  syncService;

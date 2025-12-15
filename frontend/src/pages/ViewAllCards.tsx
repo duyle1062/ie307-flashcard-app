@@ -13,7 +13,12 @@ import {
   Alert,
 } from "react-native";
 import { Card } from "../database/types";
-import { getCardsByCollectionId } from "../database/repositories/CardRepository";
+import {
+  getCardsByCollectionId,
+  updateCard,
+  deleteCard,
+} from "../database/repositories/CardRepository";
+import { useSync } from "../hooks/useSync";
 import { Colors } from "../const/Color";
 import DottedBackground from "../components/DottedBackground";
 import Feather from "@expo/vector-icons/Feather";
@@ -99,6 +104,7 @@ const MOCK_CARDS: Card[] = [
 
 export default function ViewAllCards({ route, navigation }: ViewAllCardsProps) {
   const { collectionId, collectionTitle } = route.params;
+  const { checkAndSyncIfNeeded } = useSync();
 
   // State
   const [cards, setCards] = useState<Card[]>([]);
@@ -179,8 +185,24 @@ export default function ViewAllCards({ route, navigation }: ViewAllCardsProps) {
 
   const totalPages = Math.ceil(filteredAndSortedCards.length / PAGE_SIZE);
   // Handlers
-  const handleDeleteCard = (cardId: string) => {
-    setCards(cards.filter((c) => c.id !== cardId));
+  const handleDeleteCard = async (cardId: string) => {
+    try {
+      // Soft delete in database (auto-adds to sync_queue)
+      const success = await deleteCard(cardId);
+
+      if (success) {
+        // Remove from local state
+        setCards(cards.filter((c) => c.id !== cardId));
+
+        // Check if queue threshold reached and auto-sync if needed
+        await checkAndSyncIfNeeded();
+
+        Alert.alert("Success", "Card deleted successfully");
+      }
+    } catch (error) {
+      console.error("Error deleting card:", error);
+      Alert.alert("Error", "Failed to delete card");
+    }
   };
 
   const handleOpenDetails = (card: Card) => {
@@ -190,25 +212,37 @@ export default function ViewAllCards({ route, navigation }: ViewAllCardsProps) {
     setDetailsModalVisible(true);
   };
 
-  const handleUpdateCard = () => {
+  const handleUpdateCard = async () => {
     if (!detailsCard || !editFront.trim() || !editBack.trim()) {
       return;
     }
 
-    const updatedCard = {
-      ...detailsCard,
-      front: editFront.trim(),
-      back: editBack.trim(),
-      updated_at: new Date().toISOString(),
-    };
+    try {
+      // Update in database (auto-adds to sync_queue)
+      const updatedCard = await updateCard(
+        detailsCard.id,
+        editFront.trim(),
+        editBack.trim()
+      );
 
-    const updatedCards = cards.map((c) =>
-      c.id === detailsCard.id ? updatedCard : c
-    );
+      if (updatedCard) {
+        // Update local state
+        const updatedCards = cards.map((c) =>
+          c.id === detailsCard.id ? updatedCard : c
+        );
+        setCards(updatedCards);
+        setDetailsCard(updatedCard);
+        setDetailsModalVisible(false);
 
-    setCards(updatedCards);
-    setDetailsCard(updatedCard);
-    setDetailsModalVisible(false);
+        // Check if queue threshold reached and auto-sync if needed
+        await checkAndSyncIfNeeded();
+
+        Alert.alert("Success", "Card updated successfully");
+      }
+    } catch (error) {
+      console.error("Error updating card:", error);
+      Alert.alert("Error", "Failed to update card");
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -264,7 +298,20 @@ export default function ViewAllCards({ route, navigation }: ViewAllCardsProps) {
       </View>
       <View style={styles.cardActions}>
         <TouchableOpacity
-          onPress={() => handleDeleteCard(item.id)}
+          onPress={() => {
+            Alert.alert(
+              "Delete Card",
+              "Are you sure you want to delete this card?",
+              [
+                { text: "Cancel", style: "cancel" },
+                {
+                  text: "Delete",
+                  style: "destructive",
+                  onPress: () => handleDeleteCard(item.id),
+                },
+              ]
+            );
+          }}
           style={styles.actionBtn}
         >
           <Feather name="trash-2" size={18} color={Colors.red} />
