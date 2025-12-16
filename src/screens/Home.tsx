@@ -29,7 +29,7 @@ type Props = CompositeScreenProps<
 export default function Home({ navigation }: Readonly<Props>) {
   const { user, logout } = useAuth();
   const { forceSync, syncStatus, checkAndSyncIfNeeded } = useSync();
-  
+
   // Use custom hook for collections management
   const {
     collections,
@@ -41,7 +41,8 @@ export default function Home({ navigation }: Readonly<Props>) {
   const [showMenu, setShowMenu] = useState<boolean>(false);
 
   const [actionModalVisible, setActionModalVisible] = useState(false);
-  const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
+  const [selectedCollection, setSelectedCollection] =
+    useState<Collection | null>(null);
 
   /**
    * Handle manual sync (triggered by refresh button)
@@ -223,6 +224,7 @@ export default function Home({ navigation }: Readonly<Props>) {
         onClose={() => setShowMenu(false)}
         onLogout={logout}
         onAccountPress={() => navigation.navigate("UserProfile")}
+        onChangePassword={() => navigation.navigate("ChangePassword")}
       />
 
       <CollectionActionModal
