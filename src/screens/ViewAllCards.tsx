@@ -7,10 +7,11 @@ import {
   TouchableOpacity,
   Modal,
   TextInput,
-  SafeAreaView,
   ScrollView,
   Alert,
 } from "react-native";
+
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Card } from "../shared/types";
 import { useCards } from "../features/card";
 import { Colors } from "../shared/constants/Color";
@@ -96,7 +97,10 @@ const MOCK_CARDS: Card[] = [
   },
 ];
 
-export default function ViewAllCards({ route, navigation }: Readonly<ViewAllCardsProps>) {
+export default function ViewAllCards({
+  route,
+  navigation,
+}: Readonly<ViewAllCardsProps>) {
   const { collectionId, collectionTitle } = route.params;
 
   // Use custom hook for cards management
