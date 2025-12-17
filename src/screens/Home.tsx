@@ -15,6 +15,7 @@ import SearchBar from "../components/SearchBar";
 import CollectionList from "../components/CollectionList";
 import FloatingAddButton from "../components/FloatingAddButton";
 import CollectionActionModal from "../components/CollectionActionModal";
+import StreakModal from "../components/StreakModal";
 
 import { useAuth } from "../shared/context/AuthContext";
 import { useSync } from "../shared/context/SyncContext";
@@ -29,7 +30,7 @@ type Props = CompositeScreenProps<
 export default function Home({ navigation }: Readonly<Props>) {
   const { user, logout } = useAuth();
   const { forceSync, syncStatus, checkAndSyncIfNeeded } = useSync();
-  
+
   // Use custom hook for collections management
   const {
     collections,
@@ -39,9 +40,11 @@ export default function Home({ navigation }: Readonly<Props>) {
 
   const [search, setSearch] = useState<string>("");
   const [showMenu, setShowMenu] = useState<boolean>(false);
+  const [showStreakModal, setShowStreakModal] = useState(false);
 
   const [actionModalVisible, setActionModalVisible] = useState(false);
-  const [selectedCollection, setSelectedCollection] = useState<Collection | null>(null);
+  const [selectedCollection, setSelectedCollection] =
+    useState<Collection | null>(null);
 
   /**
    * Handle manual sync (triggered by refresh button)
@@ -214,8 +217,13 @@ export default function Home({ navigation }: Readonly<Props>) {
         onAvatarPress={() => setShowMenu(true)}
         onMenuPress={() => navigation.dispatch(DrawerActions.openDrawer())}
         onRefreshPress={handleManualSync}
+        onStreakPress={() => setShowStreakModal(true)}
         isSyncing={syncStatus.isRunning}
         pendingChanges={syncStatus.pendingChanges}
+      />
+      <StreakModal
+        visible={showStreakModal}
+        onClose={() => setShowStreakModal(false)}
       />
 
       <UserMenuModal
