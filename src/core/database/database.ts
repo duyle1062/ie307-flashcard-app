@@ -25,6 +25,8 @@ export const initDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
     await migrateSyncQueueTable();
     await migrateToIsDeleted();
 
+    await migrateUsersTable();
+
     // Create indexes AFTER migrations (so new columns exist)
     await createIndexes();
 
@@ -143,6 +145,39 @@ export const executeTransaction = async (
     });
   } catch (error) {
     console.error("Error executing transaction:", error);
+    throw error;
+  }
+};
+
+/**
+  * Migrate users table: rename 'name' column to 'display_name'
+ */
+export const migrateUsersTable = async (): Promise<void> => {
+  const db = getDatabase();
+
+  try {
+    console.log("Checking users table schema...");
+
+    const tableInfo = await db.getAllAsync("PRAGMA table_info(users)");
+    // Kiểm tra xem có cột 'name' cũ không
+    const hasNameColumn = tableInfo.some((col: any) => col.name === "name");
+    // Kiểm tra xem đã có cột 'display_name' chưa
+    const hasDisplayNameColumn = tableInfo.some((col: any) => col.name === "display_name");
+
+    if (hasNameColumn && !hasDisplayNameColumn) {
+      console.log("⚠️ Old 'name' column detected. Migrating to 'display_name'...");
+      
+      // SQLite hỗ trợ rename column (ở các phiên bản mới của Expo)
+      await db.execAsync("ALTER TABLE users RENAME COLUMN name TO display_name");
+      
+      console.log("✅ Users table migrated successfully (name -> display_name)");
+    } else {
+      console.log("Users table schema is up to date.");
+    }
+  } catch (error) {
+    console.error("Error migrating users table:", error);
+    // Fallback: Nếu ALTER TABLE thất bại (do phiên bản SQLite cũ), 
+    // bạn có thể cần dùng phương pháp: Create New -> Copy -> Drop -> Rename
     throw error;
   }
 };

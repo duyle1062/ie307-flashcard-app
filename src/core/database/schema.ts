@@ -9,8 +9,9 @@ export const CREATE_TABLES = {
   users: `
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
+      display_name TEXT NOT NULL,
       email TEXT UNIQUE NOT NULL,
+      picture TEXT,
       password_hash TEXT,
       streak_days INTEGER DEFAULT 0,
       last_active_date TEXT,

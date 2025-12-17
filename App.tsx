@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator, StyleSheet, Text } from "react-native";
 import { initDatabase, resetDatabase } from "./src/core/database";
+import { clearAllData } from "./src/core/database/storage";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { AuthProvider } from "./src/shared/context/AuthContext";
@@ -28,12 +29,12 @@ export default function App(): React.ReactElement {
 
   const initializeDatabase = async (): Promise<void> => {
     try {
-      console.log("Initializing database...");
+      await initDatabase();
 
       // 🔥 UNCOMMENT dòng này để clear toàn bộ DB (chỉ dùng 1 lần)
+      // await clearAllData(); // Xóa AsyncStorage (Token, Session...)
       // await resetDatabase();
-
-      await initDatabase();
+      
       console.log("Database initialized successfully");
       setIsDbReady(true);
     } catch (error) {

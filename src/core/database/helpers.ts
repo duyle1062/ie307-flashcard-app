@@ -118,7 +118,7 @@ export const updateWithSync = async (
           tableName,
           recordId,
           "UPDATE",
-          JSON.stringify({ id: recordId, ...updates, changedFields }),
+          JSON.stringify({ id: recordId, ...updates }),
           getCurrentTimestamp(),
         ],
       },

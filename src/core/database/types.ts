@@ -11,7 +11,6 @@ export type SyncOperation = "INSERT" | "UPDATE" | "DELETE";
 // User model (matches SQLite schema)
 export interface User {
   id: string;
-  name: string;
   email: string;
   display_name?: string;
   picture?: string;

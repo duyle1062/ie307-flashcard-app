@@ -60,11 +60,10 @@ export const upsertUser = async (
     );
     
     if (existingCheck.rows.length > 0) {
-      // Update existing user by ID
       await executeQuery(
         `UPDATE users SET 
           email = ?, 
-          name = ?, 
+          display_name = ?,
           picture = ?,
           streak_days = ?,
           last_active_date = ?,
@@ -74,7 +73,7 @@ export const upsertUser = async (
         WHERE id = ?`,
         [
           userData.email,
-          userData.display_name,
+          userData.display_name, 
           userData.picture,
           userData.streak_days ?? 0,
           userData.last_active_date,
@@ -101,7 +100,7 @@ export const upsertUser = async (
       // Insert new user
       await executeQuery(
         `INSERT INTO users (
-          id, email, name, picture,
+          id, email, display_name, picture,
           streak_days, last_active_date, 
           daily_new_cards_limit, daily_review_cards_limit,
           created_at, updated_at
@@ -193,10 +192,10 @@ export const updateUserProfile = async (
       "users",
       userId,
       {
-        name: displayName,
+        display_name: displayName,
         picture: profilePictureUrl,
       },
-      ["name", "picture"]
+      ["display_name", "picture"]
     );
     
     console.log("✅ UserRepository: Update query executed");
@@ -206,7 +205,7 @@ export const updateUserProfile = async (
     if (updatedUser) {
       console.log("✅ UserRepository: Retrieved updated user:", {
         id: updatedUser.id,
-        name: updatedUser.name,
+        display_name: updatedUser.display_name,
         email: updatedUser.email,
       });
     } else {

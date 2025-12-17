@@ -15,6 +15,7 @@ import {
   serverTimestamp,
   Timestamp,
   writeBatch,
+  documentId,
 } from "firebase/firestore";
 import { getUnsyncedChanges, removeSyncQueueItems } from "../../../core/database/helpers";
 import { executeQuery } from "../../../core/database/database";
@@ -29,6 +30,7 @@ import {
   upsertReview,
 } from "../../../core/database/repositories";
 import NetInfo from "@react-native-community/netinfo";
+import { toFirestoreData, fromFirestoreData } from "../../../core/utils/mapper"; // Import vào
 
 // Sync configuration
 const SYNC_CONFIG = {
@@ -53,6 +55,12 @@ export interface SyncResult {
   pulledCount: number;
   failedCount: number;
   errors: string[];
+}
+
+// Options để điều khiển Sync
+export interface SyncOptions {
+  push?: boolean; // default: true
+  pull?: boolean; // default: true
 }
 
 /**
@@ -158,18 +166,12 @@ class SyncService {
             switch (operation) {
               case "INSERT":
               case "UPDATE": {
-                // Sử dụng set với merge để đảm bảo idempotency
-                // ⚠️ IMPORTANT: Cards don't have user_id (new schema)
-                // Cards are owned through collection_id → collections.user_id
-                const updateData: Record<string, unknown> = {
-                  ...parsedData,
+                const parsedData = data ? JSON.parse(data) : {};
+
+                const updateData = {
+                  ...toFirestoreData(entity_type, parsedData),
                   updated_at: serverTimestamp(),
                 };
-
-                // Only add user_id for entities that have it (not cards)
-                if (entity_type !== "cards") {
-                  updateData.user_id = userId;
-                }
 
                 batch.set(docRef, updateData, { merge: true });
                 successfulIds.push(change.id);
@@ -180,7 +182,7 @@ class SyncService {
                 // Soft delete - use is_deleted flag (new schema)
                 // ⚠️ IMPORTANT: Include parsedData (contains collection_id for cards)
                 const deleteData: Record<string, unknown> = {
-                  ...parsedData, // Keep collection_id and other metadata
+                  ...toFirestoreData(entity_type, parsedData),
                   is_deleted: 1,
                   updated_at: serverTimestamp(),
                 };
@@ -195,6 +197,16 @@ class SyncService {
                 failedCount++;
             }
           }
+
+          const syncStateRef = doc(db, "sync_state", userId);
+          batch.set(
+            syncStateRef,
+            { 
+              last_modified: serverTimestamp(),
+              updated_by_device_id: "current_device_id" // (Optional) Để debug
+            }, 
+            { merge: true }
+          );
 
           // Commit entire batch in one network request
           await batch.commit();
@@ -257,6 +269,39 @@ class SyncService {
         `🔄 [DELTA SYNC] Pulling changes since: ${lastSyncDate.toISOString()}`
       );
 
+      // MASTER CHECK: Kiểm tra sync_state để quyết định có nên pull không
+      try {
+        const syncStateRef = doc(db, "sync_state", userId);
+        const syncStateSnap = await getDoc(syncStateRef);
+
+        if (syncStateSnap.exists()) {
+          const syncData = syncStateSnap.data();
+          // Chuyển Firestore Timestamp sang Milliseconds
+          const cloudLastModified = syncData.last_modified 
+            ? (syncData.last_modified as Timestamp).toMillis() 
+            : 0;
+
+          // SO SÁNH: Nếu Cloud <= Local (nghĩa là không có gì mới)
+          // Lưu ý: Thêm buffer 1-2 giây để tránh lệch đồng hồ mạng
+          if (cloudLastModified <= (lastSyncTime || 0)) {
+             console.log("✅ [MASTER CHECK] Cloud is not newer. Skipping Pull.");
+             console.log(`   Cloud: ${new Date(cloudLastModified).toISOString()}`);
+             console.log(`   Local: ${lastSyncDate.toISOString()}`);
+             
+             // RETURN SỚM - Tiết kiệm 4 Reads tại đây!
+             return { pulledCount: 0, failedCount: 0, errors: [] };
+          }
+          
+          console.log("🚀 [MASTER CHECK] Found updates on Cloud. Proceeding to pull...");
+        } else {
+          console.log("⚠️ [MASTER CHECK] No sync_state doc found. Proceeding to full pull (first time?)");
+        }
+      } catch (checkError) {
+        console.warn("⚠️ [MASTER CHECK] Failed to check sync_state, proceeding anyway:", checkError);
+      }
+
+      // --- NẾU CODE CHẠY ĐẾN ĐÂY NGHĨA LÀ CÓ DỮ LIỆU MỚI ---
+
       // Pull changes from each collection
       const collections = ["users", "collections", "cards", "reviews"];
 
@@ -302,50 +347,52 @@ class SyncService {
   ): Promise<number> {
     try {
       const collectionRef = collection(db, collectionName);
+      let syncQueryDate = lastSyncDate;
 
-      // Query for changes since last sync
-      // Filter by user_id for collections, cards, reviews
-      // For users, just get the current user's document
-      let q;
+      // Chỉ áp dụng cho bảng reviews VÀ khi sync lần đầu (lastSyncDate = 0)
+      if (collectionName === "reviews" && lastSyncDate.getTime() === 0) {
+        const threeMonthsAgo = new Date();
+        threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+        
+        // Ép buộc chỉ lấy dữ liệu từ 3 tháng trở lại đây
+        syncQueryDate = threeMonthsAgo;
+        console.log(`❄️ [COLD STORAGE] Reviews: Only syncing data from ${syncQueryDate.toISOString()}`);
+      }
+      
+      // Chuyển đổi sang Firestore Timestamp để query
+      const syncTimestamp = Timestamp.fromDate(syncQueryDate);
+
       if (collectionName === "users") {
-        // Special case: Just get the user's own document
-        // No compound query needed, just fetch by ID
-        try {
-          const userDocRef = doc(db, "users", userId);
-          const userDoc = await getDoc(userDocRef);
+        const userDocRef = doc(db, "users", userId);
+        const userSnap = await getDoc(userDocRef);
 
-          if (userDoc.exists()) {
-            const data = userDoc.data();
-            const firestoreData = this.convertFirestoreData(data);
-            await this.resolveConflictAndUpsert(collectionName, firestoreData);
-            console.log(`✅ Pulled 1 record from ${collectionName}`);
-            return 1;
-          }
-          return 0;
-        } catch (error: any) {
-          // If permission error, skip silently (user document might not exist yet)
-          if (error.code === "permission-denied") {
-            console.log(
-              `⏭️  Skipping ${collectionName} pull (no read permission)`
-            );
-            return 0;
-          }
-          throw error;
+        if (userSnap.exists()) {
+            // Mapper thủ công
+            const rawData = fromFirestoreData(collectionName, userSnap.id, userSnap.data());
+            const firestoreData = this.convertFirestoreData(rawData);
+
+            // Manual Check updated_at
+            const cloudUpdateTime = new Date(firestoreData.updated_at).getTime();
+            if (cloudUpdateTime > syncQueryDate.getTime()) {
+                await this.resolveConflictAndUpsert(collectionName, firestoreData);
+                return 1;
+            }
         }
-      } else if (collectionName === "cards") {
-        // ⚠️ IMPORTANT: Cards don't have user_id field (new schema)
-        // Pull all cards updated since last sync
-        // Permission checking happens via Firestore rules (collection_id → collections.user_id)
+        return 0;
+      }
+
+      // CASE 2: CÁC COLLECTION KHÁC (Dùng Query bình thường)
+      let q;
+      if (collectionName === "cards") {
         q = query(
           collectionRef,
-          where("updated_at", ">", Timestamp.fromDate(lastSyncDate))
+          where("updated_at", ">", syncTimestamp)
         );
       } else {
-        // For collections and reviews - they have user_id
         q = query(
           collectionRef,
           where("user_id", "==", userId),
-          where("updated_at", ">", Timestamp.fromDate(lastSyncDate))
+          where("updated_at", ">", syncTimestamp)
         );
       }
 
@@ -353,12 +400,12 @@ class SyncService {
       let count = 0;
 
       for (const docSnapshot of querySnapshot.docs) {
-        const data = docSnapshot.data();
+        const rawData = fromFirestoreData(collectionName, docSnapshot.id, docSnapshot.data());
+        
+        // Convert timestamp
+        const firestoreData = this.convertFirestoreData(rawData);
 
-        // Convert Firestore Timestamp to ISO string
-        const firestoreData = this.convertFirestoreData(data);
-
-        // Conflict Resolution: Last Write Wins (LWW)
+        // Xử lý conflict và lưu xuống SQLite
         await this.resolveConflictAndUpsert(collectionName, firestoreData);
         count++;
       }
@@ -522,48 +569,45 @@ class SyncService {
   }
 
   /**
-   * Full bidirectional sync
+   * Full bidirectional sync with options
+   * @param options.push Default true
+   * @param options.pull Default true
    */
-  async sync(userId: string): Promise<SyncResult> {
-    // Prevent concurrent sync — set running flag immediately to avoid race conditions
+  async sync(userId: string, options: SyncOptions = { push: true, pull: true }): Promise<SyncResult> {
+    // Prevent concurrent sync
     if (this.isRunning) {
       console.log("⚠️ Sync already running, skipping...");
-      return {
-        success: false,
-        pushedCount: 0,
-        pulledCount: 0,
-        failedCount: 0,
-        errors: ["Sync already in progress"],
-      };
+      return { success: false, pushedCount: 0, pulledCount: 0, failedCount: 0, errors: ["Sync busy"] };
     }
     this.isRunning = true;
 
     // Check network
     const hasNetwork = await this.hasNetwork();
     if (!hasNetwork) {
-      console.log("⚠️ No network connection, skipping sync");
-      // Reset running flag since we are exiting early
       this.isRunning = false;
-      return {
-        success: false,
-        pushedCount: 0,
-        pulledCount: 0,
-        failedCount: 0,
-        errors: ["No network connection"],
-      };
+      return { success: false, pushedCount: 0, pulledCount: 0, failedCount: 0, errors: ["No network"] };
     }
+
     const allErrors: string[] = [];
+    let pushResult = { pushedCount: 0, failedCount: 0, errors: [] as string[] };
+    let pullResult = { pulledCount: 0, failedCount: 0, errors: [] as string[] };
 
     try {
-      console.log("🔄 Starting full sync...");
+      console.log(`🔄 Starting sync (Push: ${options.push}, Pull: ${options.pull})...`);
 
-      // Step 1: PUSH local changes to cloud
-      const pushResult = await this.pushToCloud(userId);
-      allErrors.push(...pushResult.errors);
+      // ✅ Step 1: PUSH (Chỉ chạy khi options.push = true)
+      // Push nên được ưu tiên chạy để bảo toàn dữ liệu người dùng vừa nhập
+      if (options.push !== false) {
+        pushResult = await this.pushToCloud(userId);
+        allErrors.push(...pushResult.errors);
+      }
 
-      // Step 2: PULL cloud changes to local
-      const pullResult = await this.pullFromCloud(userId);
-      allErrors.push(...pullResult.errors);
+      // ✅ Step 2: PULL (Chỉ chạy khi options.pull = true)
+      // Pull có thể "lười" (lazy), không cần chạy liên tục
+      if (options.pull !== false) {
+         pullResult = await this.pullFromCloud(userId); // Hàm này đã có Master Check ở bài trước
+         allErrors.push(...pullResult.errors);
+      }
 
       const result: SyncResult = {
         success: allErrors.length === 0,
@@ -577,13 +621,7 @@ class SyncService {
       return result;
     } catch (error: any) {
       console.error("❌ Sync failed:", error);
-      return {
-        success: false,
-        pushedCount: 0,
-        pulledCount: 0,
-        failedCount: 1,
-        errors: [error.message],
-      };
+      return { success: false, pushedCount: 0, pulledCount: 0, failedCount: 1, errors: [error.message] };
     } finally {
       this.isRunning = false;
     }
@@ -592,9 +630,8 @@ class SyncService {
   /**
    * Start automatic background sync (every X minutes)
    */
-  startAutoSync(userId: string, intervalMinutes: number = 5): void {
+  startAutoSync(userId: string, intervalMinutes: number = 30): void {
     if (this.syncInterval) {
-      console.log("⚠️ Auto-sync already running");
       return;
     }
 
@@ -602,7 +639,9 @@ class SyncService {
 
     this.syncInterval = setInterval(async () => {
       try {
-        await this.sync(userId);
+        // Auto sync định kỳ thì nên Pull về để cập nhật
+        // Push cũng cần thiết để đảm bảo data an toàn
+        await this.sync(userId, { push: true, pull: true });
       } catch (error) {
         console.error("❌ Auto-sync failed:", error);
       }

@@ -9,7 +9,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppState, AppStateStatus } from "react-native";
-import { syncService, SyncStatus, SyncResult } from "../services/syncService";
+import { syncService, SyncStatus, SyncResult, SyncOptions } from "../services/syncService";
 import { useAuth } from "../../../shared/context/AuthContext";
 import NetInfo from "@react-native-community/netinfo";
 // Removed seedDatabase import - no longer auto-creating collections
@@ -41,7 +41,7 @@ export const useSync = () => {
   /**
    * Perform sync
    */
-  const performSync = useCallback(async (): Promise<SyncResult | null> => {
+  const performSync = useCallback(async (options?: SyncOptions): Promise<SyncResult | null> => {
     if (!user) {
       console.warn("No user logged in, cannot sync");
       return null;
@@ -54,7 +54,7 @@ export const useSync = () => {
         return null;
       }
       setSyncStatus((prev) => ({ ...prev, isRunning: true }));
-      const result = await syncService.sync(user.uid);
+      const result = await syncService.sync(user.uid, options);
       await refreshStatus();
       return result;
     } catch (error: any) {
@@ -111,7 +111,7 @@ export const useSync = () => {
       const shouldSync = await syncService.shouldSync();
       if (shouldSync) {
         console.log("🔔 Queue threshold reached (≥20 items), auto-syncing...");
-        await performSync();
+        await performSync({ push: true, pull: false });
       }
     } catch (error) {
       console.error("Error checking sync threshold:", error);
@@ -140,10 +140,11 @@ export const useSync = () => {
 
     // Handle AppState changes (Active <-> Background)
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      if (nextAppState === "background" && !syncService.isSyncing) {
-        console.log("📱 App going to background, syncing...");
-        performSync();
-      } else if (nextAppState === "active") {
+      // if (nextAppState === "background" && !syncService.isSyncing) {
+      //   console.log("📱 App going to background, syncing...");
+      //   performSync();
+      // } else 
+      if (nextAppState === "active") {
         console.log("📱 App became active, refreshing status...");
         refreshStatus();
       }
@@ -183,7 +184,7 @@ export const useSync = () => {
         // Debounce: Đợi 2s trước khi sync (tránh nhiều trigger liên tiếp)
         if (syncTimeout) clearTimeout(syncTimeout);
         syncTimeout = setTimeout(() => {
-          performSync();
+          performSync({ push: true, pull: false });
         }, 2000);
       }
 
