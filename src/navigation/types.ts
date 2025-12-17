@@ -10,4 +10,5 @@ export type AppStackParamList = {
   Study: { deckId: string; title: string };
   UserProfile: undefined;
   ViewAllCards: { collectionId: string; collectionTitle: string };
+  ChangePassword: undefined;
 };

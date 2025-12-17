@@ -10,6 +10,7 @@ interface UserMenuModalProps {
   onClose: () => void;
   onLogout: () => void;
   onAccountPress: () => void;
+  onChangePassword: () => void;
 }
 
 const UserMenuModal: React.FC<UserMenuModalProps> = ({
@@ -17,6 +18,7 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
   onClose,
   onLogout,
   onAccountPress,
+  onChangePassword,
 }) => {
   return (
     <Modal
@@ -42,7 +44,13 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
             <Text style={styles.menuText}>Account</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              onClose();
+              onChangePassword();
+            }}
+          >
             <AntDesign name="lock" size={18} color={Colors.black} />
             <Text style={styles.menuText}>Change Password</Text>
           </TouchableOpacity>

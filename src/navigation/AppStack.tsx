@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import DrawerNavigator from "./DrawerNavigator";
 import UserProfile from "../screens/UserProfile";
+import ChangePassword from "../screens/ChangePassword";
 import Study from "../screens/Study";
 import ViewAllCards from "../screens/ViewAllCards";
 import { AppStackParamList } from "./types";
@@ -17,6 +18,7 @@ export default function AppStack() {
     >
       <Stack.Screen name="Drawer" component={DrawerNavigator} />
       <Stack.Screen name="UserProfile" component={UserProfile} />
+      <Stack.Screen name="ChangePassword" component={ChangePassword} />
       <Stack.Screen name="Study" component={Study} />
       <Stack.Screen name="ViewAllCards" component={ViewAllCards} />
     </Stack.Navigator>
