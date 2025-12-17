@@ -6,7 +6,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Alert } from "react-native";
 import { UserService } from "../services/UserService";
-import { useSync } from "../../sync/hooks";
+import { useSync } from "../../../shared/context/SyncContext";
 import { User } from "../../../shared/types";
 
 interface UseUserProfileReturn {
@@ -22,7 +22,7 @@ export const useUserProfile = (): UseUserProfileReturn => {
   const [userData, setUserData] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const { forceSync } = useSync();
+  const { checkAndSyncIfNeeded } = useSync();
 
   /**
    * Load user data from database
@@ -66,7 +66,7 @@ export const useUserProfile = (): UseUserProfileReturn => {
         console.log("🔄 useUserProfile: Starting profile update...");
         console.log("   Current userData:", {
           id: userData.id,
-          name: userData.name,
+          name: userData.display_name,
           email: userData.email,
         });
         console.log("   New name:", name.trim());
@@ -84,7 +84,7 @@ export const useUserProfile = (): UseUserProfileReturn => {
           console.log("✅ useUserProfile: Local DB updated successfully");
           console.log("   Updated user data:", {
             id: updatedUser.id,
-            name: updatedUser.name,
+            name: updatedUser.display_name,
             email: updatedUser.email,
           });
           
@@ -92,27 +92,10 @@ export const useUserProfile = (): UseUserProfileReturn => {
 
           // Trigger sync
           console.log("🔄 useUserProfile: Triggering sync...");
-          const syncResult = await forceSync();
+          checkAndSyncIfNeeded();
 
-          if (syncResult?.success) {
-            console.log("✅ useUserProfile: Sync successful");
-            console.log("   Pushed:", syncResult.pushedCount);
-            console.log("   Pulled:", syncResult.pulledCount);
-            Alert.alert("Success!", "Your profile has been updated");
-            return true;
-          } else if (syncResult?.errors && syncResult.errors.length > 0) {
-            console.log("⚠️ useUserProfile: Sync failed but saved locally");
-            console.log("   Errors:", syncResult.errors);
-            Alert.alert(
-              "Saved locally",
-              "Changes will sync when connection is available"
-            );
-            return true;
-          } else {
-            console.log("⚠️ useUserProfile: Sync result unclear, but data saved locally");
-            Alert.alert("Saved locally", "Your changes have been saved");
-            return true;
-          }
+          Alert.alert("useUserProfile: Profile update process completed successfully");
+          return true;
         } else {
           console.log("❌ useUserProfile: Failed to update profile - returned null");
           Alert.alert("Error", "Failed to update profile");
@@ -126,7 +109,7 @@ export const useUserProfile = (): UseUserProfileReturn => {
         setIsUpdating(false);
       }
     },
-    [userData, forceSync]
+    [userData, checkAndSyncIfNeeded]
   );
 
   /**

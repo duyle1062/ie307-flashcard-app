@@ -43,7 +43,7 @@ export default function UserProfile() {
   // Update local state when userData changes
   useEffect(() => {
     if (userData) {
-      setName(userData.name || userData.display_name || "");
+      setName(userData.display_name || "");
       setEmail(userData.email);
       setStreakDays(userData.streak_days || 0);
     }
@@ -54,17 +54,11 @@ export default function UserProfile() {
       Alert.alert("Error", "User data not available");
       return;
     }
-
     if (!name.trim()) {
       Alert.alert("Error", "Name cannot be empty");
       return;
     }
-
-    const success = await updateProfile(name.trim(), userData.picture);
-
-    if (success) {
-      Alert.alert("Thành công!", "Hồ sơ của bạn đã được cập nhật");
-    }
+    await updateProfile(name, userData.picture);
   };
 
   if (isLoading) {

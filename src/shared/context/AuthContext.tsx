@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { Alert } from "react-native";
-
+import { toFirestoreData } from "../../core/utils/mapper";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -9,23 +9,18 @@ import {
   User as FirebaseUser,
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
-
 import { auth, db } from "../../core/config/firebaseConfig";
-
 import {
   upsertUser,
   getUserById,
 } from "../../core/database/repositories/UserRepository";
-
 import {
   saveCurrentUserId,
   getCurrentUserId,
   clearAllData,
   clearFirebaseAuthToken,
 } from "../../core/database/storage";
-
 import { logTableData } from "../../core/utils/dbDebug";
-
 import { getDatabase } from "../../core/database";
 
 type AuthContextType = {
@@ -65,7 +60,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       );
       const firebaseUser = userCredential.user;
 
-      const userData = {
+      const fullUserData = {
         id: firebaseUser.uid,
         email: email,
         display_name: email.split("@")[0],
@@ -76,18 +71,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         updated_at: new Date().toISOString(),
       };
 
-      // 2. Tạo User Document trên Firestore
-      await setDoc(doc(db, "users", firebaseUser.uid), userData);
+      const cloudUserData = toFirestoreData("users", fullUserData);
 
-      // 3. Khởi tạo SQLite Local DB cho user mới
-      await upsertUser({
-        id: firebaseUser.uid,
-        email: email,
-        display_name: email.split("@")[0],
-        streak_days: 0,
-        daily_new_cards_limit: 25,
-        daily_review_cards_limit: 50,
-      });
+      // 2. Tạo User Document trên Firestore (không có id)
+      await setDoc(doc(db, "users", firebaseUser.uid), cloudUserData);
+
+      // 3. Khởi tạo SQLite Local DB (Cần ID)
+      await upsertUser(fullUserData);
 
       // 4. Lưu userId vào AsyncStorage (Lưu session vào AsyncStorage)
       await saveCurrentUserId(firebaseUser.uid);
