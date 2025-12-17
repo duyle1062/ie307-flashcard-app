@@ -12,6 +12,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
+import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updatePassword,
+} from "firebase/auth";
 
 import AntDesign from "@expo/vector-icons/AntDesign";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
@@ -20,11 +25,13 @@ import Fontisto from "@expo/vector-icons/Fontisto";
 
 import { Colors } from "../shared/constants/Color";
 import { Shadows } from "../shared/constants/Shadow";
+import { useAuth } from "../shared/context/AuthContext";
 
 import DottedBackground from "@/components/DottedBackground";
 
 export default function ChangePassword() {
   const navigation = useNavigation();
+  const { user } = useAuth();
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
@@ -32,6 +39,7 @@ export default function ChangePassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleChangePassword = async () => {
+    // Validation
     if (!oldPassword || !newPassword || !confirmPassword) {
       Alert.alert("Error", "Please fill in all fields");
       return;
@@ -42,22 +50,64 @@ export default function ChangePassword() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters long");
+    if (newPassword.length < 8) {
+      Alert.alert("Error", "Password must be at least 8 characters long");
+      return;
+    }
+
+    if (oldPassword === newPassword) {
+      Alert.alert("Error", "New password must be different from old password");
+      return;
+    }
+
+    if (!user || !user.email) {
+      Alert.alert("Error", "User not authenticated");
       return;
     }
 
     try {
       setIsUpdating(true);
 
-      // Hiện tại dùng mock success
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Step 1: Re-authenticate user with old password
+      // Firebase requires recent authentication before changing password
+      const credential = EmailAuthProvider.credential(user.email, oldPassword);
+      await reauthenticateWithCredential(user, credential);
 
-      Alert.alert("Success", "Password changed successfully");
+      // Step 2: Update password
+      await updatePassword(user, newPassword);
 
-      navigation.goBack();
-    } catch (error) {
-      Alert.alert("Error", "Failed to change password. Please try again.");
+      // Clear form
+      setOldPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+
+      Alert.alert("Success", "Password changed successfully", [
+        {
+          text: "OK",
+          onPress: () => navigation.goBack(),
+        },
+      ]);
+    } catch (error: any) {
+      let errorMessage = "Failed to change password. Please try again.";
+
+      if (
+        error.code === "auth/wrong-password" ||
+        error.code === "auth/invalid-credential" ||
+        error.code === "auth/invalid-login-credentials"
+      ) {
+        errorMessage = "Old password is incorrect. Please try again.";
+      } else if (error.code === "auth/weak-password") {
+        errorMessage = "New password is too weak";
+      } else if (error.code === "auth/requires-recent-login") {
+        errorMessage =
+          "Please log out and log in again before changing password";
+      } else if (error.code === "auth/too-many-requests") {
+        errorMessage = "Too many attempts. Please try again later";
+      } else if (error.code === "auth/network-request-failed") {
+        errorMessage = "Network error. Please check your connection";
+      }
+
+      Alert.alert("Error", errorMessage);
     } finally {
       setIsUpdating(false);
     }
