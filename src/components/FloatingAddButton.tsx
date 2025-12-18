@@ -6,6 +6,7 @@ import Animated, {
   withTiming,
   interpolate,
 } from "react-native-reanimated";
+import { useTranslation } from "react-i18next";
 
 import AntDesign from "@expo/vector-icons/AntDesign";
 
@@ -105,6 +106,7 @@ const FloatingAddButton: React.FC<Props> = ({
   onImport,
   collections = [],
 }) => {
+  const { t } = useTranslation();
   const isOpen = useSharedValue(0);
   const [showCollectionSheet, setShowCollectionSheet] = useState(false);
   const [showCardSheet, setShowCardSheet] = useState(false);
@@ -118,7 +120,10 @@ const FloatingAddButton: React.FC<Props> = ({
   const overlayStyle = useAnimatedStyle(() => {
     return {
       opacity: interpolate(isOpen.value, [0, 1], [0, 0.5]),
-      pointerEvents: isOpen.value > 0 || showCollectionSheet || showCardSheet ? "auto" : "none",
+      pointerEvents:
+        isOpen.value > 0 || showCollectionSheet || showCardSheet
+          ? "auto"
+          : "none",
     };
   });
 
@@ -162,7 +167,15 @@ const FloatingAddButton: React.FC<Props> = ({
         {MENU_ITEMS.map((item) => (
           <MenuItem
             key={item.id}
-            item={item}
+            item={{
+              ...item,
+              label:
+                item.id === "create-collection"
+                  ? t("components.createCollection")
+                  : item.id === "create-card"
+                  ? t("card.createCard")
+                  : t("components.importCollection"),
+            }}
             isOpen={isOpen}
             onPress={(itemId) => {
               if (itemId === "create-collection") {

@@ -22,9 +22,11 @@ import { Colors } from "../shared/constants/Color";
 import { Shadows } from "../shared/constants/Shadow";
 
 import DottedBackground from "@/components/DottedBackground";
+import { useLanguage } from "../shared/hooks/useLanguage";
 
 export default function ChangePassword() {
   const navigation = useNavigation();
+  const { t } = useLanguage();
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
@@ -33,17 +35,23 @@ export default function ChangePassword() {
 
   const handleChangePassword = async () => {
     if (!oldPassword || !newPassword || !confirmPassword) {
-      Alert.alert("Error", "Please fill in all fields");
+      Alert.alert(t("common.error"), t("common.confirm"));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert("Error", "New password and confirmation do not match");
+      Alert.alert(
+        t("common.error"),
+        "New password and confirmation do not match"
+      );
       return;
     }
 
     if (newPassword.length < 6) {
-      Alert.alert("Error", "Password must be at least 6 characters long");
+      Alert.alert(
+        t("common.error"),
+        "Password must be at least 6 characters long"
+      );
       return;
     }
 
@@ -53,11 +61,14 @@ export default function ChangePassword() {
       // Hiện tại dùng mock success
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      Alert.alert("Success", "Password changed successfully");
+      Alert.alert(t("common.success"), "Password changed successfully");
 
       navigation.goBack();
     } catch (error) {
-      Alert.alert("Error", "Failed to change password. Please try again.");
+      Alert.alert(
+        t("common.error"),
+        "Failed to change password. Please try again."
+      );
     } finally {
       setIsUpdating(false);
     }
@@ -71,7 +82,7 @@ export default function ChangePassword() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <AntDesign name="arrow-left" size={24} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Change Password</Text>
+        <Text style={styles.headerTitle}>{t("auth.changePassword")}</Text>
         <View style={{ width: 100 }} />
       </View>
 
@@ -87,35 +98,35 @@ export default function ChangePassword() {
               </View>
             </View>
 
-            <Text style={styles.label}>Old Password</Text>
+            <Text style={styles.label}>{t("auth.oldPassword")}</Text>
 
             <AuthInput
               icon={<Fontisto name="key" size={18} color={Colors.black} />}
               value={oldPassword}
               onChangeText={setOldPassword}
-              placeholder="Input your old password"
+              placeholder={t("auth.oldPassword")}
               secureTextEntry
               editable={!isUpdating}
               placeholderTextColor={Colors.subText}
             />
 
-            <Text style={styles.label}>New Password</Text>
+            <Text style={styles.label}>{t("auth.newPassword")}</Text>
 
             <AuthInput
               icon={<Fontisto name="key" size={18} color={Colors.black} />}
               value={newPassword}
               onChangeText={setNewPassword}
-              placeholder="Input your new password"
+              placeholder={t("auth.newPassword")}
               secureTextEntry
               editable={!isUpdating}
               placeholderTextColor={Colors.subText}
             />
-            <Text style={styles.label}>Confirm Password</Text>
+            <Text style={styles.label}>{t("auth.confirmNewPassword")}</Text>
             <AuthInput
               icon={<Fontisto name="key" size={18} color={Colors.black} />}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              placeholder="Confirm your new password"
+              placeholder={t("auth.confirmNewPassword")}
               secureTextEntry
               editable={!isUpdating}
               placeholderTextColor={Colors.subText}
@@ -131,7 +142,7 @@ export default function ChangePassword() {
           {isUpdating ? (
             <ActivityIndicator size="small" color={Colors.white} />
           ) : (
-            <Text style={styles.updateButtonText}>UPDATE</Text>
+            <Text style={styles.updateButtonText}>{t("common.save")}</Text>
           )}
         </TouchableOpacity>
       </View>

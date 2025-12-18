@@ -1,10 +1,13 @@
 import { View, Text, StyleSheet } from "react-native";
 import { Colors } from "../shared/constants/Color";
+import { useLanguage } from "../shared/hooks/useLanguage";
 
 export default function Statistical() {
+  const { t } = useLanguage();
+
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Statistical Page</Text>
+      <Text style={styles.text}>{t("statistics.title")}</Text>
     </View>
   );
 }

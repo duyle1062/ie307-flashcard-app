@@ -8,6 +8,7 @@ import {
   Insets,
   Alert,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
 import { AppStackParamList } from "../navigation/types";
@@ -78,6 +79,7 @@ type Props = NativeStackScreenProps<AppStackParamList, "Study">;
 export default function Study({ navigation, route }: Readonly<Props>) {
   const insets = useSafeAreaInsets();
   const { deckId } = route.params;
+  const { t } = useTranslation();
 
   const [cards, setCards] = useState<Card[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -100,7 +102,7 @@ export default function Study({ navigation, route }: Readonly<Props>) {
       setCards(dbCards);
     } catch (error) {
       console.error("Error loading cards:", error);
-      Alert.alert("Error", "Failed to load cards");
+      Alert.alert(t("common.error"), t("study.failed"));
     } finally {
       setIsLoading(false);
     }
@@ -165,7 +167,7 @@ export default function Study({ navigation, route }: Readonly<Props>) {
           style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
           <Text style={{ fontSize: 16, color: Colors.title }}>
-            Loading cards...
+            {t("study.loading")}
           </Text>
         </View>
       </View>
@@ -183,6 +185,7 @@ export default function Study({ navigation, route }: Readonly<Props>) {
           onUndo={handleUndo}
           canUndo={false}
           counts={counts}
+          t={t}
         />
         <View
           style={{
@@ -195,7 +198,7 @@ export default function Study({ navigation, route }: Readonly<Props>) {
           <Text
             style={{ fontSize: 18, color: Colors.title, textAlign: "center" }}
           >
-            No cards in this collection yet.
+            {t("study.noCardsInCollection")}
           </Text>
         </View>
       </View>
@@ -218,13 +221,12 @@ export default function Study({ navigation, route }: Readonly<Props>) {
         onUndo={handleUndo}
         canUndo={!isFirstCard}
         counts={counts}
+        t={t}
       />
 
       {/* 2. Main Card Area (Responsive) */}
       <View style={styles.cardArea}>
-        {currentCard && (
-          <FlashCard data={currentCard} isFlipped={isFlipped} />
-        )}
+        {currentCard && <FlashCard data={currentCard} isFlipped={isFlipped} />}
       </View>
 
       {/* 3. Bottom Actions */}
@@ -233,6 +235,7 @@ export default function Study({ navigation, route }: Readonly<Props>) {
         isFlipped={isFlipped}
         onFlip={handleFlip}
         onRate={handleNextCard}
+        t={t}
       />
     </View>
   );
@@ -241,7 +244,7 @@ export default function Study({ navigation, route }: Readonly<Props>) {
 // ======================= SUB COMPONENTS =======================
 
 // --- HEADER COMPONENT ---
-const StudyHeader = ({ insets, onBack, onUndo, canUndo, counts }: any) => (
+const StudyHeader = ({ insets, onBack, onUndo, canUndo, counts, t }: any) => (
   <View style={[styles.headerContainer, { paddingTop: insets.top }]}>
     <View style={styles.topBar}>
       <TouchableOpacity onPress={onBack} style={styles.iconBtn}>
@@ -269,13 +272,16 @@ const StudyHeader = ({ insets, onBack, onUndo, canUndo, counts }: any) => (
 
     <View style={styles.statusBarStripe}>
       <Text style={styles.statusLabel}>
-        New: <Text style={{ color: Colors.blue }}>{counts.new}</Text>
+        {t("study.newLabel")}:{" "}
+        <Text style={{ color: Colors.blue }}>{counts.new}</Text>
       </Text>
       <Text style={styles.statusLabel}>
-        Learn: <Text style={{ color: Colors.red }}>{counts.learning}</Text>
+        {t("study.learnLabel")}:{" "}
+        <Text style={{ color: Colors.red }}>{counts.learning}</Text>
       </Text>
       <Text style={styles.statusLabel}>
-        Review: <Text style={{ color: Colors.green }}>{counts.review}</Text>
+        {t("study.reviewLabel")}:{" "}
+        <Text style={{ color: Colors.green }}>{counts.review}</Text>
       </Text>
     </View>
   </View>
@@ -308,38 +314,38 @@ const FlashCard = ({
 );
 
 // --- ACTION BUTTONS COMPONENT ---
-const ActionButtons = ({ insets, isFlipped, onFlip, onRate }: any) => (
+const ActionButtons = ({ insets, isFlipped, onFlip, onRate, t }: any) => (
   <View style={[styles.bottomContainer, { paddingBottom: insets.bottom + 20 }]}>
     {isFlipped ? (
       <View style={styles.ratingContainer}>
         <RatingButton
-          label="Again"
-          time="< 1m"
+          label={t("study.again")}
+          time={t("study.time_1m")}
           color={Colors.red}
           onPress={() => onRate("again")}
         />
         <RatingButton
-          label="Hard"
-          time="2d"
+          label={t("study.hardDifficulty")}
+          time={t("study.time_2d")}
           color={Colors.gray}
           onPress={() => onRate("hard")}
         />
         <RatingButton
-          label="Good"
-          time="4d"
+          label={t("study.good")}
+          time={t("study.time_4d")}
           color={Colors.green}
           onPress={() => onRate("good")}
         />
         <RatingButton
-          label="Easy"
-          time="7d"
+          label={t("study.easy")}
+          time={t("study.time_7d")}
           color={Colors.blue}
           onPress={() => onRate("easy")}
         />
       </View>
     ) : (
       <TouchableOpacity style={styles.showAnswerBtn} onPress={onFlip}>
-        <Text style={styles.showAnswerText}>SHOW ANSWER</Text>
+        <Text style={styles.showAnswerText}>{t("study.showAnswer")}</Text>
       </TouchableOpacity>
     )}
   </View>

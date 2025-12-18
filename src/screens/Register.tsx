@@ -7,6 +7,7 @@ import {
   Platform,
   Alert,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { Colors } from "../shared/constants/Color";
 
@@ -35,26 +36,21 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState<string>("");
 
   const { register } = useAuth();
+  const { t } = useTranslation();
 
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert("Missing Information", "Please fill in all fields.");
+      Alert.alert(t("common.error"), t("auth.fillAllFields"));
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert(
-        "Weak Password",
-        "Password must be at least 8 characters long."
-      );
+      Alert.alert(t("common.error"), t("auth.passwordTooShort"));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert(
-        "Password Mismatch",
-        "The passwords you entered do not match."
-      );
+      Alert.alert(t("common.error"), t("auth.passwordMismatch"));
       return;
     }
     setLoading(true); // Bắt đầu loading
@@ -72,13 +68,13 @@ export default function Register() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <AuthHeader title="Sign up" />
+      <AuthHeader title={t("auth.signUp")} />
 
       <View style={styles.field}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>{t("auth.email")}</Text>
         <AuthInput
           icon={<Fontisto name="email" size={18} color={Colors.black} />}
-          placeholder="example@gmail.com"
+          placeholder={t("auth.emailPlaceholder")}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -87,10 +83,10 @@ export default function Register() {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Create a password</Text>
+        <Text style={styles.label}>{t("auth.newPassword")}</Text>
         <AuthInput
           icon={<Fontisto name="key" size={18} color={Colors.black} />}
-          placeholder="Must be 8 characters"
+          placeholder={t("auth.passwordPlaceholder")}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
@@ -98,10 +94,10 @@ export default function Register() {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Confirm password</Text>
+        <Text style={styles.label}>{t("auth.confirmPassword")}</Text>
         <AuthInput
           icon={<Fontisto name="key" size={18} color={Colors.black} />}
-          placeholder="Repeat password"
+          placeholder={t("auth.repeatPasswordPlaceholder")}
           secureTextEntry
           value={confirmPassword}
           onChangeText={setConfirmPassword}
@@ -109,22 +105,22 @@ export default function Register() {
       </View>
 
       <AuthButton
-        title={loading ? "Creating account..." : "Sign up"}
+        title={loading ? t("common.loading") : t("auth.signUp")}
         onPress={handleRegister}
         disabled={loading}
       />
 
       <View style={styles.dividerContainer}>
         <View style={styles.line} />
-        <Text style={styles.dividerText}>Or Register with</Text>
+        <Text style={styles.dividerText}>{t("auth.or")}</Text>
         <View style={styles.line} />
       </View>
 
       <AuthSocial />
 
       <AuthNavigate
-        text="Already have an account?"
-        linkText="Log in"
+        text={t("auth.haveAccount")}
+        linkText={t("auth.login")}
         onPress={() => navigation.navigate("Login")}
       />
     </KeyboardAvoidingView>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { StatusBar } from "expo-status-bar";
 import { View, ActivityIndicator, StyleSheet, Text } from "react-native";
 import { initDatabase, resetDatabase } from "./src/core/database";
@@ -8,15 +8,15 @@ import { NavigationContainer } from "@react-navigation/native";
 import { AuthProvider } from "./src/shared/context/AuthContext";
 import { SyncProvider } from "./src/shared/context/SyncContext";
 import RootNavigator from "./src/navigation/RootNavigator";
+import "./src/shared/i18n";
 
-// Disable Reanimated strict mode warnings
 import {
   configureReanimatedLogger,
   ReanimatedLogLevel,
 } from "react-native-reanimated";
 configureReanimatedLogger({
   level: ReanimatedLogLevel.warn,
-  strict: false, // Disable strict mode warnings
+  strict: false,
 });
 
 export default function App(): React.ReactElement {
@@ -34,7 +34,7 @@ export default function App(): React.ReactElement {
       // 🔥 UNCOMMENT dòng này để clear toàn bộ DB (chỉ dùng 1 lần)
       // await clearAllData(); // Xóa AsyncStorage (Token, Session...)
       // await resetDatabase();
-      
+
       console.log("Database initialized successfully");
       setIsDbReady(true);
     } catch (error) {

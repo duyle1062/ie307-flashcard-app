@@ -20,6 +20,7 @@ import { useAuth } from "../shared/context/AuthContext";
 import { useSync } from "../shared/context/SyncContext";
 import { useCollections, Collection } from "../features/collection";
 import { CardService } from "../features/card/services/CardService";
+import { useLanguage } from "../shared/hooks/useLanguage";
 
 type Props = CompositeScreenProps<
   DrawerScreenProps<DrawerParamList, "Home">,
@@ -29,6 +30,7 @@ type Props = CompositeScreenProps<
 export default function Home({ navigation }: Readonly<Props>) {
   const { user, logout } = useAuth();
   const { forceSync, syncStatus, checkAndSyncIfNeeded } = useSync();
+  const { t } = useLanguage();
 
   // Use custom hook for collections management
   const {
@@ -49,7 +51,7 @@ export default function Home({ navigation }: Readonly<Props>) {
    */
   const handleManualSync = async () => {
     if (!user) {
-      Alert.alert("Error", "User not authenticated");
+      Alert.alert(t("common.error"), t("alerts.userNotAuthenticated"));
       return;
     }
 
@@ -64,18 +66,21 @@ export default function Home({ navigation }: Readonly<Props>) {
 
       if (result?.success) {
         Alert.alert(
-          "Sync Complete",
-          `Synced ${result.pushedCount} local changes and pulled ${result.pulledCount} updates from cloud`
+          t("alerts.syncComplete"),
+          t("alerts.syncInfo", {
+            pushedCount: result.pushedCount,
+            pulledCount: result.pulledCount,
+          })
         );
       } else if (result) {
         Alert.alert(
-          "Sync Failed",
-          result.errors.length > 0 ? result.errors[0] : "Unknown error"
+          t("alerts.syncFailed"),
+          result.errors.length > 0 ? result.errors[0] : t("alerts.unknownError")
         );
       }
     } catch (error) {
       console.error("Error during manual sync:", error);
-      Alert.alert("Sync Error", "Failed to sync data");
+      Alert.alert(t("alerts.syncError"), t("alerts.failedToSyncData"));
     }
   };
 
@@ -85,7 +90,7 @@ export default function Home({ navigation }: Readonly<Props>) {
   const handleCreateCollection = async (name: string) => {
     const success = await createCollectionHook(name);
     if (success) {
-      Alert.alert("Success", `Collection "${name}" created successfully`);
+      Alert.alert(t("common.success"), t("collection.createSuccess"));
     }
   };
 
@@ -98,7 +103,7 @@ export default function Home({ navigation }: Readonly<Props>) {
   ) => {
     const success = await deleteCollectionHook(collectionId);
     if (success) {
-      Alert.alert("Success", `Collection "${collectionName}" deleted`);
+      Alert.alert(t("common.success"), t("collection.deleteSuccess"));
     }
   };
 
@@ -128,7 +133,7 @@ export default function Home({ navigation }: Readonly<Props>) {
     back: string;
   }) => {
     if (!user) {
-      Alert.alert("Error", "User not authenticated");
+      Alert.alert(t("common.error"), t("alerts.userNotAuthenticated"));
       return;
     }
 
@@ -145,11 +150,11 @@ export default function Home({ navigation }: Readonly<Props>) {
         // ✅ Check if queue threshold reached and auto-sync if needed
         await checkAndSyncIfNeeded();
 
-        Alert.alert("Success", "Card created successfully");
+        Alert.alert(t("common.success"), t("card.createSuccess"));
       }
     } catch (error) {
       console.error("Error creating card:", error);
-      Alert.alert("Error", "Failed to create card");
+      Alert.alert(t("common.error"), t("alerts.failedToCreateCard"));
     }
   };
 
@@ -184,12 +189,14 @@ export default function Home({ navigation }: Readonly<Props>) {
     if (!selectedCollection) return;
 
     Alert.alert(
-      "Delete Collection",
-      `Are you sure you want to delete "${selectedCollection.title}"?`,
+      t("alerts.deleteCollection"),
+      t("alerts.deleteCollectionConfirm", {
+        collectionName: selectedCollection.title,
+      }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("common.delete"),
           style: "destructive",
           onPress: () => {
             handleDeleteCollection(
@@ -248,7 +255,7 @@ export default function Home({ navigation }: Readonly<Props>) {
         />
       ) : (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No collection found</Text>
+          <Text style={styles.emptyText}>{t("home.noCollections")}</Text>
         </View>
       )}
 

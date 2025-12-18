@@ -9,6 +9,7 @@ import {
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { Colors } from "../shared/constants/Color";
 
@@ -34,6 +35,7 @@ const Header: React.FC<HeaderProps> = ({
   pendingChanges = 0,
 }) => {
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   // Animation for pulse effect
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -72,14 +74,14 @@ const Header: React.FC<HeaderProps> = ({
   const handleRefreshLongPress = () => {
     if (pendingChanges > 0) {
       Alert.alert(
-        "Pending Changes",
-        `You have ${pendingChanges} change${
-          pendingChanges > 1 ? "s" : ""
-        } waiting to sync.\n\nTap to sync now!`,
+        t("components.pendingChanges"),
+        `You have ${pendingChanges} ${t("components.waitingToSync")}\n\n${t(
+          "components.tapToSync"
+        )}`,
         [{ text: "OK" }]
       );
     } else {
-      Alert.alert("All Synced", "All your changes are synced to cloud", [
+      Alert.alert(t("components.allSynced"), t("components.allChangesSynced"), [
         { text: "OK" },
       ]);
     }

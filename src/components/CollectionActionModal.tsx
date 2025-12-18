@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableWithoutFeedback,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import Feather from "@expo/vector-icons/Feather";
 
@@ -36,6 +37,7 @@ const CollectionActionModal: React.FC<CollectionActionModalProps> = ({
   onExport,
   onDelete,
 }) => {
+  const { t } = useTranslation();
   if (!collection) return null;
 
   const ActionItem = ({
@@ -77,7 +79,9 @@ const CollectionActionModal: React.FC<CollectionActionModalProps> = ({
                 <Text style={styles.collectionTitle} numberOfLines={1}>
                   {collection.title}
                 </Text>
-                <Text style={styles.subText}>Select an action</Text>
+                <Text style={styles.subText}>
+                  {t("collection.selectAction")}
+                </Text>
               </View>
 
               <View style={styles.divider} />
@@ -90,28 +94,28 @@ const CollectionActionModal: React.FC<CollectionActionModalProps> = ({
                     color={Colors.primary}
                   />
                 }
-                label="Add card"
+                label={t("collection.addCard")}
                 onPress={onAddCard}
               />
               <ActionItem
                 icon={
                   <Feather name="layers" size={20} color={Colors.primary} />
                 }
-                label="View all cards"
+                label={t("collection.viewAllCards")}
                 onPress={onViewCards}
               />
               <ActionItem
                 icon={
                   <Feather name="edit-2" size={20} color={Colors.primary} />
                 }
-                label="Rename"
+                label={t("collection.rename")}
                 onPress={onRename}
               />
               <ActionItem
                 icon={
                   <Feather name="download" size={20} color={Colors.primary} />
                 }
-                label="Export collection (.csv)"
+                label={t("collection.exportCollection")}
                 onPress={onExport}
               />
 
@@ -119,7 +123,7 @@ const CollectionActionModal: React.FC<CollectionActionModalProps> = ({
 
               <ActionItem
                 icon={<Feather name="trash-2" size={20} color={Colors.red} />}
-                label="Delete collection"
+                label={t("collection.deleteCollection")}
                 onPress={onDelete}
                 isDestructive
               />

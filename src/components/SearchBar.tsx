@@ -1,4 +1,5 @@
 import { View, TextInput, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import Feather from "@expo/vector-icons/Feather";
 
@@ -11,12 +12,14 @@ interface SearchBarProps {
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ value, onChangeText }) => {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.searchBar}>
       <Feather name="search" size={18} color={Colors.gray} />
       <TextInput
         style={styles.searchInput}
-        placeholder="Search"
+        placeholder={t("common.search")}
         placeholderTextColor={Colors.gray}
         value={value}
         onChangeText={onChangeText}

@@ -1,4 +1,5 @@
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import Feather from "@expo/vector-icons/Feather";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -20,6 +21,7 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
   onAccountPress,
   onChangePassword,
 }) => {
+  const { t } = useTranslation();
   return (
     <Modal
       visible={visible}
@@ -41,7 +43,7 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
             }}
           >
             <Feather name="user" size={18} color={Colors.black} />
-            <Text style={styles.menuText}>Account</Text>
+            <Text style={styles.menuText}>{t("components.account")}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -52,7 +54,7 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
             }}
           >
             <AntDesign name="lock" size={18} color={Colors.black} />
-            <Text style={styles.menuText}>Change Password</Text>
+            <Text style={styles.menuText}>{t("auth.changePassword")}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -63,7 +65,7 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
             }}
           >
             <AntDesign name="logout" size={18} color={Colors.black} />
-            <Text style={styles.menuText}>Sign Out</Text>
+            <Text style={styles.menuText}>{t("components.signOut")}</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>

@@ -11,6 +11,7 @@ import {
   ScrollView,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import AntDesign from "@expo/vector-icons/AntDesign";
 
@@ -40,6 +41,7 @@ const CreateCardSheet: React.FC<Props> = ({
   onCreate,
   collections: externalCollections,
 }) => {
+  const { t } = useTranslation();
   const mockCollections: Collection[] = [
     { id: "1", name: "N3" },
     { id: "2", name: "N2" },
@@ -92,7 +94,7 @@ const CreateCardSheet: React.FC<Props> = ({
             <TouchableOpacity onPress={handleClose} style={styles.backButton}>
               <AntDesign name="left" size={24} color={Colors.title} />
             </TouchableOpacity>
-            <Text style={styles.title}>Create Card</Text>
+            <Text style={styles.title}>{t("card.createCard")}</Text>
             <View style={{ width: 40 }} />
           </View>
 
@@ -103,7 +105,7 @@ const CreateCardSheet: React.FC<Props> = ({
           >
             <View style={styles.formCard}>
               <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Card Collections</Text>
+                <Text style={styles.label}>{t("collection.title")}</Text>
                 <TouchableOpacity
                   style={styles.dropdownButton}
                   onPress={() => setShowDropdown(!showDropdown)}
@@ -114,7 +116,8 @@ const CreateCardSheet: React.FC<Props> = ({
                       !selectedCollection && styles.placeholder,
                     ]}
                   >
-                    {selectedCollection?.name || "Choose a collection"}
+                    {selectedCollection?.name ||
+                      t("components.chooseCollection")}
                   </Text>
                   <AntDesign
                     name={showDropdown ? "up" : "down"}
@@ -142,7 +145,7 @@ const CreateCardSheet: React.FC<Props> = ({
               </View>
 
               <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Front Text</Text>
+                <Text style={styles.label}>{t("components.frontText")}</Text>
                 <TextInput
                   style={styles.textInput}
                   placeholder="Example: 漢字"
@@ -155,7 +158,7 @@ const CreateCardSheet: React.FC<Props> = ({
               </View>
 
               <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Back Text</Text>
+                <Text style={styles.label}>{t("components.backText")}</Text>
                 <TextInput
                   style={styles.textInput}
                   placeholder="Ví dụ: Hán tự"
@@ -175,7 +178,9 @@ const CreateCardSheet: React.FC<Props> = ({
                 onPress={handleCreate}
                 disabled={!canCreate}
               >
-                <Text style={styles.createButtonText}>Create</Text>
+                <Text style={styles.createButtonText}>
+                  {t("common.confirm")}
+                </Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

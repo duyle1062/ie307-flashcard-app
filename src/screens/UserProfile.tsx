@@ -22,10 +22,12 @@ import { Shadows } from "../shared/constants/Shadow";
 import DottedBackground from "@/components/DottedBackground";
 
 import { useUserProfile } from "../features/user";
+import { useLanguage } from "../shared/hooks/useLanguage";
 
 export default function UserProfile() {
   const navigation = useNavigation();
-  
+  const { t } = useLanguage();
+
   // Use custom hook for user profile management
   const { userData, isLoading, isUpdating, updateProfile } = useUserProfile();
 
@@ -51,11 +53,11 @@ export default function UserProfile() {
 
   const handleUpdateProfile = async () => {
     if (!userData) {
-      Alert.alert("Error", "User data not available");
+      Alert.alert(t("common.error"), "User data not available");
       return;
     }
     if (!name.trim()) {
-      Alert.alert("Error", "Name cannot be empty");
+      Alert.alert(t("common.error"), "Name cannot be empty");
       return;
     }
     await updateProfile(name, userData.picture);
@@ -66,7 +68,7 @@ export default function UserProfile() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Loading user data...</Text>
+          <Text style={styles.loadingText}>{t("common.loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -79,7 +81,7 @@ export default function UserProfile() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <AntDesign name="arrow-left" size={24} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>User Information</Text>
+        <Text style={styles.headerTitle}>{t("profile.title")}</Text>
         <View style={{ width: 100 }} />
       </View>
 
@@ -97,23 +99,23 @@ export default function UserProfile() {
 
               <View style={styles.streakContainer}>
                 <Text style={styles.streakLabel}>
-                  Streak: {streakDays} days
+                  {t("profile.streak")}: {streakDays}
                 </Text>
                 <AntDesign name="fire" size={24} color="orange" />
               </View>
             </View>
 
             {/* Form Fields */}
-            <Text style={styles.label}>Name</Text>
+            <Text style={styles.label}>{t("profile.username")}</Text>
             <TextInput
               style={styles.input}
               value={name}
               onChangeText={setName}
-              placeholder="Enter your name"
+              placeholder={t("profile.username")}
               editable={!isUpdating}
             />
 
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>{t("profile.email")}</Text>
             <TextInput
               style={[styles.input, styles.disabledInput]}
               value={email}
@@ -160,7 +162,7 @@ export default function UserProfile() {
           {isUpdating ? (
             <ActivityIndicator size="small" color={Colors.white} />
           ) : (
-            <Text style={styles.updateButtonText}>UPDATE</Text>
+            <Text style={styles.updateButtonText}>{t("common.save")}</Text>
           )}
         </TouchableOpacity>
       </View>

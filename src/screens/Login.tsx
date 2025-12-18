@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 
 import { Colors } from "../shared/constants/Color";
 
@@ -26,14 +27,12 @@ export default function Login() {
   const [password, setPassword] = useState<string>("");
 
   const { login } = useAuth();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert(
-        "Missing Information",
-        "Please enter both email and password."
-      );
+      Alert.alert(t("common.error"), t("auth.emailRequired"));
       return;
     }
 
@@ -44,23 +43,23 @@ export default function Login() {
 
   return (
     <View style={styles.container}>
-      <AuthHeader title="Log in" />
+      <AuthHeader title={t("auth.login")} />
 
       <View style={styles.field}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>{t("auth.email")}</Text>
         <AuthInput
           icon={<Fontisto name="email" size={18} color={Colors.black} />}
-          placeholder="Email address"
+          placeholder={t("auth.loginEmailPlaceholder")}
           value={email}
           onChangeText={setEmail}
         />
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Password</Text>
+        <Text style={styles.label}>{t("auth.password")}</Text>
         <AuthInput
           icon={<Fontisto name="key" size={18} color={Colors.black} />}
-          placeholder="Password"
+          placeholder={t("auth.loginPasswordPlaceholder")}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
@@ -71,26 +70,28 @@ export default function Login() {
         style={styles.forgotPassword}
         // onPress={() => navigation.navigate("ForgotPassword")}
       >
-        <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+        <Text style={styles.forgotPasswordText}>
+          {t("auth.forgotPassword")}
+        </Text>
       </TouchableOpacity>
 
       <AuthButton
-        title={loading ? "Logging in..." : "Log in"}
+        title={loading ? t("common.loading") : t("auth.login")}
         onPress={handleLogin}
         disabled={loading}
       />
 
       <View style={styles.dividerContainer}>
         <View style={styles.line} />
-        <Text style={styles.dividerText}>Or Login with</Text>
+        <Text style={styles.dividerText}>{t("auth.or")}</Text>
         <View style={styles.line} />
       </View>
 
       <AuthSocial />
 
       <AuthNavigate
-        text="Don't have an account?"
-        linkText="Sign up"
+        text={t("auth.noAccount")}
+        linkText={t("auth.signUp")}
         onPress={() => navigation.navigate("Register")}
       />
     </View>

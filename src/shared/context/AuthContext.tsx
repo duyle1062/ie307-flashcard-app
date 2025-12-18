@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { Alert } from "react-native";
+import i18n from "../i18n";
 import { toFirestoreData } from "../../core/utils/mapper";
 import {
   createUserWithEmailAndPassword,
@@ -92,11 +93,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       return true;
     } catch (error: any) {
-      let msg = "Registration failed";
+      let msg = i18n.t("auth.registrationFailed");
       if (error.code === "auth/email-already-in-use")
-        msg = "Email already in use.";
-      if (error.code === "auth/weak-password") msg = "Password is too weak.";
-      Alert.alert("Error", msg);
+        msg = i18n.t("auth.emailAlreadyInUse");
+      if (error.code === "auth/weak-password")
+        msg = i18n.t("auth.passwordTooWeak");
+      Alert.alert(i18n.t("common.error"), msg);
       return false;
     }
   };
@@ -140,7 +142,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       return true;
     } catch (error: any) {
-      Alert.alert("Login Failed", "Incorrect email or password.");
+      Alert.alert(
+        i18n.t("auth.loginFailed"),
+        i18n.t("auth.incorrectCredentials")
+      );
       return false;
     }
   };

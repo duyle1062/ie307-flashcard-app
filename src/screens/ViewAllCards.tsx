@@ -10,6 +10,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Card } from "../shared/types";
@@ -102,6 +103,7 @@ export default function ViewAllCards({
   navigation,
 }: Readonly<ViewAllCardsProps>) {
   const { collectionId, collectionTitle } = route.params;
+  const { t } = useTranslation();
 
   // Use custom hook for cards management
   const {
@@ -173,7 +175,7 @@ export default function ViewAllCards({
   const handleDeleteCard = async (cardId: string) => {
     const success = await deleteCardHook(cardId);
     if (success) {
-      Alert.alert("Success", "Card deleted successfully");
+      Alert.alert(t("common.success"), t("card.deleteSuccess"));
     }
   };
 
@@ -203,7 +205,7 @@ export default function ViewAllCards({
         back: editBack.trim(),
       });
       setDetailsModalVisible(false);
-      Alert.alert("Success", "Card updated successfully");
+      Alert.alert(t("common.success"), t("card.updateSuccess"));
     }
   };
 
@@ -261,20 +263,16 @@ export default function ViewAllCards({
       <View style={styles.cardActions}>
         <TouchableOpacity
           onPress={() => {
-            Alert.alert(
-              "Delete Card",
-              "Are you sure you want to delete this card?",
-              [
-                { text: "Cancel", style: "cancel" },
-                {
-                  text: "Delete",
-                  style: "destructive",
-                  onPress: () => {
-                    handleDeleteCard(item.id);
-                  },
+            Alert.alert(t("card.deleteCard"), t("card.deleteCardConfirm"), [
+              { text: t("common.cancel"), style: "cancel" },
+              {
+                text: t("common.delete"),
+                style: "destructive",
+                onPress: () => {
+                  handleDeleteCard(item.id);
                 },
-              ]
-            );
+              },
+            ]);
           }}
           style={styles.actionBtn}
         >
@@ -307,7 +305,7 @@ export default function ViewAllCards({
         />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search cards..."
+          placeholder={t("card.searchPlaceholder")}
           placeholderTextColor={Colors.gray}
           value={searchText}
           onChangeText={setSearchText}
@@ -337,10 +335,10 @@ export default function ViewAllCards({
               ]}
             >
               {sort === "due_date"
-                ? "Due Date"
+                ? t("card.sortByDueDate")
                 : sort === "created"
-                ? "Created"
-                : "Status"}
+                ? t("card.sortByCreated")
+                : t("card.sortByStatus")}
             </Text>
           </TouchableOpacity>
         ))}
@@ -356,7 +354,7 @@ export default function ViewAllCards({
             style={{ marginBottom: 12 }}
           />
           <Text style={styles.emptyText}>
-            {searchText ? "No cards found" : "No cards"}
+            {searchText ? t("card.noCardsFound") : t("card.noCards")}
           </Text>
         </View>
       ) : (
@@ -413,7 +411,9 @@ export default function ViewAllCards({
               <View style={{ flex: 1 }}>
                 {/* Header */}
                 <View style={styles.detailsHeader}>
-                  <Text style={styles.detailsTitle}>Card Details</Text>
+                  <Text style={styles.detailsTitle}>
+                    {t("card.cardDetails")}
+                  </Text>
                   <TouchableOpacity
                     onPress={() => setDetailsModalVisible(false)}
                   >
@@ -429,7 +429,9 @@ export default function ViewAllCards({
                 >
                   {/* Front Field */}
                   <View style={styles.detailSection}>
-                    <Text style={styles.detailLabel}>Front</Text>
+                    <Text style={styles.detailLabel}>
+                      {t("card.frontText")}
+                    </Text>
                     <TextInput
                       style={styles.editFieldInput}
                       value={editFront}
@@ -437,13 +439,13 @@ export default function ViewAllCards({
                       multiline
                       maxLength={500}
                       placeholderTextColor={Colors.gray}
-                      placeholder="Enter front text"
+                      placeholder={t("card.enterFront")}
                     />
                   </View>
 
                   {/* Back Field */}
                   <View style={styles.detailSection}>
-                    <Text style={styles.detailLabel}>Back</Text>
+                    <Text style={styles.detailLabel}>{t("card.backText")}</Text>
                     <TextInput
                       style={styles.editFieldInput}
                       value={editBack}
@@ -451,18 +453,20 @@ export default function ViewAllCards({
                       multiline
                       maxLength={500}
                       placeholderTextColor={Colors.gray}
-                      placeholder="Enter back text"
+                      placeholder={t("card.enterBack")}
                     />
                   </View>
 
                   {/* Stats Section */}
                   <View style={styles.statsSection}>
                     <Text style={styles.statsSectionTitle}>
-                      Card Statistics
+                      {t("card.cardStatistics")}
                     </Text>
                     <View style={styles.statsGrid}>
                       <View style={styles.statBox}>
-                        <Text style={styles.statLabel}>Status</Text>
+                        <Text style={styles.statLabel}>
+                          {t("card.statusLabel")}
+                        </Text>
                         <View
                           style={[
                             styles.statusBadge,
@@ -479,19 +483,27 @@ export default function ViewAllCards({
                         </View>
                       </View>
                       <View style={styles.statBox}>
-                        <Text style={styles.statLabel}>Due Date</Text>
+                        <Text style={styles.statLabel}>
+                          {t("card.dueDate")}
+                        </Text>
                         <Text style={styles.statValue}>
                           {formatDate(detailsCard.due_date)}
                         </Text>
                       </View>
                       <View style={styles.statBox}>
-                        <Text style={styles.statLabel}>Interval</Text>
+                        <Text style={styles.statLabel}>
+                          {t("card.intervalLabel")}
+                        </Text>
                         <Text style={styles.statValue}>
-                          {detailsCard.interval} days
+                          {t("card.daysInterval", {
+                            count: detailsCard.interval,
+                          })}
                         </Text>
                       </View>
                       <View style={styles.statBox}>
-                        <Text style={styles.statLabel}>Ease Factor</Text>
+                        <Text style={styles.statLabel}>
+                          {t("card.easeFactorLabel")}
+                        </Text>
                         <Text style={styles.statValue}>
                           {detailsCard.ef.toFixed(2)}
                         </Text>
@@ -506,7 +518,9 @@ export default function ViewAllCards({
                     style={styles.updateButton}
                     onPress={handleUpdateCard}
                   >
-                    <Text style={styles.updateButtonText}>Update</Text>
+                    <Text style={styles.updateButtonText}>
+                      {t("card.update")}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </View>
