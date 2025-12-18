@@ -9,6 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  FlatList,
+  Keyboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -22,7 +24,6 @@ interface Collection {
   name: string;
 }
 
-// sau này thay để truyền data thật vào
 interface Props {
   visible: boolean;
   onClose: () => void;
@@ -41,12 +42,20 @@ const CreateCardSheet: React.FC<Props> = ({
   collections: externalCollections,
 }) => {
   const mockCollections: Collection[] = [
-    { id: "1", name: "N3" },
-    { id: "2", name: "N2" },
-    { id: "3", name: "N1" },
+    { id: "1", name: "N5" },
+    { id: "2", name: "N4" },
+    { id: "3", name: "N3" },
+    { id: "4", name: "N2" },
+    { id: "5", name: "N1" },
+    { id: "6", name: "TOEIC Part 5" },
+    { id: "7", name: "English Phrasal Verbs" },
+    { id: "8", name: "Medical Terms" },
+    { id: "9", name: "Programming Concepts" },
+    { id: "10", name: "History Dates" },
+    { id: "11", name: "Geography Capitals" },
+    { id: "12", name: "Math Formulas" },
   ];
 
-  // Ưu tiên dùng data từ props, nếu không có thì dùng mock
   const collections =
     externalCollections && externalCollections.length > 0
       ? externalCollections
@@ -56,7 +65,7 @@ const CreateCardSheet: React.FC<Props> = ({
     useState<Collection | null>(null);
   const [frontText, setFrontText] = useState("");
   const [backText, setBackText] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [showCollectionPopup, setShowCollectionPopup] = useState(false);
 
   const canCreate = selectedCollection && frontText.trim() && backText.trim();
 
@@ -75,122 +84,183 @@ const CreateCardSheet: React.FC<Props> = ({
     setSelectedCollection(null);
     setFrontText("");
     setBackText("");
-    setShowDropdown(false);
+    setShowCollectionPopup(false);
     onClose();
+  };
+
+  const handleSelectCollection = (collection: Collection) => {
+    setSelectedCollection(collection);
+    setShowCollectionPopup(false);
   };
 
   if (!visible) return null;
 
   return (
-    <Modal visible={visible} animationType="slide" onRequestClose={handleClose}>
-      <SafeAreaView style={styles.container}>
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <View style={styles.header}>
-            <TouchableOpacity onPress={handleClose} style={styles.backButton}>
-              <AntDesign name="left" size={24} color={Colors.title} />
-            </TouchableOpacity>
-            <Text style={styles.title}>Create Card</Text>
-            <View style={{ width: 40 }} />
-          </View>
-
-          <ScrollView
-            contentContainerStyle={styles.scrollContent}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+    <>
+      <Modal
+        visible={visible}
+        animationType="slide"
+        onRequestClose={handleClose}
+      >
+        <SafeAreaView style={styles.container}>
+          <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === "ios" ? "padding" : "height"}
           >
-            <View style={styles.formCard}>
-              <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Card Collections</Text>
-                <TouchableOpacity
-                  style={styles.dropdownButton}
-                  onPress={() => setShowDropdown(!showDropdown)}
-                >
-                  <Text
-                    style={[
-                      styles.dropdownText,
-                      !selectedCollection && styles.placeholder,
-                    ]}
-                  >
-                    {selectedCollection?.name || "Choose a collection"}
-                  </Text>
-                  <AntDesign
-                    name={showDropdown ? "up" : "down"}
-                    size={20}
-                    color={Colors.subText}
-                  />
-                </TouchableOpacity>
-
-                {showDropdown && (
-                  <View style={styles.dropdownList}>
-                    {collections.map((col) => (
-                      <TouchableOpacity
-                        key={col.id}
-                        style={styles.dropdownItem}
-                        onPress={() => {
-                          setSelectedCollection(col);
-                          setShowDropdown(false);
-                        }}
-                      >
-                        <Text style={styles.dropdownItemText}>{col.name}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              </View>
-
-              <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Front Text</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Example: 漢字"
-                  placeholderTextColor={Colors.gray}
-                  value={frontText}
-                  onChangeText={setFrontText}
-                  multiline
-                  textAlignVertical="top"
-                />
-              </View>
-
-              <View style={styles.fieldContainer}>
-                <Text style={styles.label}>Back Text</Text>
-                <TextInput
-                  style={styles.textInput}
-                  placeholder="Ví dụ: Hán tự"
-                  placeholderTextColor={Colors.gray}
-                  value={backText}
-                  onChangeText={setBackText}
-                  multiline
-                  textAlignVertical="top"
-                />
-              </View>
-
-              <TouchableOpacity
-                style={[
-                  styles.createButton,
-                  !canCreate && styles.createButtonDisabled,
-                ]}
-                onPress={handleCreate}
-                disabled={!canCreate}
-              >
-                <Text style={styles.createButtonText}>Create</Text>
+            <View style={styles.header}>
+              <TouchableOpacity onPress={handleClose} style={styles.backButton}>
+                <AntDesign name="left" size={24} color={Colors.title} />
               </TouchableOpacity>
+              <Text style={styles.title}>Create Card</Text>
+              <View style={{ width: 40 }} />
             </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </SafeAreaView>
-    </Modal>
+
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <View style={styles.formCard}>
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Card Collection</Text>
+                  <TouchableOpacity
+                    style={styles.cardCollection}
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      setShowCollectionPopup(true);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.collectionText,
+                        !selectedCollection && styles.placeholder,
+                      ]}
+                    >
+                      {selectedCollection?.name || "Choose a collection"}
+                    </Text>
+                    <AntDesign
+                      name={showCollectionPopup ? "down" : "right"}
+                      size={18}
+                      color={Colors.title}
+                    />
+                  </TouchableOpacity>
+                </View>
+
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Front Text</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Example: 漢字"
+                    placeholderTextColor={Colors.gray}
+                    value={frontText}
+                    onChangeText={setFrontText}
+                    multiline
+                    textAlignVertical="top"
+                  />
+                </View>
+
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>Back Text</Text>
+                  <TextInput
+                    style={styles.textInput}
+                    placeholder="Example: Hán tự"
+                    placeholderTextColor={Colors.gray}
+                    value={backText}
+                    onChangeText={setBackText}
+                    multiline
+                    textAlignVertical="top"
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={[
+                    styles.createButton,
+                    !canCreate && styles.createButtonDisabled,
+                  ]}
+                  onPress={handleCreate}
+                  disabled={!canCreate}
+                >
+                  <Text style={styles.createButtonText}>Create</Text>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>
+        </SafeAreaView>
+      </Modal>
+
+      <Modal
+        visible={showCollectionPopup}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCollectionPopup(false)}
+      >
+        <TouchableOpacity
+          activeOpacity={1}
+          style={styles.popupOverlay}
+          onPress={() => setShowCollectionPopup(false)}
+        >
+          <TouchableWithoutFeedback>
+            <View style={styles.popupContainer}>
+              <View style={styles.popupHeader}>
+                <Text style={styles.popupTitle}>Select Collection</Text>
+                <TouchableOpacity
+                  onPress={() => setShowCollectionPopup(false)}
+                  style={styles.closePopupButton}
+                >
+                  <AntDesign name="close" size={24} color={Colors.title} />
+                </TouchableOpacity>
+              </View>
+
+              <FlatList
+                data={collections}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.popupItem,
+                      item.id === selectedCollection?.id &&
+                        styles.popupItemSelected,
+                    ]}
+                    onPress={() => handleSelectCollection(item)}
+                  >
+                    <Text
+                      style={[
+                        styles.popupItemText,
+                        item.id === selectedCollection?.id &&
+                          styles.popupItemTextSelected,
+                      ]}
+                    >
+                      {item.name}
+                    </Text>
+                    {item.id === selectedCollection?.id && (
+                      <AntDesign
+                        name="check"
+                        size={20}
+                        color={Colors.primary}
+                      />
+                    )}
+                  </TouchableOpacity>
+                )}
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={{ paddingBottom: 20 }}
+                ItemSeparatorComponent={() => <View style={styles.separator} />}
+              />
+            </View>
+          </TouchableWithoutFeedback>
+        </TouchableOpacity>
+      </Modal>
+    </>
   );
 };
+
+import { TouchableWithoutFeedback } from "react-native";
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
   },
-
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -199,12 +269,11 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+    backgroundColor: Colors.white,
   },
-
   backButton: {
     padding: 8,
   },
-
   title: {
     fontSize: 20,
     fontWeight: "700",
@@ -215,31 +284,26 @@ const styles = StyleSheet.create({
     textAlign: "center",
     zIndex: -1,
   },
-
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
   },
-
   formCard: {
     backgroundColor: Colors.white,
     borderRadius: 20,
     padding: 24,
     ...Shadows.medium,
   },
-
   fieldContainer: {
     marginBottom: 24,
   },
-
   label: {
     fontSize: 15,
     fontWeight: "600",
     color: Colors.title,
     marginBottom: 8,
   },
-
-  dropdownButton: {
+  cardCollection: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
@@ -250,36 +314,13 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     backgroundColor: Colors.background,
   },
-
-  dropdownText: {
+  collectionText: {
     fontSize: 17,
     color: Colors.title,
   },
-
   placeholder: {
     color: Colors.gray,
   },
-
-  dropdownList: {
-    marginTop: 8,
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: 14,
-    backgroundColor: Colors.white,
-    maxHeight: 200,
-    ...Shadows.light,
-  },
-
-  dropdownItem: {
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-  },
-
-  dropdownItemText: {
-    fontSize: 16,
-    color: Colors.title,
-  },
-
   textInput: {
     borderWidth: 1.5,
     borderColor: Colors.border,
@@ -288,9 +329,8 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     fontSize: 17,
     backgroundColor: Colors.background,
-    minHeight: 100,
+    minHeight: 120,
   },
-
   createButton: {
     backgroundColor: Colors.blue,
     paddingVertical: 18,
@@ -298,16 +338,70 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 12,
   },
-
   createButtonDisabled: {
     backgroundColor: Colors.blueLight,
     opacity: 0.6,
   },
-
   createButtonText: {
     color: Colors.white,
     fontSize: 18,
     fontWeight: "600",
+  },
+
+  popupOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  popupContainer: {
+    marginTop: 30,
+    width: "80%",
+    maxHeight: "50%",
+    backgroundColor: Colors.white,
+    borderRadius: 24,
+    ...Shadows.strong,
+    overflow: "hidden",
+  },
+  popupHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  popupTitle: {
+    fontSize: 19,
+    fontWeight: "700",
+    color: Colors.title,
+  },
+  closePopupButton: {
+    padding: 4,
+  },
+  popupItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+  },
+  popupItemSelected: {
+    backgroundColor: `${Colors.primary}10`,
+  },
+  popupItemText: {
+    fontSize: 17,
+    color: Colors.title,
+  },
+  popupItemTextSelected: {
+    fontWeight: "600",
+    color: Colors.primary,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginHorizontal: 20,
   },
 });
 
