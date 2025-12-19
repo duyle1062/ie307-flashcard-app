@@ -115,12 +115,12 @@ const FloatingAddButton: React.FC<Props> = ({
     setShowCardSheet(false);
   };
 
-  const overlayStyle = useAnimatedStyle(() => {
-    return {
-      opacity: interpolate(isOpen.value, [0, 1], [0, 0.5]),
-      pointerEvents: isOpen.value > 0 || showCollectionSheet || showCardSheet ? "auto" : "none",
-    };
-  });
+  const shouldShowOverlay = () =>
+    isOpen.value > 0 || showCollectionSheet || showCardSheet;
+
+  const overlayOpacity = useAnimatedStyle(() => ({
+    opacity: interpolate(isOpen.value, [0, 1], [0, 0.5]),
+  }));
 
   const fabRotation = useAnimatedStyle(() => ({
     transform: [{ rotate: `${isOpen.value * 135}deg` }],
@@ -128,16 +128,18 @@ const FloatingAddButton: React.FC<Props> = ({
 
   return (
     <>
-      <Animated.View
-        style={[styles.overlay, overlayStyle]}
-        pointerEvents="box-none"
-      >
-        <TouchableOpacity
-          activeOpacity={1}
-          style={StyleSheet.absoluteFill}
-          onPress={closeAll}
-        />
-      </Animated.View>
+      {shouldShowOverlay() && (
+        <Animated.View
+          style={[styles.overlay, overlayOpacity]}
+          pointerEvents="auto"
+        >
+          <TouchableOpacity
+            activeOpacity={1}
+            style={StyleSheet.absoluteFill}
+            onPress={closeAll}
+          />
+        </Animated.View>
+      )}
 
       <CreateCollectionSheet
         visible={showCollectionSheet}
