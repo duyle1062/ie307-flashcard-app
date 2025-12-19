@@ -5,6 +5,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { Alert } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import { CollectionService } from "../services/CollectionService";
 import { getCardsByStatus } from "../../../core/database/repositories/CardRepository";
 import { useSync } from "../../sync/hooks";
@@ -41,29 +42,10 @@ export const useCollections = (): UseCollectionsReturn => {
 
     try {
       setIsLoading(true);
-      const dbCollections = await CollectionService.getCollectionsByUserId(
-        user.uid
-      );
-
-      // Transform to UI format with actual card counts by status
-      const transformedCollections: Collection[] = await Promise.all(
-        dbCollections.map(async (col) => {
-          // Get cards for each collection and count by status
-          const newCards = await getCardsByStatus("new", col.id);
-          const learningCards = await getCardsByStatus("learning", col.id);
-          const reviewCards = await getCardsByStatus("review", col.id);
-
-          return {
-            id: col.id,
-            title: col.name,
-            new: newCards.length,
-            learning: learningCards.length,
-            review: reviewCards.length,
-          };
-        })
-      );
-
-      setCollections(transformedCollections);
+      
+      const data = await CollectionService.getCollections(user.uid);
+      
+      setCollections(data);
     } catch (error) {
       console.error("Error loading collections:", error);
       Alert.alert("Error", "Failed to load collections");
@@ -159,10 +141,16 @@ export const useCollections = (): UseCollectionsReturn => {
     await loadCollections();
   }, [loadCollections]);
 
-  // Load collections on mount and when user changes
-  useEffect(() => {
-    loadCollections();
-  }, [loadCollections]);
+  // ❌ REMOVED: useEffect load on mount (causes duplicate with useFocusEffect)
+  // Chỉ dùng useFocusEffect để load collections khi screen được focus
+  // Điều này tránh duplicate Firestore reads khi component mount
+
+  // Refresh collections khi màn hình được focus (ví dụ: quay về từ Study)
+  useFocusEffect(
+    useCallback(() => {
+      loadCollections();
+    }, [loadCollections])
+  );
 
   return {
     collections,

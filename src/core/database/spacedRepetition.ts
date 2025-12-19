@@ -6,190 +6,188 @@ import {
 } from "./repositories/ReviewRepository";
 import { getDueCards, getNewCards } from "./repositories/CardRepository";
 import { Card, CardStatus, StudyQueue, DailyLimits } from "./types";
+import { executeQuery } from "./database";
 
-/**
- * Spaced Repetition System (SM-2 Algorithm)
- * Implements the SuperMemo-2 algorithm for optimal card scheduling
- *
- * Rating system:
- * 1 - Again (wrong): Reset card, show again soon
- * 2 - Hard (barely remembered): Reduce interval slightly
- * 3 - Good (correct with effort): Normal progression
- * 4 - Easy (perfect recall): Increase interval significantly
- *
- * Status transitions:
- * new -> learning (after first review)
- * learning -> learning (if rating < 3)
- * learning -> review (if rating >= 3 and interval >= 1 day)
- * review -> review (continue with longer intervals)
- * review -> learning (if rating = 1, reset)
- */
-
-/**
- * Calculate new interval based on SM-2 algorithm
- */
-const calculateInterval = (
-  oldInterval: number,
-  ef: number,
-  rating: number
-): number => {
-  if (rating === 1) {
-    // Again - reset to 0 (will be shown in learning queue)
-    return 0;
-  }
-
-  if (oldInterval === 0) {
-    // First review
-    if (rating === 2) return 0.1; // 2.4 hours (hard)
-    if (rating === 3) return 0.5; // 12 hours (good)
-    if (rating === 4) return 1; // 1 day (easy)
-  }
-
-  if (oldInterval < 1) {
-    // Learning phase (< 1 day)
-    if (rating === 2) return oldInterval; // Same interval
-    if (rating === 3) return 1; // Graduate to 1 day
-    if (rating === 4) return 4; // Skip to 4 days
-  }
-
-  // Review phase (>= 1 day)
-  let newInterval: number;
-
-  if (rating === 2) {
-    // Hard - multiply by 1.2
-    newInterval = oldInterval * 1.2;
-  } else if (rating === 3) {
-    // Good - multiply by EF
-    newInterval = oldInterval * ef;
-  } else if (rating === 4) {
-    // Easy - multiply by EF * 1.3
-    newInterval = oldInterval * ef * 1.3;
-  } else {
-    newInterval = oldInterval;
-  }
-
-  // Round to nearest day
-  return Math.round(newInterval);
+// Helper: Chuyển đổi đơn vị thời gian sang hiển thị
+export const formatInterval = (interval: number): string => {
+  if (interval <= 0.02) return "1m"; // ~1 phút
+  if (interval <= 0.06) return "6m"; // ~6 phút
+  if (interval <= 0.1) return "10m"; // ~10 phút
+  if (interval < 1) return `${Math.round(interval * 24 * 60)}m`;
+  return `${Math.round(interval)}d`;
 };
 
 /**
- * Calculate new Ease Factor based on SM-2 algorithm
+ * Format interval cho button preview (hiển thị chính xác theo spec)
+ * Dùng để hiển thị trên các nút Again, Hard, Good, Easy
  */
-const calculateEaseFactor = (oldEf: number, rating: number): number => {
-  // SM-2 formula: EF' = EF + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02))
-  // Where q is quality (0-5), we map our rating (1-4) to quality (1-5)
-  const quality = rating + 1; // 1->2, 2->3, 3->4, 4->5
+export const formatIntervalForButton = (card: Card, rating: 1 | 2 | 3 | 4): string => {
+  const currentStatus = (card.status || "new") as CardStatus;
+  const interval = card.interval || 0;
+  const ef = card.ef || 2.5;
 
-  const newEf = oldEf + (0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02));
-
-  // EF should never go below 1.3
-  return Math.max(1.3, newEf);
-};
-
-/**
- * Determine new card status based on interval and rating
- */
-const calculateStatus = (
-  currentStatus: CardStatus,
-  newInterval: number,
-  rating: number
-): CardStatus => {
-  if (rating === 1) {
-    // Failed - back to learning
-    return "learning";
-  }
-
+  // NEW cards
   if (currentStatus === "new") {
-    // First review - move to learning
-    return "learning";
+    if (rating === 1) return "1m";  // Again: 1 phút
+    if (rating === 2) return "6m";  // Hard: 6 phút
+    if (rating === 3) return "10m"; // Good: 10 phút
+    if (rating === 4) return "5d";  // Easy: 5 ngày
   }
 
-  if (newInterval >= 1) {
-    // Graduated to review (1 day or more)
-    return "review";
+  // LEARNING cards
+  if (currentStatus === "learning") {
+    if (rating === 1) return "1m";  // Again: 1 phút
+    if (rating === 2) return "10m"; // Hard: 10 phút
+    if (rating === 3) return "1d";  // Good: 1 ngày
+    if (rating === 4) return "5d";  // Easy: 5 ngày
   }
 
-  // Still in learning phase
-  return "learning";
+  // REVIEW cards
+  if (currentStatus === "review") {
+    if (rating === 1) return "1m";  // Again: 1 phút (quay lại Learning)
+    if (rating === 2) {
+      // Hard: interval × 1.2
+      const newInterval = Math.round(interval * 1.2);
+      return `${newInterval}d`;
+    }
+    if (rating === 3) {
+      // Good: interval × EF
+      const newInterval = Math.round(interval * ef);
+      return `${newInterval}d`;
+    }
+    if (rating === 4) {
+      // Easy: interval × EF × 1.3
+      const newInterval = Math.round(interval * ef * 1.3);
+      return `${newInterval}d`;
+    }
+  }
+
+  return "-";
 };
 
 /**
- * Calculate due date based on current date and interval
+ * Tính toán kết quả SRS (Preview) mà không lưu DB
+ * Dùng để hiển thị lên nút bấm và xử lý logic
+ */
+export const calculateSRSResult = (card: Card, rating: 1 | 2 | 3 | 4) => {
+  const currentStatus = (card.status || "new") as CardStatus;
+  const oldInterval = card.interval || 0;
+  const oldEf = card.ef || 2.5;
+
+  let newInterval = oldInterval;
+  let newStatus: CardStatus = currentStatus;
+  let newEf = oldEf;
+
+  // --- 1. LOGIC NEW ---
+  if (currentStatus === "new") {
+    if (rating === 1) { // Again
+      newInterval = 0.02; // 1 phút (~0.02 ngày)
+      newStatus = "learning";
+    } else if (rating === 2) { // Hard
+      newInterval = 0.06; // 6 phút (~0.06 ngày)
+      newStatus = "learning";
+    } else if (rating === 3) { // Good
+      newInterval = 0.1; // 10 phút (~0.1 ngày)
+      newStatus = "learning"; // Vẫn ở LEARNING theo spec
+    } else if (rating === 4) { // Easy
+      newInterval = 5; // 5 ngày
+      newStatus = "review"; // Chỉ Easy mới chuyển sang review
+    }
+  } 
+  // --- 2. LOGIC LEARNING ---
+  else if (currentStatus === "learning") {
+    if (rating === 1) { // Again
+      newInterval = 0.02; // 1 phút
+      newStatus = "learning";
+    } else if (rating === 2) { // Hard
+      newInterval = 0.1; // 10 phút
+      newStatus = "learning";
+    } else if (rating === 3) { // Good
+      newInterval = 1; // 1 ngày -> Graduate
+      newStatus = "review";
+    } else if (rating === 4) { // Easy
+      newInterval = 5; // 5 ngày -> Graduate
+      newStatus = "review";
+    }
+  } 
+  // --- 3. LOGIC REVIEW ---
+  else if (currentStatus === "review") {
+    if (rating === 1) { // Again
+      newInterval = 0.02; // 1 phút (~0.02 ngày)
+      newStatus = "learning"; // Lapse
+      // EF giảm (bên dưới)
+    } else if (rating === 2) { // Hard
+      newInterval = oldInterval * 1.2;
+      newStatus = "review";
+    } else if (rating === 3) { // Good
+      newInterval = oldInterval * oldEf;
+      newStatus = "review";
+    } else if (rating === 4) { // Easy
+      newInterval = oldInterval * oldEf * 1.3;
+      newStatus = "review";
+    }
+
+    // Cập nhật EF (Chỉ áp dụng khi ở Review hoặc Lapse từ Review)
+    // Công thức: EF' = EF + (0.1 - (3-q)*(0.08+(3-q)*0.02))
+    // q: 1=Again, 2=Hard, 3=Good, 4=Easy
+    const modifier = (0.1 - (3 - rating) * (0.08 + (3 - rating) * 0.02));
+    newEf = Math.max(1.3, oldEf + modifier);
+  }
+
+  return { newInterval, newStatus, newEf };
+};
+
+/**
+ * Tính Due Date từ interval
  */
 const calculateDueDate = (interval: number): string => {
   const now = new Date();
-
   if (interval < 1) {
-    // For intervals less than 1 day, add hours
-    const hours = interval * 24;
-    now.setHours(now.getHours() + hours);
+    // Nếu < 1 ngày: Cộng phút (để học lại ngay trong ngày)
+    now.setMinutes(now.getMinutes() + Math.round(interval * 24 * 60));
   } else {
-    // For intervals >= 1 day, add days
-    now.setDate(now.getDate() + interval);
+    // Nếu >= 1 ngày: Cộng ngày
+    now.setDate(now.getDate() + Math.round(interval));
   }
-
-  // Return in YYYY-MM-DD format
-  return now.toISOString().split("T")[0];
+  return now.toISOString(); // Format đầy đủ để so sánh chính xác
 };
 
 /**
- * Process a card answer and update SRS fields
+ * Xử lý khi trả lời thẻ (Lưu DB)
  */
 export const onAnswer = async (
   userId: string,
   card: Card,
-  rating: number
-): Promise<Card | null> => {
+  rating: 1 | 2 | 3 | 4
+): Promise<Card> => {
   try {
-    // Validate rating
-    if (rating < 1 || rating > 4) {
-      throw new Error("Rating must be between 1 and 4");
-    }
+    // 1. Tính toán
+    const { newInterval, newStatus, newEf } = calculateSRSResult(card, rating);
+    const newDueDate = calculateDueDate(newInterval);
 
-    // Store old values for review record
-    const oldInterval = card.interval || 0;
-    const oldEf = card.ef || 2.5;
-    const oldStatus = card.status || "new";
-
-    // Calculate new values
-    const newInterval = calculateInterval(oldInterval, oldEf, rating);
-    const newEf = calculateEaseFactor(oldEf, rating);
-    const newStatus = calculateStatus(oldStatus, newInterval, rating);
-    const dueDate = calculateDueDate(newInterval);
-
-    // Update card in database
+    // 2. Cập nhật Card
     const updatedCard = await updateCardSRS(
       card.id,
       newStatus,
       newInterval,
       newEf,
-      dueDate
+      newDueDate
     );
 
-    // Create review record
-    await createReview(
-      userId,
-      card.id,
-      rating,
-      oldInterval,
-      newInterval,
-      oldEf,
-      newEf
-    );
+    // 3. Log Review
+    if (updatedCard) {
+      await createReview(
+        userId,
+        card.id,
+        rating,
+        card.interval || 0,
+        newInterval,
+        card.ef || 2.5,
+        newEf
+      );
+    }
 
-    console.log("Card answered successfully:", {
-      cardId: card.id,
-      rating,
-      oldInterval,
-      newInterval,
-      oldEf,
-      newEf,
-      oldStatus,
-      newStatus,
-      dueDate,
-    });
-
-    return updatedCard;
+    return updatedCard || card;
   } catch (error) {
     console.error("Error processing card answer:", error);
     throw error;
@@ -197,56 +195,133 @@ export const onAnswer = async (
 };
 
 /**
- * Get today's study queue with daily limits applied
+ * Tính Ease Factor (EF) mới dựa trên công thức SM-2
+ * Chỉ cập nhật khi thẻ đang ở trạng thái REVIEW
+ */
+const calculateNewEf = (oldEf: number, rating: number): number => {
+  // Công thức: EF' = EF + (0.1 - (5-q)*(0.08+(5-q)*0.02))
+  // Mapping rating của ta: 1(Again) -> q=? 
+  // Pseudo-code của bạn: EF' = EF + (0.1 - (3 - rating) * (0.08 + (3 - rating) * 0.02))
+  // Rating: 1=Again, 2=Hard, 3=Good, 4=Easy
+  
+  const modifier = (0.1 - (3 - rating) * (0.08 + (3 - rating) * 0.02));
+  const newEf = oldEf + modifier;
+  
+  // EF không bao giờ giảm dưới 1.3
+  return Math.max(1.3, newEf);
+};
+
+/**
+ * Lấy hàng đợi học tập cho ngày hôm nay
+ * Logic: Independent Queues (New limit độc lập với Review limit)
  */
 export const getTodaysQueue = async (
   userId: string,
-  dailyNewLimit: number = 25,
-  dailyReviewLimit: number = 50,
-  collectionId?: string
+  collectionId: string
 ): Promise<StudyQueue> => {
   try {
-    // Count cards already studied today
-    const newCardsStudied = await countNewCardsStudiedToday(userId);
-    const reviewCardsStudied = await countReviewCardsStudiedToday(userId);
+    const todayStr = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+    const nowISO = new Date().toISOString(); // Full timestamp cho so sánh chính xác
 
-    // Calculate remaining limits
-    const remainingNewCards = Math.max(0, dailyNewLimit - newCardsStudied);
-    const remainingReviewCards = Math.max(
-      0,
-      dailyReviewLimit - reviewCardsStudied
+    // 1. Lấy giới hạn (Settings) từ User
+    const userRes = await executeQuery(
+      "SELECT daily_new_cards_limit, daily_review_cards_limit FROM users WHERE id = ?",
+      [userId]
     );
 
-    // Get due cards (review cards)
+    if (userRes.rows.length === 0) throw new Error("User not found");
+    
+    const settings = userRes.rows.item(0);
+    const limitNew = settings.daily_new_cards_limit || 25;  // Default 25 theo spec
+    const limitReview = settings.daily_review_cards_limit || 50;
+
+    // 2. Đếm số lượng đã học hôm nay (Từ bảng reviews)
+    // ⚠️ QUAN TRỌNG: Chỉ đếm New và Review, KHÔNG đếm Learning
+    // Learning là KẾT QUẢ của việc học New/Review, không phải input
+    const countNewDone = await countNewCardsStudiedToday(userId);
+    const countReviewDone = await countReviewCardsStudiedToday(userId);
+
+    // 3. Tính Quota còn lại
+    // New limit: Giới hạn số new cards được giới thiệu
+    // Review limit: Giới hạn số review cards due
+    // Learning: KHÔNG GIỚI HẠN (theo chuẩn Anki)
+    const remainingNew = Math.max(0, limitNew - countNewDone);
+    const remainingReview = Math.max(0, limitReview - countReviewDone);
+
+    // 4. Query lấy thẻ
     let reviewCards: Card[] = [];
-    if (remainingReviewCards > 0) {
-      const allDueCards = await getDueCards(collectionId);
-      // Filter out new cards (only want cards with interval > 0)
-      reviewCards = allDueCards
-        .filter((card) => card.interval > 0)
-        .slice(0, remainingReviewCards);
-    }
-
-    // Get new cards
+    let learningCards: Card[] = [];
     let newCards: Card[] = [];
-    if (remainingNewCards > 0) {
-      newCards = await getNewCards(collectionId, remainingNewCards);
+
+    // 4.1 Get Learning Cards (KHÔNG GIỚI HẠN - theo chuẩn Anki)
+    // Learning là cards đang học dở, cần xuất hiện lại trong session
+    const learningRes = await executeQuery(
+      `SELECT * FROM cards 
+       WHERE collection_id = ? 
+       AND status = 'learning' 
+       AND due_date <= ? 
+       AND is_deleted = 0
+       ORDER BY due_date ASC`,
+      [collectionId, nowISO]
+    );
+    
+    for (let i = 0; i < learningRes.rows.length; i++) {
+      learningCards.push(learningRes.rows.item(i));
     }
 
+    // 4.2 Get Review Cards (CÓ GIỚI HẠN)
+    // Chỉ lấy review cards, không bao gồm learning
+    if (remainingReview > 0) {
+      const reviewRes = await executeQuery(
+        `SELECT * FROM cards 
+         WHERE collection_id = ? 
+         AND status = 'review' 
+         AND due_date <= ? 
+         AND is_deleted = 0
+         ORDER BY due_date ASC 
+         LIMIT ?`,
+        [collectionId, nowISO, remainingReview]
+      );
+      
+      for (let i = 0; i < reviewRes.rows.length; i++) {
+        reviewCards.push(reviewRes.rows.item(i));
+      }
+    }
+
+    // 4.3 Get New Cards (CÓ GIỚI HẠN)
+    if (remainingNew > 0) {
+      const newRes = await executeQuery(
+        `SELECT * FROM cards 
+         WHERE collection_id = ? 
+         AND status = 'new' 
+         AND is_deleted = 0
+         ORDER BY created_at ASC 
+         LIMIT ?`,
+        [collectionId, remainingNew]
+      );
+
+      for (let i = 0; i < newRes.rows.length; i++) {
+        newCards.push(newRes.rows.item(i));
+      }
+    }
+
+    // 5. Trả về cấu trúc StudyQueue
+    // ⚠️ reviewCards bây giờ bao gồm: Learning (không giới hạn) + Review (có giới hạn)
     return {
+      reviewCards: [...learningCards, ...reviewCards], // Learning ưu tiên trước
       newCards,
-      reviewCards,
       stats: {
-        newCardsStudied,
-        newCardsRemaining: remainingNewCards,
-        reviewCardsStudied,
-        reviewCardsRemaining: remainingReviewCards,
-        totalCardsToday: newCardsStudied + reviewCardsStudied,
-        totalCardsRemaining: remainingNewCards + remainingReviewCards,
-      },
+        newCardsStudied: countNewDone,
+        newCardsRemaining: remainingNew,
+        reviewCardsStudied: countReviewDone,
+        reviewCardsRemaining: remainingReview,
+        totalCardsToday: countNewDone + countReviewDone,
+        totalCardsRemaining: remainingNew + remainingReview + learningCards.length
+      }
     };
+
   } catch (error) {
-    console.error("Error getting today's queue:", error);
+    console.error("❌ Queue Error:", error);
     throw error;
   }
 };

@@ -4,6 +4,7 @@ import { DrawerActions } from "@react-navigation/native";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { DrawerScreenProps } from "@react-navigation/drawer";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 
 import { Colors } from "../shared/constants/Color";
 import type { DrawerParamList, AppStackParamList } from "../navigation/types";
@@ -16,7 +17,7 @@ import CollectionList from "../components/CollectionList";
 import FloatingAddButton from "../components/FloatingAddButton";
 import CollectionActionModal from "../components/CollectionActionModal";
 import StreakModal from "../components/StreakModal";
-
+import CreateCardSheet from "../components/CreateCardSheet";
 import { useAuth } from "../shared/context/AuthContext";
 import { useSync } from "../shared/context/SyncContext";
 import { useCollections, Collection } from "../features/collection";
@@ -36,6 +37,7 @@ export default function Home({ navigation }: Readonly<Props>) {
     collections,
     createCollection: createCollectionHook,
     deleteCollection: deleteCollectionHook,
+    refreshCollections,
   } = useCollections();
 
   const [search, setSearch] = useState<string>("");
@@ -45,6 +47,9 @@ export default function Home({ navigation }: Readonly<Props>) {
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [selectedCollection, setSelectedCollection] =
     useState<Collection | null>(null);
+  
+  // State for CreateCardSheet from CollectionActionModal
+  const [showCreateCardFromModal, setShowCreateCardFromModal] = useState(false);
 
   /**
    * Handle manual sync (triggered by refresh button)
@@ -147,6 +152,9 @@ export default function Home({ navigation }: Readonly<Props>) {
         // ✅ Check if queue threshold reached and auto-sync if needed
         await checkAndSyncIfNeeded();
 
+        // ✅ Refresh collections ngay lập tức để cập nhật count
+        await refreshCollections();
+
         Alert.alert("Success", "Card created successfully");
       }
     } catch (error) {
@@ -156,8 +164,9 @@ export default function Home({ navigation }: Readonly<Props>) {
   };
 
   const onAddCard = () => {
-    handleCloseActionModal();
-    console.log("Add card to:", selectedCollection?.title);
+    // Đóng CollectionActionModal và mở CreateCardSheet
+    setActionModalVisible(false);
+    setShowCreateCardFromModal(true);
   };
 
   const onViewCards = () => {
@@ -205,7 +214,7 @@ export default function Home({ navigation }: Readonly<Props>) {
   };
 
   const filteredCollections = collections.filter((item) =>
-    item.title.toLowerCase().includes(search.toLowerCase())
+    (item.title || "").toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -268,6 +277,27 @@ export default function Home({ navigation }: Readonly<Props>) {
           name: col.title,
         }))}
       />
+
+      {/* CreateCardSheet from CollectionActionModal */}
+      {selectedCollection && (
+        <CreateCardSheet
+          visible={showCreateCardFromModal}
+          onClose={() => {
+            setShowCreateCardFromModal(false);
+            setSelectedCollection(null);
+          }}
+          onCreate={async (data) => {
+            await handleCreateCard(data);
+            setShowCreateCardFromModal(false);
+            setSelectedCollection(null);
+          }}
+          collections={[{
+            id: selectedCollection.id,
+            name: selectedCollection.title,
+          }]}
+          preSelectedCollectionId={selectedCollection.id}
+        />
+      )}
     </View>
   );
 }

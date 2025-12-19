@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Modal,
   View,
@@ -24,6 +24,7 @@ interface Collection {
   name: string;
 }
 
+// Props interface
 interface Props {
   visible: boolean;
   onClose: () => void;
@@ -33,6 +34,7 @@ interface Props {
     back: string;
   }) => void;
   collections?: Collection[];
+  preSelectedCollectionId?: string; // Auto-select collection
 }
 
 const CreateCardSheet: React.FC<Props> = ({
@@ -40,32 +42,25 @@ const CreateCardSheet: React.FC<Props> = ({
   onClose,
   onCreate,
   collections: externalCollections,
+  preSelectedCollectionId,
 }) => {
-  const mockCollections: Collection[] = [
-    { id: "1", name: "N5" },
-    { id: "2", name: "N4" },
-    { id: "3", name: "N3" },
-    { id: "4", name: "N2" },
-    { id: "5", name: "N1" },
-    { id: "6", name: "TOEIC Part 5" },
-    { id: "7", name: "English Phrasal Verbs" },
-    { id: "8", name: "Medical Terms" },
-    { id: "9", name: "Programming Concepts" },
-    { id: "10", name: "History Dates" },
-    { id: "11", name: "Geography Capitals" },
-    { id: "12", name: "Math Formulas" },
-  ];
-
-  const collections =
-    externalCollections && externalCollections.length > 0
-      ? externalCollections
-      : mockCollections;
+ const collections = externalCollections || [];
 
   const [selectedCollection, setSelectedCollection] =
     useState<Collection | null>(null);
   const [frontText, setFrontText] = useState("");
   const [backText, setBackText] = useState("");
   const [showCollectionPopup, setShowCollectionPopup] = useState(false);
+
+  // Auto-select collection khi mở sheet với preSelectedCollectionId
+  useEffect(() => {
+    if (visible && preSelectedCollectionId) {
+      const preSelected = collections.find(c => c.id === preSelectedCollectionId);
+      if (preSelected) {
+        setSelectedCollection(preSelected);
+      }
+    }
+  }, [visible, preSelectedCollectionId, collections]);
 
   const canCreate = selectedCollection && frontText.trim() && backText.trim();
 

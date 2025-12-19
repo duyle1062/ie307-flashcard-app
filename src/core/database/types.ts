@@ -3,7 +3,7 @@
  */
 
 // Card status enum
-export type CardStatus = "new" | "learning" | "review";
+export type CardStatus = 'new' | 'learning' | 'review';
 
 // Sync queue operation enum
 export type SyncOperation = "INSERT" | "UPDATE" | "DELETE";
@@ -29,6 +29,9 @@ export interface Collection {
   user_id: string;
   name: string;
   description?: string;
+  count_new?: number;
+  count_learning?: number;
+  count_review?: number;
   is_deleted: number; // SQLite uses 0/1 for boolean
   created_at: string;
   updated_at: string;
@@ -120,7 +123,14 @@ export interface SQLError {
 export interface StudyQueue {
   newCards: Card[];
   reviewCards: Card[];
-  stats: StudyStats;
+  stats: {
+    newCardsStudied: number;
+    newCardsRemaining: number;
+    reviewCardsStudied: number;
+    reviewCardsRemaining: number;
+    totalCardsToday: number;
+    totalCardsRemaining: number;
+  };
 }
 
 // Study statistics

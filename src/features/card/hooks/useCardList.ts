@@ -55,8 +55,8 @@ export const useCardList = ({
     const query = searchQuery.toLowerCase();
     return cards.filter(
       (card) =>
-        card.front.toLowerCase().includes(query) ||
-        card.back.toLowerCase().includes(query)
+        (card.front || "").toLowerCase().includes(query) || 
+        (card.back || "").toLowerCase().includes(query)    
     );
   }, [cards, searchQuery]);
 

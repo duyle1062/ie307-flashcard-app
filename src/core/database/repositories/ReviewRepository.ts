@@ -116,6 +116,14 @@ export const countNewCardsStudiedToday = async (
 
 /**
  * Count review cards studied today by user
+ * 
+ * ⚠️ QUAN TRỌNG: Chỉ đếm cards có old_interval >= 1 (Review cards đã graduate)
+ * KHÔNG đếm Learning cards vì Learning không tính vào review limit
+ * 
+ * Logic phân biệt:
+ * - New cards: old_interval = 0 (chưa học bao giờ)
+ * - Review cards: old_interval >= 1 (đã graduate, đang ôn định kỳ)
+ * - Learning cards: 0 < old_interval < 1 (đang học dở, chưa graduate)
  */
 export const countReviewCardsStudiedToday = async (
   userId: string
@@ -123,13 +131,15 @@ export const countReviewCardsStudiedToday = async (
   try {
     const today = new Date().toISOString().split("T")[0];
 
+    // Chỉ đếm cards có old_interval >= 1 (Review cards)
+    // Learning cards (0 < interval < 1) KHÔNG tính
     const result = await executeQuery(
       `SELECT COUNT(DISTINCT card_id) as count 
        FROM reviews r
        INNER JOIN cards c ON r.card_id = c.id
        WHERE r.user_id = ? 
        AND DATE(r.reviewed_at) = ?
-       AND r.old_interval > 0
+       AND r.old_interval >= 1
        AND c.is_deleted = 0`,
       [userId, today]
     );
