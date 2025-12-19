@@ -5,6 +5,7 @@
 
 import {
   getCollectionsByUserId,
+  getCollectionsWithStats,
   createCollection as createCollectionRepo,
   deleteCollection as deleteCollectionRepo,
   getCollectionById,
@@ -23,20 +24,15 @@ export class CollectionService {
   /**
    * Get all collections for a user
    */
-  static async getCollectionsByUserId(
-    userId: string
-  ): Promise<CollectionData[]> {
+  static async getCollections(userId: string): Promise<any[]> {
     try {
-      return await getCollectionsByUserId(userId);
+      return await getCollectionsWithStats(userId);
     } catch (error) {
-      console.error(
-        "CollectionService: Error getting collections by user ID:",
-        error
-      );
+      console.error("CollectionService: Error getting collections:", error);
       throw error;
     }
   }
-
+  
   /**
    * Create a new collection
    */

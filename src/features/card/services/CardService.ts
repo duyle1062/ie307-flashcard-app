@@ -10,7 +10,11 @@ import {
   deleteCard as deleteCardRepo,
   getCardById,
 } from "../../../core/database/repositories/CardRepository";
-import { Card } from "../../../shared/types";
+import { 
+  onAnswer, 
+  getTodaysQueue 
+} from "../../../core/database/spacedRepetition";
+import { Card, StudyQueue} from "../../../shared/types";
 
 export type CardData = Card;
 
@@ -86,6 +90,24 @@ export class CardService {
       console.error("CardService: Error getting card by ID:", error);
       throw error;
     }
+  }
+
+  /**
+   * Get study card list queue for today (Queue)
+   */
+  static async getStudyQueue(userId: string, collectionId: string): Promise<StudyQueue> {
+    return await getTodaysQueue(userId, collectionId);
+  }
+
+  /**
+   * Answer a card and update its spaced repetition data (SRS algorithm)
+   */
+  static async answerCard(
+    userId: string,
+    card: Card,
+    rating: 1 | 2 | 3 | 4
+  ): Promise<Card> {
+    return await onAnswer(userId, card, rating);
   }
 }
 

@@ -28,75 +28,6 @@ interface ViewAllCardsProps {
   navigation: any;
 }
 
-// MOCK DATA
-const MOCK_CARDS: Card[] = [
-  {
-    id: "1",
-    collection_id: "1",
-    front: "What is the capital of France?",
-    back: "Paris",
-    created_at: "2025-11-01T10:00:00Z",
-    updated_at: "2025-12-05T15:30:00Z",
-    due_date: "2025-12-08T00:00:00Z",
-    interval: 3,
-    ef: 2.5,
-    status: "review",
-    is_deleted: 0,
-  },
-  {
-    id: "2",
-    collection_id: "1",
-    front: "What is 2 + 2?",
-    back: "4",
-    created_at: "2025-12-01T10:00:00Z",
-    updated_at: "2025-12-01T10:00:00Z",
-    due_date: "2025-12-12T00:00:00Z",
-    interval: 0,
-    ef: 2.5,
-    status: "new",
-    is_deleted: 0,
-  },
-  {
-    id: "3",
-    collection_id: "1",
-    front: "What is the largest planet?",
-    back: "Jupiter",
-    created_at: "2025-11-15T10:00:00Z",
-    updated_at: "2025-12-04T12:00:00Z",
-    due_date: "2025-12-10T00:00:00Z",
-    interval: 1,
-    ef: 2.3,
-    status: "learning",
-    is_deleted: 0,
-  },
-  {
-    id: "4",
-    collection_id: "1",
-    front: "What is photosynthesis?",
-    back: "Process by which plants convert light to chemical energy",
-    created_at: "2025-10-20T10:00:00Z",
-    updated_at: "2025-12-03T14:00:00Z",
-    due_date: "2025-12-15T00:00:00Z",
-    interval: 5,
-    ef: 2.6,
-    status: "review",
-    is_deleted: 0,
-  },
-  {
-    id: "5",
-    collection_id: "1",
-    front: "What is the chemical symbol for Gold?",
-    back: "Au",
-    created_at: "2025-12-02T10:00:00Z",
-    updated_at: "2025-12-02T10:00:00Z",
-    due_date: "2025-12-11T00:00:00Z",
-    interval: 0,
-    ef: 2.5,
-    status: "new",
-    is_deleted: 0,
-  },
-];
-
 export default function ViewAllCards({
   route,
   navigation,
@@ -129,8 +60,8 @@ export default function ViewAllCards({
       const query = searchText.toLowerCase();
       result = result.filter(
         (card) =>
-          card.front.toLowerCase().includes(query) ||
-          card.back.toLowerCase().includes(query)
+          (card.front || "").toLowerCase().includes(query) ||
+          (card.back || "").toLowerCase().includes(query)
       );
     }
 

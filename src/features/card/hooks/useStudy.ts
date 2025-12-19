@@ -1,127 +1,99 @@
-/**
- * useStudy Hook
- * Custom hook for managing study session logic and state
- */
-
 import { useState, useEffect, useCallback } from "react";
 import { Alert } from "react-native";
-import { getCardsByCollectionId } from "../../../core/database/repositories/CardRepository";
-import { Card } from "../../../shared/types";
+import { CardService } from "../services/CardService";
+import { Card} from "../../../shared/types";
+import { calculateSRSResult } from "../../../core/database/spacedRepetition";
 
-export interface StudyCard {
-  id: string;
-  frontText: string;
-  backText: string;
-  type: "new" | "learning" | "review";
-}
-
-export interface StudyCounts {
+export interface StudyStats {
   new: number;
   learning: number;
   review: number;
 }
 
-interface StudyHistory {
-  index: number;
-  counts: StudyCounts;
-}
-
 interface UseStudyParams {
   collectionId: string;
+  userId: string | undefined;
 }
 
 interface UseStudyReturn {
   // State
-  cards: StudyCard[];
-  currentCard: StudyCard | undefined;
-  currentIndex: number;
+  cards: Card[];
+  currentCard: Card | undefined;
+  stats: StudyStats;
   isFlipped: boolean;
-  counts: StudyCounts;
   isLoading: boolean;
-  canUndo: boolean;
-  
+  // Computed Properties
+  isFinished: boolean; // Đã học hết hàng đợi chưa
+  isEmpty: boolean;    // Collection không có thẻ nào để học
+  currentIndex: number;
   // Actions
   handleFlip: () => void;
-  handleRate: (difficulty: "again" | "hard" | "good" | "easy") => void;
-  handleUndo: () => void;
-  refreshCards: () => Promise<void>;
+  handleRate: (rating: 1 | 2 | 3 | 4) => Promise<void>;
+  reload: () => Promise<void>;
 }
 
-export const useStudy = ({ collectionId }: UseStudyParams): UseStudyReturn => {
-  const [cards, setCards] = useState<StudyCard[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export const useStudy = ({ collectionId, userId }: UseStudyParams): UseStudyReturn => {
+  const [queueCards, setQueueCards] = useState<Card[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-  const [counts, setCounts] = useState<StudyCounts>({
-    new: 0,
-    learning: 0,
-    review: 0,
-  });
-  const [history, setHistory] = useState<StudyHistory[]>([]);
-
-  /**
-   * Transform Card from DB to StudyCard format
-   */
-  const transformCard = (card: Card): StudyCard => ({
-    id: card.id,
-    frontText: card.front,
-    backText: card.back,
-    type: card.status as "new" | "learning" | "review",
+  const [isLoading, setIsLoading] = useState(true);
+  // State thống kê (Hiển thị trên Header)
+  const [stats, setStats] = useState<StudyStats>({ 
+    new: 0, 
+    learning: 0, 
+    review: 0 
   });
 
-  /**
-   * Calculate counts from cards
-   */
-  const calculateCounts = (cardList: StudyCard[]): StudyCounts => {
-    return cardList.reduce(
-      (acc, card) => {
-        if (card.type === "new") acc.new++;
-        else if (card.type === "learning") acc.learning++;
-        else if (card.type === "review") acc.review++;
-        return acc;
-      },
-      { new: 0, learning: 0, review: 0 }
-    );
-  };
+  // --- ACTIONS ---
 
   /**
-   * Load cards from database
+   * Load Session: Lấy hàng đợi từ DB dựa trên thuật toán SRS
    */
-  const loadCards = useCallback(async () => {
+  const loadSession = useCallback(async () => {
+    // Validate inputs
+    if (!userId || !collectionId) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
-      const dbCards = await getCardsByCollectionId(collectionId);
-      const studyCards = dbCards.map(transformCard);
       
-      setCards(studyCards);
-      setCounts(calculateCounts(studyCards));
+      // 1. Gọi Service lấy hàng đợi (đã tính toán limit & due date)
+      const queue = await CardService.getStudyQueue(userId, collectionId);
+      
+      // 2. Gộp Review và New thành 1 danh sách phẳng để chạy slide
+      // Ưu tiên Review trước, New sau
+      const combinedCards = [...queue.reviewCards, ...queue.newCards];
+      setQueueCards(combinedCards);
+
+      const countNew = queue.newCards.length;
+      const countLearning = queue.reviewCards.filter(c => c.status === 'learning').length;
+      const countReview = queue.reviewCards.filter(c => c.status === 'review').length;
+
+      // 3. Cập nhật thống kê ban đầu từ DB trả về
+     setStats({
+        new: countNew,
+        learning: countLearning,
+        review: countReview
+      });
+
+      // Reset vị trí
       setCurrentIndex(0);
       setIsFlipped(false);
-      setHistory([]);
+
     } catch (error) {
-      console.error("Error loading cards:", error);
-      Alert.alert("Error", "Failed to load cards");
+      console.error("Error loading study session:", error);
+      Alert.alert("Error", "Failed to load study session. Please try again.");
     } finally {
       setIsLoading(false);
     }
-  }, [collectionId]);
+  }, [userId, collectionId]);
 
   /**
    * Initial load
    */
-  useEffect(() => {
-    loadCards();
-  }, [loadCards]);
-
-  /**
-   * Get current card
-   */
-  const currentCard = cards[currentIndex] || undefined;
-
-  /**
-   * Check if can undo
-   */
-  const canUndo = history.length > 0;
+  useEffect(() => { loadSession();}, [loadSession]);
 
   /**
    * Handle flip card
@@ -131,80 +103,91 @@ export const useStudy = ({ collectionId }: UseStudyParams): UseStudyReturn => {
   }, []);
 
   /**
-   * Handle rate card and move to next
+   * Handle Rate Card (Logic quan trọng nhất)
+   * @param rating 1: Again, 2: Hard, 3: Good, 4: Easy
    */
-  const handleRate = useCallback(
-    (difficulty: "again" | "hard" | "good" | "easy") => {
-      if (!currentCard) return;
+  const handleRate = useCallback(async (rating: 1 | 2 | 3 | 4) => {
+    const currentCard = queueCards[currentIndex];
 
-      // Save current state to history
-      setHistory((prev) => [
-        ...prev,
-        { index: currentIndex, counts: { ...counts } },
-      ]);
+    if (!currentCard || !userId) return;
 
-      // Update counts based on current card type and difficulty
-      setCounts((prev) => {
-        const newCounts = { ...prev };
+    try {
+      // 1. Tính toán trước kết quả để quyết định re-queue
+      const srsResult = calculateSRSResult(currentCard, rating);
+      
+      // 2. Lưu xuống DB
+      await CardService.answerCard(userId, currentCard, rating);
+
+      // 3. Xử lý Re-queue (Học lại trong phiên)
+      // Nếu interval < 1 ngày (ví dụ 10 phút), thẻ cần xuất hiện lại.
+      const shouldRequeue = srsResult.newInterval < 1;
+
+      setQueueCards(prev => {
+        const nextQueue = [...prev];
+        if (shouldRequeue) {
+          // Clone thẻ và cập nhật trạng thái tạm thời để hiển thị lại
+          const requeuedCard = { 
+            ...currentCard, 
+            status: srsResult.newStatus, 
+            interval: srsResult.newInterval,
+            ef: srsResult.newEf
+          };
+          // Đẩy xuống cuối hàng đợi
+          nextQueue.push(requeuedCard);
+        }
+        return nextQueue;
+      });
+      // 2. OPTIMISTIC UPDATE: Cập nhật UI ngay lập tức
+      setStats((prev) => {
+        const newStats = { ...prev };
+        const oldType = currentCard.status || 'new';
         
-        // Decrease count for current card type
-        if (currentCard.type === "new" && newCounts.new > 0) {
-          newCounts.new--;
-        } else if (currentCard.type === "learning" && newCounts.learning > 0) {
-          newCounts.learning--;
-        } else if (currentCard.type === "review" && newCounts.review > 0) {
-          newCounts.review--;
-        }
+        // Giảm count cũ
+        if (oldType === 'new') newStats.new = Math.max(0, newStats.new - 1);
+        else if (oldType === 'learning') newStats.learning = Math.max(0, newStats.learning - 1);
+        else if (oldType === 'review') newStats.review = Math.max(0, newStats.review - 1);
 
-        // If rated "again", add to learning
-        if (difficulty === "again") {
-          newCounts.learning++;
+        // Nếu requeue -> Nó trở thành thẻ Learning (đang học dở)
+        if (shouldRequeue) {
+          newStats.learning++;
         }
-
-        return newCounts;
+        // Nếu không requeue -> Đã graduate/review xong -> Không cộng lại vào queue hiện tại
+        
+        return newStats;
       });
 
-      // Move to next card
+      // 3. NEXT CARD: Chuyển sang thẻ tiếp theo
       setIsFlipped(false);
       setCurrentIndex((prev) => prev + 1);
-    },
-    [currentCard, currentIndex, counts]
+
+    } catch (error) {
+      console.error("Error answering card:", error);
+      Alert.alert("Error", "Failed to save progress. Please try again.");
+    }
+  }, [queueCards, currentIndex, userId]);
+  
+  // Kiểm tra đã học hết cards trong queue ngày hôm nay chưa
+  // Finish khi: đã học hết queue HOẶC queue rỗng nhưng collection có cards (nghĩa là hết hạn ngạch ngày)
+  const isFinished = !isLoading && (
+    (currentIndex >= queueCards.length && queueCards.length > 0) || 
+    (queueCards.length === 0 && (stats.new > 0 || stats.learning > 0 || stats.review > 0))
   );
-
-  /**
-   * Handle undo last action
-   */
-  const handleUndo = useCallback(() => {
-    if (history.length === 0) return;
-
-    const lastState = history[history.length - 1];
-    setCurrentIndex(lastState.index);
-    setCounts(lastState.counts);
-    setIsFlipped(false);
-    setHistory((prev) => prev.slice(0, -1));
-  }, [history]);
-
-  /**
-   * Refresh cards
-   */
-  const refreshCards = useCallback(async () => {
-    await loadCards();
-  }, [loadCards]);
+  
+  // Kiểm tra collection có trống trơn không (chưa có thẻ nào được tạo)
+  // isEmpty chỉ khi: không có queue VÀ stats = 0 (nghĩa là collection thực sự rỗng)
+  const isEmpty = !isLoading && queueCards.length === 0 && stats.new === 0 && stats.learning === 0 && stats.review === 0;
 
   return {
-    // State
-    cards,
-    currentCard,
-    currentIndex,
+    currentCard: queueCards[currentIndex],
+    cards: queueCards,
+    stats,
     isFlipped,
-    counts,
     isLoading,
-    canUndo,
-    
-    // Actions
+    isFinished,
+    isEmpty,
+    currentIndex,
     handleFlip,
     handleRate,
-    handleUndo,
-    refreshCards,
+    reload: loadSession
   };
 };
