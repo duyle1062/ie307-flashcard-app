@@ -20,6 +20,7 @@ interface HeaderProps {
   onMenuPress?: () => void;
   onAvatarPress: () => void;
   onRefreshPress?: () => void;
+  onStreakPress?: () => void;
   streak?: number;
   isSyncing?: boolean;
   pendingChanges?: number;
@@ -29,6 +30,7 @@ const Header: React.FC<HeaderProps> = ({
   onMenuPress,
   onAvatarPress,
   onRefreshPress,
+  onStreakPress,
   streak = 3,
   isSyncing = false,
   pendingChanges = 0,
@@ -95,10 +97,15 @@ const Header: React.FC<HeaderProps> = ({
           </TouchableOpacity>
 
           {/* Streak Section */}
-          <View style={styles.streak}>
-            <AntDesign name="fire" size={24} color="orange" />
-            <Text style={styles.streakText}>{streak}</Text>
-          </View>
+          <TouchableOpacity
+            style={styles.streakTouchable}
+            onPress={onStreakPress}
+          >
+            <View style={styles.streak}>
+              <AntDesign name="fire" size={24} color="orange" />
+              <Text style={styles.streakText}>{streak}</Text>
+            </View>
+          </TouchableOpacity>
 
           {/* Right Section: Refresh & User Avatar */}
           <View style={styles.headerRight}>
@@ -167,6 +174,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 15,
+  },
+
+  streakTouchable: {
+    padding: 0,
   },
 
   streak: {
