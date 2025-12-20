@@ -15,24 +15,35 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.flashcardapp"
+      "bundleIdentifier": "com.thanhdanhdo1701.flashcardapp"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.flashcardapp",
+      "package": "com.thanhdanhdo1701.flashcardapp",
       "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-sqlite"],
+    "plugins": [
+      "expo-sqlite",
+      "expo-dev-client",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The application needs access to the image library to scan the text.",
+          "cameraPermission": "The application needs access to the camera to take photos and scan the text."
+        }
+      ]
+    ],
     "extra": {
       "eas": {
-        "projectId": "your-project-id"
+        "projectId": "70cd2f55-fc1b-4049-b43e-762abb2103e9"
       }
-    }
+    },
+    "owner": "thanhdanhdo1701"
   }
 }

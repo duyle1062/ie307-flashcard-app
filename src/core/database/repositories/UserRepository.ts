@@ -53,70 +53,45 @@ export const upsertUser = async (
   userData: Partial<User> & { id: string }
 ): Promise<User | null> => {
   try {
-    // Check if user exists by ID (simple check to avoid race conditions)
-    const existingCheck = await executeQuery(
-      "SELECT id FROM users WHERE id = ?",
-      [userData.id]
-    );
-    
-    if (existingCheck.rows.length > 0) {
-      await executeQuery(
-        `UPDATE users SET 
-          email = ?, 
-          display_name = ?,
-          picture = ?,
-          streak_days = ?,
-          last_active_date = ?,
-          daily_new_cards_limit = ?,
-          daily_review_cards_limit = ?,
-          updated_at = datetime('now')
-        WHERE id = ?`,
-        [
-          userData.email,
-          userData.display_name, 
-          userData.picture,
-          userData.streak_days ?? 0,
-          userData.last_active_date,
-          userData.daily_new_cards_limit ?? 25,
-          userData.daily_review_cards_limit ?? 50,
-          userData.id,
-        ]
+    // Handle email uniqueness: If email exists with different ID, delete old user
+    if (userData.email) {
+      const emailConflict = await executeQuery(
+        "SELECT id FROM users WHERE email = ? AND id != ?",
+        [userData.email, userData.id]
       );
-    } else {
-      // Check if email already exists (handle email conflict)
-      if (userData.email) {
-        const emailCheck = await executeQuery(
-          "SELECT id FROM users WHERE email = ?",
-          [userData.email]
-        );
-        
-        if (emailCheck.rows.length > 0) {
-          // Email exists with different ID, delete old record
-          console.log(`⚠️ Email ${userData.email} exists with different ID, replacing...`);
-          await executeQuery("DELETE FROM users WHERE email = ?", [userData.email]);
-        }
-      }
       
-      // Insert new user
-      await executeQuery(
-        `INSERT INTO users (
-          id, email, display_name, picture,
-          streak_days, last_active_date, 
-          daily_new_cards_limit, daily_review_cards_limit,
-          created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
-        [
-          userData.id,
-          userData.email,
-          userData.display_name,
-          userData.picture,
-          userData.streak_days ?? 0,
-          userData.last_active_date,
-          userData.daily_new_cards_limit ?? 25,
-          userData.daily_review_cards_limit ?? 50,
-        ]
-      );
+      if (emailConflict.rows.length > 0) {
+        const oldId = emailConflict.rows.item(0).id;
+        console.log(`⚠️ Email ${userData.email} exists with different ID ${oldId}, deleting old user...`);
+        await executeQuery("DELETE FROM users WHERE id = ?", [oldId]);
+      }
     }
+    
+    // Use INSERT OR REPLACE to handle both insert and update atomically
+    // COALESCE preserves original created_at if user already exists
+    await executeQuery(
+      `INSERT OR REPLACE INTO users (
+        id, email, display_name, picture,
+        streak_days, last_active_date, 
+        daily_new_cards_limit, daily_review_cards_limit,
+        created_at, updated_at
+      ) VALUES (
+        ?, ?, ?, ?, ?, ?, ?, ?,
+        COALESCE((SELECT created_at FROM users WHERE id = ?), datetime('now')),
+        datetime('now')
+      )`,
+      [
+        userData.id,
+        userData.email,
+        userData.display_name,
+        userData.picture,
+        userData.streak_days ?? 0,
+        userData.last_active_date,
+        userData.daily_new_cards_limit ?? 25,
+        userData.daily_review_cards_limit ?? 50,
+        userData.id, // For COALESCE to preserve original created_at
+      ]
+    );
 
     return await getUserById(userData.id);
   } catch (error) {
