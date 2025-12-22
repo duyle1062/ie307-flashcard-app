@@ -9,7 +9,7 @@ import {
 } from "react-native";
 
 import Feather from "@expo/vector-icons/Feather";
-
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Colors } from "../shared/constants/Color";
 import { Shadows } from "../shared/constants/Shadow";
 
@@ -24,7 +24,8 @@ interface CollectionActionModalProps {
   onAddCardByImageOnline: () => void;
   onViewCards: () => void;
   onRename: () => void;
-  onExport: () => void;
+  onExportCSV: () => void;
+  onExportJSON: () => void;
   onDelete: () => void;
 }
 
@@ -37,7 +38,8 @@ const CollectionActionModal: React.FC<CollectionActionModalProps> = ({
   onAddCardByImageOnline,
   onViewCards,
   onRename,
-  onExport,
+  onExportCSV,
+  onExportJSON,
   onDelete,
 }) => {
   if (!collection) return null;
@@ -127,10 +129,17 @@ const CollectionActionModal: React.FC<CollectionActionModalProps> = ({
               />
               <ActionItem
                 icon={
-                  <Feather name="download" size={20} color={Colors.primary} />
+                  <MaterialCommunityIcons name="file-delimited-outline" size={20} color={Colors.primary} />
                 }
-                label="Export collection (.csv)"
-                onPress={onExport}
+                label="Export as CSV"
+                onPress={onExportCSV}
+              />
+              <ActionItem
+                icon={
+                  <MaterialCommunityIcons name="code-json" size={20} color={Colors.primary} />
+                }
+                label="Export as JSON"
+                onPress={onExportJSON}
               />
 
               <View style={styles.divider} />

@@ -22,6 +22,8 @@ import { useAuth } from "../shared/context/AuthContext";
 import { useSync } from "../shared/context/SyncContext";
 import { useCollections, Collection } from "../features/collection";
 import { CardService } from "../features/card/services/CardService";
+import { ExportService } from "../features/collection/services/ExportService";
+import { ImportService } from "../features/collection/services/ImportService";
 
 type Props = CompositeScreenProps<
   DrawerScreenProps<DrawerParamList, "Home">,
@@ -47,6 +49,8 @@ export default function Home({ navigation }: Readonly<Props>) {
   const [actionModalVisible, setActionModalVisible] = useState(false);
   const [selectedCollection, setSelectedCollection] =
     useState<Collection | null>(null);
+
+  const [isImporting, setIsImporting] = useState(false);
   
   // State for CreateCardSheet from CollectionActionModal
   const [showCreateCardFromModal, setShowCreateCardFromModal] = useState(false);
@@ -204,9 +208,52 @@ export default function Home({ navigation }: Readonly<Props>) {
     console.log("Rename:", selectedCollection?.title);
   };
 
-  const onExport = () => {
+  const onExportCSV = async () => {
     handleCloseActionModal();
-    console.log("Export CSV:", selectedCollection?.title);
+    if (selectedCollection) {
+      const collectionToExport = {
+        ...selectedCollection,
+        name: selectedCollection.title,
+      };
+      
+      await ExportService.exportToCSV(collectionToExport as any);
+    }
+  };
+
+  const onExportJSON = async () => {
+    handleCloseActionModal();
+    if (selectedCollection) {
+      const collectionToExport = {
+        ...selectedCollection,
+        name: selectedCollection.title,
+      };
+      
+      await ExportService.exportToJSON(collectionToExport as any);
+    }
+  };
+
+  const handleImport = async (type: "csv" | "json") => {
+    if (!user) {
+      Alert.alert("Error", "User not authenticated");
+      return;
+    }
+    
+    try {
+      setIsImporting(true);
+      const result = await ImportService.pickAndImport(user.uid, type);
+
+      if (result && result.success) {
+        await refreshCollections();
+        setTimeout(() => {
+          Alert.alert("Success", `Imported "${result.collectionName}" with ${result.count} cards.`);
+        }, 500);
+      }
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Import failed.");
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const onDelete = () => {
@@ -280,7 +327,7 @@ export default function Home({ navigation }: Readonly<Props>) {
       <FloatingAddButton
         onCreateCollection={handleCreateCollection}
         onCreateCard={handleCreateCard}
-        onImport={() => console.log("Import Collection")}
+        onImport={handleImport}
         collections={collections.map((col) => ({
           id: col.id,
           name: col.title,
@@ -317,7 +364,8 @@ export default function Home({ navigation }: Readonly<Props>) {
         onAddCardByImageOnline={onAddCardByImageOnline}
         onViewCards={onViewCards}
         onRename={onRename}
-        onExport={onExport}
+        onExportCSV={onExportCSV}
+        onExportJSON={onExportJSON}
         onDelete={onDelete}
       />
     </View>
