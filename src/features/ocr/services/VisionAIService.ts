@@ -75,6 +75,57 @@ export class VisionAIService {
   }
 
   /**
+   * Detect and normalize Vision API coordinate space to image space.
+   * This fixes issues where Vision API processes the full resolution image
+   * but React Native reports different logical dimensions (e.g. density scaling).
+   */
+  private static normalizeVisionCoordinates(
+    blocks: TextBlock[],
+    imageDimensions: ImageDimensions
+  ): void {
+    if (blocks.length === 0 || imageDimensions.width === 0 || imageDimensions.height === 0) return;
+
+    // Calculate Vision API bounding box (maximum extent of all blocks)
+    let visionMaxX = 0;
+    let visionMaxY = 0;
+    
+    blocks.forEach((block) => {
+      const rightEdge = block.frame.x + block.frame.width;
+      const bottomEdge = block.frame.y + block.frame.height;
+      if (rightEdge > visionMaxX) visionMaxX = rightEdge;
+      if (bottomEdge > visionMaxY) visionMaxY = bottomEdge;
+    });
+
+    if (visionMaxX === 0 || visionMaxY === 0) return;
+
+    // Calculate ratios
+    const ratioX = imageDimensions.width / visionMaxX;
+    const ratioY = imageDimensions.height / visionMaxY;
+
+    // Check if normalization is needed (if discrepancy is > 10%)
+    // Or if the Vision coordinates are significantly larger than the Image dimensions
+    const needsNormalization =
+      Math.abs(ratioX - 1) > 0.1 || Math.abs(ratioY - 1) > 0.1;
+
+    console.log("=== VISION API COORDINATE ANALYSIS ===");
+    console.log("Local Image dimensions:", imageDimensions);
+    console.log("Vision API Max Bounds:", { width: visionMaxX, height: visionMaxY });
+    console.log("Ratios:", { x: ratioX.toFixed(3), y: ratioY.toFixed(3) });
+    console.log("Needs normalization:", needsNormalization);
+    console.log("=======================================");
+
+    if (needsNormalization) {
+      console.log("Normalizing Vision coordinates to match local image space...");
+      blocks.forEach((block) => {
+        block.frame.x *= ratioX;
+        block.frame.y *= ratioY;
+        block.frame.width *= ratioX;
+        block.frame.height *= ratioY;
+      });
+    }
+  }
+
+  /**
    * Perform OCR using Google Cloud Vision API
    */
   static async recognizeText(uri: string): Promise<VisionOCRResult> {
@@ -147,6 +198,9 @@ export class VisionAIService {
         const blocks = this.mapAnnotationsToBlocks(annotations);
 
         console.log(`Successfully processed ${blocks.length} text blocks from Vision API`);
+
+        // 5. NORMALIZE COORDINATES (Fix for misaligned blocks)
+        this.normalizeVisionCoordinates(blocks, imageDimensions);
 
         return { blocks, imageDimensions };
       }

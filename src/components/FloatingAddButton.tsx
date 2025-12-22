@@ -14,6 +14,7 @@ import { Shadows } from "../shared/constants/Shadow";
 
 import CreateCollectionSheet from "./CreateCollectionSheet";
 import CreateCardSheet from "./CreateCardSheet";
+import ImportActionModal from "./ImportActionModal";
 
 // Separate MenuItem component to follow React Hooks rules
 interface MenuItemProps {
@@ -95,7 +96,7 @@ const RADIUS = 85;
 interface Props {
   onCreateCollection?: (name: string) => void;
   onCreateCard?: (data: any) => void;
-  onImport?: () => void;
+  onImport?: (type: "csv" | "json") => void;
   collections?: Array<{ id: string; name: string }>;
 }
 
@@ -108,11 +109,13 @@ const FloatingAddButton: React.FC<Props> = ({
   const isOpen = useSharedValue(0);
   const [showCollectionSheet, setShowCollectionSheet] = useState(false);
   const [showCardSheet, setShowCardSheet] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const closeAll = () => {
     isOpen.value = withTiming(0, { duration: 280 });
     setShowCollectionSheet(false);
     setShowCardSheet(false);
+    setShowImportModal(false);
   };
 
   const shouldShowOverlay = () =>
@@ -160,6 +163,19 @@ const FloatingAddButton: React.FC<Props> = ({
         collections={collections}
       />
 
+      <ImportActionModal
+        visible={showImportModal}
+        onClose={closeAll}
+        onImportCSV={() => {
+          onImport?.("csv"); 
+          closeAll();
+        }}
+        onImportJSON={() => {
+          onImport?.("json"); 
+          closeAll();
+        }}
+      />
+
       <View style={styles.container} pointerEvents="box-none">
         {MENU_ITEMS.map((item) => (
           <MenuItem
@@ -174,8 +190,8 @@ const FloatingAddButton: React.FC<Props> = ({
                 isOpen.value = withTiming(0, { duration: 280 });
                 setTimeout(() => setShowCardSheet(true), 300);
               } else if (itemId === "import") {
-                onImport?.();
                 isOpen.value = withTiming(0, { duration: 280 });
+                setTimeout(() => setShowImportModal(true), 300);
               }
             }}
           />
