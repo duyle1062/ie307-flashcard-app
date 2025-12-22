@@ -11,4 +11,6 @@ export type AppStackParamList = {
   UserProfile: undefined;
   ViewAllCards: { collectionId: string; collectionTitle: string };
   ChangePassword: undefined;
+  OCRCardCreator: { collectionId: string; collectionTitle: string };
+  VisionOCRCardCreator: { collectionId: string; collectionTitle: string };
 };

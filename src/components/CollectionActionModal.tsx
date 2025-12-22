@@ -20,6 +20,8 @@ interface CollectionActionModalProps {
   onClose: () => void;
   collection: Collection | null;
   onAddCard: () => void;
+  onAddCardByImage: () => void;
+  onAddCardByImageOnline: () => void;
   onViewCards: () => void;
   onRename: () => void;
   onExport: () => void;
@@ -31,6 +33,8 @@ const CollectionActionModal: React.FC<CollectionActionModalProps> = ({
   onClose,
   collection,
   onAddCard,
+  onAddCardByImage,
+  onAddCardByImageOnline,
   onViewCards,
   onRename,
   onExport,
@@ -92,6 +96,20 @@ const CollectionActionModal: React.FC<CollectionActionModalProps> = ({
                 }
                 label="Add card"
                 onPress={onAddCard}
+              />
+              <ActionItem
+                icon={
+                  <Feather name="image" size={20} color={Colors.primary} />
+                }
+                label="Add card by image (offline)"
+                onPress={onAddCardByImage}
+              />
+              <ActionItem
+                icon={
+                  <Feather name="cloud" size={20} color={Colors.primary} />
+                }
+                label="Add card by image (Google Vision)"
+                onPress={onAddCardByImageOnline}
               />
               <ActionItem
                 icon={

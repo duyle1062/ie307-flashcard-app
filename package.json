@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "ie307-flashcard-app",
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
@@ -12,6 +12,7 @@
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/netinfo": "^11.4.1",
+    "@react-native-ml-kit/text-recognition": "^2.0.0",
     "@react-navigation/drawer": "^7.7.8",
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.19",
@@ -22,6 +23,9 @@
     "expo": "~54.0.23",
     "expo-auth-session": "^7.0.8",
     "expo-crypto": "^15.0.7",
+    "expo-dev-client": "~6.0.20",
+    "expo-file-system": "^19.0.21",
+    "expo-image-picker": "~17.0.10",
     "expo-sqlite": "~16.0.9",
     "expo-status-bar": "~3.0.8",
     "expo-web-browser": "^15.0.9",
@@ -45,5 +49,14 @@
     "@types/react": "~19.1.0",
     "@types/react-native": "^0.72.8",
     "typescript": "~5.9.2"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "@react-native-ml-kit/text-recognition"
+        ]
+      }
+    }
   }
 }

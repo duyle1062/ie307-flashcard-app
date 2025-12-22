@@ -37,15 +37,58 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [syncedUserId, setSyncedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     // onAuthStateChanged: Lắng nghe thay đổi trạng thái đăng nhập (tự động login nếu còn session)
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        // Tránh sync lại nếu đã sync user này rồi
+        if (syncedUserId === currentUser.uid) {
+          setUser(currentUser);
+          setIsLoading(false);
+          return;
+        }
+        
+        // User đã login (auto-restore từ Firebase Auth)
+        // Cần sync user data từ Firestore về SQLite
+        try {
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            
+            // Sync user vào SQLite
+            await upsertUser({
+              id: currentUser.uid,
+              email: userData.email || currentUser.email || "",
+              display_name: userData.display_name || userData.name || currentUser.email?.split("@")[0] || "",
+              picture: userData.picture || userData.profile_picture_url,
+              streak_days: userData.streak_days || 0,
+              last_active_date: userData.last_active_date,
+              daily_new_cards_limit: userData.daily_new_cards_limit || 25,
+              daily_review_cards_limit: userData.daily_review_cards_limit || 50,
+            });
+            
+            // Lưu userId vào AsyncStorage
+            await saveCurrentUserId(currentUser.uid);
+            
+            setSyncedUserId(currentUser.uid);
+            console.log("✅ User auto-restored and synced to SQLite:", currentUser.uid);
+          }
+        } catch (error) {
+          console.error("❌ Error syncing user on auth state change:", error);
+        }
+      } else {
+        // User logged out
+        setSyncedUserId(null);
+      }
+      
       setUser(currentUser);
       setIsLoading(false);
     });
     return unsubscribe;
-  }, []);
+  }, [syncedUserId]);
 
   const register = async (
     email: string,

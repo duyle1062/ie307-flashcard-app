@@ -169,6 +169,26 @@ export default function Home({ navigation }: Readonly<Props>) {
     setShowCreateCardFromModal(true);
   };
 
+  const onAddCardByImage = () => {
+    handleCloseActionModal();
+    if (selectedCollection) {
+      navigation.navigate("OCRCardCreator", {
+        collectionId: selectedCollection.id,
+        collectionTitle: selectedCollection.title,
+      });
+    }
+  };
+
+  const onAddCardByImageOnline = () => {
+    handleCloseActionModal();
+    if (selectedCollection) {
+      navigation.navigate("VisionOCRCardCreator", {
+        collectionId: selectedCollection.id,
+        collectionTitle: selectedCollection.title,
+      });
+    }
+  };
+
   const onViewCards = () => {
     handleCloseActionModal();
     if (selectedCollection) {
@@ -243,17 +263,6 @@ export default function Home({ navigation }: Readonly<Props>) {
         onChangePassword={() => navigation.navigate("ChangePassword")}
       />
 
-      <CollectionActionModal
-        visible={actionModalVisible}
-        onClose={handleCloseActionModal}
-        collection={selectedCollection}
-        onAddCard={onAddCard}
-        onViewCards={onViewCards}
-        onRename={onRename}
-        onExport={onExport}
-        onDelete={onDelete}
-      />
-
       <SearchBar value={search} onChangeText={setSearch} />
 
       {filteredCollections.length > 0 ? (
@@ -298,6 +307,19 @@ export default function Home({ navigation }: Readonly<Props>) {
           preSelectedCollectionId={selectedCollection.id}
         />
       )}
+
+      <CollectionActionModal
+        visible={actionModalVisible}
+        onClose={handleCloseActionModal}
+        collection={selectedCollection}
+        onAddCard={onAddCard}
+        onAddCardByImage={onAddCardByImage}
+        onAddCardByImageOnline={onAddCardByImageOnline}
+        onViewCards={onViewCards}
+        onRename={onRename}
+        onExport={onExport}
+        onDelete={onDelete}
+      />
     </View>
   );
 }
