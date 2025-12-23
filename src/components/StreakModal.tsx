@@ -1,6 +1,6 @@
 // components/StreakModal.tsx
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   View,
   Text,
@@ -23,6 +23,9 @@ import {
   isToday,
   addDays,
   subDays,
+  parseISO,
+  differenceInCalendarDays, // ✅ [FIX] Import thêm để tính ngày chính xác
+  startOfDay,
 } from "date-fns";
 
 import { Colors } from "../shared/constants/Color";
@@ -37,7 +40,8 @@ const CELL_SIZE = (width - 100) / 7;
 interface StreakModalProps {
   visible: boolean;
   onClose: () => void;
-  studyDays?: Date[];
+  currentStreak: number; // Lấy từ User State
+  studyHistory: string[]; // Danh sách ngày 'YYYY-MM-DD' từ DB
 }
 
 interface StreakResult {
@@ -45,156 +49,102 @@ interface StreakResult {
   longestStreak: number;
 }
 
-const calculateStreaks = (studyDays: Date[]): StreakResult => {
-  if (studyDays.length === 0) {
-    return { currentStreak: 0, longestStreak: 0 };
-  }
+/**
+ * Helper: Tính toán Longest Streak dựa trên lịch sử
+ */
+const calculateStats = (dates: string[], currentVal: number) => {
+  if (!dates || dates.length === 0) return { current: currentVal, longest: currentVal };
 
-  const sortedDays = [...studyDays]
-    .map((d) => {
-      const normalized = new Date(d);
-      normalized.setHours(0, 0, 0, 0);
-      return normalized;
-    })
+  // 1. Chuyển đổi về đầu ngày và Sort & Unique
+  const sortedDates = Array.from(new Set(dates))
+    .map((d) => startOfDay(parseISO(d))) // Đưa về 00:00:00
     .sort((a, b) => a.getTime() - b.getTime());
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  if (sortedDates.length === 0) return { current: currentVal, longest: currentVal };
 
-  let currentStreak = 0;
-  let longestStreak = 0;
+  let maxStreak = 1;
   let tempStreak = 1;
 
-  const lastStudyDay = sortedDays[sortedDays.length - 1];
-  const daysSinceLastStudy =
-    (today.getTime() - lastStudyDay.getTime()) / (1000 * 60 * 60 * 24);
+  for (let i = 0; i < sortedDates.length - 1; i++) {
+    const currentDay = sortedDates[i];
+    const nextDay = sortedDates[i + 1];
 
-  if (daysSinceLastStudy > 1) {
-    currentStreak = 0;
-  } else {
-    currentStreak = 1;
-    for (let i = sortedDays.length - 2; i >= 0; i--) {
-      const prev = sortedDays[i];
-      const next = sortedDays[i + 1];
-      const diff = (next.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
-      if (diff === 1) {
-        currentStreak++;
-      } else {
-        break;
-      }
-    }
-  }
-
-  for (let i = 1; i < sortedDays.length; i++) {
-    const prev = sortedDays[i - 1];
-    const curr = sortedDays[i];
-    const diff = (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+    // ✅ Dùng differenceInCalendarDays để so sánh chính xác tuyệt đối
+    // Tránh lỗi chênh lệch múi giờ gây ra số lẻ (vd: 0.9 ngày)
+    const diff = differenceInCalendarDays(nextDay, currentDay);
 
     if (diff === 1) {
       tempStreak++;
     } else {
+      maxStreak = Math.max(maxStreak, tempStreak);
       tempStreak = 1;
     }
-    longestStreak = Math.max(longestStreak, tempStreak);
   }
 
-  longestStreak = Math.max(longestStreak, currentStreak);
+  maxStreak = Math.max(maxStreak, tempStreak);
 
-  return { currentStreak, longestStreak };
+  return { 
+    current: currentVal, 
+    // Longest streak ít nhất phải bằng current streak hiện tại
+    longest: Math.max(maxStreak, currentVal) 
+  };
 };
 
 const StreakModal: React.FC<StreakModalProps> = ({
   visible,
   onClose,
-  studyDays,
+  currentStreak = 0,
+  studyHistory = [],
 }) => {
-  const mockStudyDays: Date[] = [
-    new Date(2025, 10, 19),
-    new Date(2025, 10, 20),
-    new Date(2025, 10, 21),
-    new Date(2025, 10, 22),
-    new Date(2025, 10, 23),
-    new Date(2025, 10, 24),
-    new Date(2025, 10, 25),
-    new Date(2025, 10, 26),
-    new Date(2025, 10, 27),
-    new Date(2025, 10, 28),
-    new Date(2025, 10, 29),
-    new Date(2025, 10, 30),
-
-    new Date(2025, 9, 5),
-    new Date(2025, 9, 6),
-    new Date(2025, 9, 7),
-    new Date(2025, 9, 8),
-
-    new Date(2025, 11, 10),
-    new Date(2025, 11, 11),
-    new Date(2025, 11, 12),
-    new Date(2025, 11, 13),
-    new Date(2025, 11, 14),
-    new Date(2025, 11, 15),
-
-    new Date(2025, 11, 17),
-  ];
-
-  const daysToUse =
-    studyDays && studyDays.length > 0 ? studyDays : mockStudyDays;
-
   const insets = useSafeAreaInsets();
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  const { currentStreak, longestStreak } = calculateStreaks(daysToUse);
+  const stats = useMemo(() => {
+    return calculateStats(studyHistory, currentStreak);
+  }, [studyHistory, currentStreak]);
+
+  const studyDaysSet = useMemo(() => new Set(studyHistory), [studyHistory]);
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
-  const days = eachDayOfInterval({ start: monthStart, end: monthEnd });
+  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
-  const firstDayOfWeek = monthStart.getDay();
-  const leadingEmptyDays = (firstDayOfWeek + 6) % 7;
+  const firstDayOfWeek = monthStart.getDay(); 
+  const leadingEmptyDays = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1; 
 
   const prevMonth = () => setCurrentMonth(subMonths(currentMonth, 1));
   const nextMonth = () => setCurrentMonth(addMonths(currentMonth, 1));
 
-  const isStudyDay = (day: Date): boolean => {
-    const normalized = new Date(day);
-    normalized.setHours(0, 0, 0, 0);
-    return daysToUse.some((d) => {
-      const studyNormalized = new Date(d);
-      studyNormalized.setHours(0, 0, 0, 0);
-      return studyNormalized.getTime() === normalized.getTime();
-    });
+  /**
+   * Check ngày có học không
+   */
+  const isStudyDay = (date: Date): boolean => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    return studyDaysSet.has(dateStr);
   };
 
-  const getStreakPosition = (
-    day: Date
-  ): "single" | "start" | "middle" | "end" | null => {
+  /**
+   * Helper xác định vị trí để vẽ style (Start/Middle/End/Single)
+   */
+  const getStreakPosition = (day: Date): "single" | "start" | "middle" | "end" | null => {
     if (!isStudyDay(day)) return null;
 
-    let start = new Date(day);
-    let end = new Date(day);
+    const prevDate = subDays(day, 1);
+    const nextDate = addDays(day, 1);
+    const hasPrev = isStudyDay(prevDate);
+    const hasNext = isStudyDay(nextDate);
 
-    while (isStudyDay(subDays(start, 1))) {
-      start = subDays(start, 1);
-    }
-
-    while (isStudyDay(addDays(end, 1))) {
-      end = addDays(end, 1);
-    }
-
-    const length =
-      (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24) + 1;
-
-    if (length === 1) return "single";
-    if (isSameDay(day, start)) return "start";
-    if (isSameDay(day, end)) return "end";
-    return "middle";
+    if (hasPrev && hasNext) return "middle";
+    if (!hasPrev && hasNext) return "start";
+    if (hasPrev && !hasNext) return "end";
+    return "single";
   };
 
   return (
-    <Modal visible={visible} transparent animationType="fade">
-      <View style={styles.overlay}>
-        <View style={[styles.modalContainer, { paddingTop: insets.top + 20 }]}>
-          {/* HEADER */}
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity style={styles.overlay} activeOpacity={1} onPress={onClose}>
+        <TouchableOpacity activeOpacity={1} style={[styles.modalContainer, { marginTop: insets.top + 40 }]}>
+          {/* --- HEADER (STYLE CŨ) --- */}
           <View style={styles.header}>
             <View style={styles.mainFireIcon}>
               <Text style={styles.streakTitle}>STREAK</Text>
@@ -205,12 +155,13 @@ const StreakModal: React.FC<StreakModalProps> = ({
             </TouchableOpacity>
           </View>
 
-          {/* 2 Ô STREAK */}
+          {/* --- 2 Ô STREAK (STYLE CŨ) --- */}
           <View style={styles.streakRows}>
             <View style={styles.streakBox}>
               <View style={styles.streakContent}>
                 <AntDesign name="fire" size={32} color={Colors.redLight} />
-                <Text style={styles.streakNumber}>{currentStreak}</Text>
+                {/* Dùng stats.current đã tính toán chính xác */}
+                <Text style={styles.streakNumber}>{stats.current}</Text>
               </View>
               <Text style={styles.streakLabel}>Current streak</Text>
             </View>
@@ -218,13 +169,14 @@ const StreakModal: React.FC<StreakModalProps> = ({
             <View style={styles.streakBox}>
               <View style={styles.streakContent}>
                 <Feather name="award" size={30} color={Colors.secondary} />
-                <Text style={styles.streakNumber}>{longestStreak}</Text>
+                {/* Dùng stats.longest đã tính toán chính xác */}
+                <Text style={styles.streakNumber}>{stats.longest}</Text>
               </View>
               <Text style={styles.streakLabel}>Longest streak</Text>
             </View>
           </View>
 
-          {/* CALENDAR */}
+          {/* --- CALENDAR CARD (STYLE CŨ) --- */}
           <View style={[styles.calendarCard, Shadows.medium]}>
             <View style={styles.calendarHeader}>
               <TouchableOpacity onPress={prevMonth}>
@@ -234,14 +186,11 @@ const StreakModal: React.FC<StreakModalProps> = ({
                 {format(currentMonth, "MMMM yyyy").toUpperCase()}
               </Text>
               <TouchableOpacity onPress={nextMonth}>
-                <Feather
-                  name="chevron-right"
-                  size={24}
-                  color={Colors.primary}
-                />
+                <Feather name="chevron-right" size={24} color={Colors.primary} />
               </TouchableOpacity>
             </View>
 
+            {/* Week Headers: Mon, Tue, Wed... */}
             <View style={styles.weekDays}>
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
                 <Text key={day} style={styles.weekDayText}>
@@ -255,20 +204,19 @@ const StreakModal: React.FC<StreakModalProps> = ({
                 <View key={`empty-${i}`} style={styles.dayCell} />
               ))}
 
-              {days.map((day) => {
+              {daysInMonth.map((day) => {
                 const studied = isStudyDay(day);
                 const today = isToday(day);
                 const position = getStreakPosition(day);
 
+                // --- LOGIC STYLE CŨ ---
                 let cellStyles: ViewStyle[] = [];
 
                 if (studied && position) {
-                  const isPrevStudied =
-                    isStudyDay(subDays(day, 1)) &&
-                    isSameMonth(subDays(day, 1), currentMonth);
-                  const isNextStudied =
-                    isStudyDay(addDays(day, 1)) &&
-                    isSameMonth(addDays(day, 1), currentMonth);
+                  // Logic vẽ thanh nối (Bar)
+                  // Check lại logic hiển thị prev/next trong tháng hiện tại để vẽ bo góc
+                  const isPrevStudied = isStudyDay(subDays(day, 1));
+                  const isNextStudied = isStudyDay(addDays(day, 1));
 
                   if (position === "single") {
                     cellStyles = [styles.studiedDay];
@@ -280,10 +228,6 @@ const StreakModal: React.FC<StreakModalProps> = ({
                     }
                     if (!isNextStudied) {
                       cellStyles.push(styles.streakEnd);
-                    }
-
-                    if (position === "start" || position === "end") {
-                      cellStyles.push(styles.studiedDayOverride);
                     }
                   }
                 }
@@ -301,7 +245,7 @@ const StreakModal: React.FC<StreakModalProps> = ({
                       style={[
                         styles.dayText,
                         !isSameMonth(day, currentMonth) && styles.outsideMonth,
-                        studied && styles.studiedText,
+                        studied && styles.studiedText, // Chữ đậm màu primary
                         today && styles.todayText,
                       ]}
                     >
@@ -314,8 +258,8 @@ const StreakModal: React.FC<StreakModalProps> = ({
           </View>
 
           <Text style={styles.motivationText}>Keep the streak going! 🔥</Text>
-        </View>
-      </View>
+        </TouchableOpacity>
+      </TouchableOpacity>
     </Modal>
   );
 };
@@ -430,15 +374,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginVertical: 4,
   },
+  // Style cho thanh Streak (kiểu cũ)
   streakBar: {
-    backgroundColor: `${Colors.tertiary}80`, // Nhạt 50%
+    backgroundColor: `${Colors.tertiary}80`, // Màu nhạt hơn
+    borderRadius: 0, // Vuông để nối
   },
   studiedDay: {
     backgroundColor: Colors.tertiary,
-    borderRadius: 12,
-  },
-  studiedDayOverride: {
-    backgroundColor: Colors.tertiary,
+    borderRadius: 12, // Tròn
   },
   streakStart: {
     borderTopLeftRadius: 12,
@@ -451,6 +394,7 @@ const styles = StyleSheet.create({
   todayHighlight: {
     borderWidth: 2,
     borderColor: Colors.secondary,
+    borderRadius: 12,
   },
   dayText: {
     fontSize: 14,

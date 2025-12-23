@@ -15,7 +15,6 @@ import {
   serverTimestamp,
   Timestamp,
   writeBatch,
-  documentId,
 } from "firebase/firestore";
 import { getUnsyncedChanges, removeSyncQueueItems } from "../../../core/database/helpers";
 import { executeQuery } from "../../../core/database/database";
@@ -382,19 +381,13 @@ class SyncService {
       }
 
       // CASE 2: CÁC COLLECTION KHÁC (Dùng Query bình thường)
-      let q;
-      if (collectionName === "cards") {
-        q = query(
-          collectionRef,
-          where("updated_at", ">", syncTimestamp)
-        );
-      } else {
-        q = query(
-          collectionRef,
-          where("user_id", "==", userId),
-          where("updated_at", ">", syncTimestamp)
-        );
-      }
+      // ✅ PERFECT ARCHITECTURE: Tất cả collections đều có user_id
+      // Query đơn giản, nhất quán, và hiệu quả
+      const q = query(
+        collectionRef,
+        where("user_id", "==", userId),
+        where("updated_at", ">", syncTimestamp)
+      );
 
       const querySnapshot = await getDocs(q);
       let count = 0;

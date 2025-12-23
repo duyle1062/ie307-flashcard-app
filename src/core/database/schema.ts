@@ -38,6 +38,7 @@ export const CREATE_TABLES = {
   cards: `
     CREATE TABLE IF NOT EXISTS cards (
       id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
       collection_id TEXT NOT NULL,
       front TEXT NOT NULL,
       back TEXT NOT NULL,
@@ -48,6 +49,7 @@ export const CREATE_TABLES = {
       is_deleted INTEGER DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
       FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
     );
   `,
@@ -95,6 +97,7 @@ export const CREATE_TABLES = {
 export const CREATE_INDEXES = [
   "CREATE INDEX IF NOT EXISTS idx_collections_user_id ON collections(user_id);",
   "CREATE INDEX IF NOT EXISTS idx_collections_is_deleted ON collections(is_deleted);",
+  "CREATE INDEX IF NOT EXISTS idx_cards_user_id ON cards(user_id);",
   "CREATE INDEX IF NOT EXISTS idx_cards_collection_id ON cards(collection_id);",
   "CREATE INDEX IF NOT EXISTS idx_cards_status ON cards(status);",
   "CREATE INDEX IF NOT EXISTS idx_cards_due_date ON cards(due_date);",

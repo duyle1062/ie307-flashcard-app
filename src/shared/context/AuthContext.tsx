@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import { Alert } from "react-native";
 import { toFirestoreData } from "../../core/utils/mapper";
 import {
@@ -16,79 +16,122 @@ import {
 } from "../../core/database/repositories/UserRepository";
 import {
   saveCurrentUserId,
-  getCurrentUserId,
   clearAllData,
   clearFirebaseAuthToken,
 } from "../../core/database/storage";
 import { logTableData } from "../../core/utils/dbDebug";
 import { getDatabase } from "../../core/database";
+import { User } from "../../core/database/types"
+import { clearLocalDatabase } from "../../core/database/helpers";
+import { syncService } from "../../features/sync/services/syncService";
 
 type AuthContextType = {
   user: FirebaseUser | null;
+  userData: User | null;     // User của App (SQLite - chứa streak, settings)
   isAuthenticated: boolean;
   isLoading: boolean;
   register: (email: string, password: string) => Promise<boolean>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  refreshUser: () => Promise<void>; // Hàm mới để reload data
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
+  const [userData, setUserData] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [syncedUserId, setSyncedUserId] = useState<string | null>(null);
+  
+  // Biến cờ để tránh sync nhiều lần không cần thiết trong cùng 1 session
+  const isSyncedRef = useRef<boolean>(false);
+
+  /**
+   * Helper: Đồng bộ User từ Firestore về SQLite
+   * Được tách ra để dùng chung
+   */
+  const syncCloudUserToLocal = async (uid: string) => {
+    try {
+      const userDoc = await getDoc(doc(db, "users", uid));
+      if (userDoc.exists()) {
+        const cloudData = userDoc.data();
+        
+        // Map data từ Firestore sang cấu trúc Local
+        // Sử dụng Partial để an toàn kiểu dữ liệu
+        const userToSave: Partial<User> & { id: string } = {
+          id: uid,
+          email: cloudData.email || "",
+          display_name: cloudData.display_name || cloudData.name || "",
+          picture: cloudData.picture || cloudData.profile_picture_url,
+          streak_days: cloudData.streak_days ?? 0,
+          last_active_date: cloudData.last_active_date,
+          daily_new_cards_limit: cloudData.daily_new_cards_limit ?? 25,
+          daily_review_cards_limit: cloudData.daily_review_cards_limit ?? 50,
+        };
+
+        const savedUser = await upsertUser(userToSave);
+        
+        // Cập nhật state ngay lập tức nếu có sự thay đổi
+        if (savedUser) {
+          setUserData(savedUser);
+        }
+        console.log("✅ User synced from Cloud to SQLite:", uid);
+      }
+    } catch (error) {
+      console.error("❌ Error internal syncing user:", error);
+    }
+  };
+
+  // Hàm load user data từ SQLite lên State
+  const refreshUser = useCallback(async () => {
+    if (!user?.uid) return;
+    try {
+      const localUser = await getUserById(user.uid);
+      if (localUser) {
+        setUserData(localUser);
+      }
+    } catch (error) {
+      console.error("Failed to refresh user data:", error);
+    }
+  }, [user?.uid]);
 
   useEffect(() => {
-    // onAuthStateChanged: Lắng nghe thay đổi trạng thái đăng nhập (tự động login nếu còn session)
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        // Tránh sync lại nếu đã sync user này rồi
-        if (syncedUserId === currentUser.uid) {
-          setUser(currentUser);
-          setIsLoading(false);
-          return;
-        }
-        
-        // User đã login (auto-restore từ Firebase Auth)
-        // Cần sync user data từ Firestore về SQLite
         try {
-          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
-          
-          if (userDoc.exists()) {
-            const userData = userDoc.data();
-            
-            // Sync user vào SQLite
-            await upsertUser({
-              id: currentUser.uid,
-              email: userData.email || currentUser.email || "",
-              display_name: userData.display_name || userData.name || currentUser.email?.split("@")[0] || "",
-              picture: userData.picture || userData.profile_picture_url,
-              streak_days: userData.streak_days || 0,
-              last_active_date: userData.last_active_date,
-              daily_new_cards_limit: userData.daily_new_cards_limit || 25,
-              daily_review_cards_limit: userData.daily_review_cards_limit || 50,
-            });
-            
-            // Lưu userId vào AsyncStorage
-            await saveCurrentUserId(currentUser.uid);
-            
-            setSyncedUserId(currentUser.uid);
-            console.log("✅ User auto-restored and synced to SQLite:", currentUser.uid);
+          // 1. QUAN TRỌNG: Lưu Session ID trước (Chặn await để đảm bảo xong 100%)
+          await saveCurrentUserId(currentUser.uid);
+
+          // 2. Load User từ SQLite lên
+          const localUser = await getUserById(currentUser.uid);
+          if (localUser) {
+            setUserData(localUser);
           }
+
+          // 3. Sync Cloud (Chạy background, không cần await block UI lâu)
+          if (!isSyncedRef.current) {
+            syncCloudUserToLocal(currentUser.uid).then(() => {
+               isSyncedRef.current = true;
+            });
+          }
+
+          // 4. SAU KHI MỌI THỨ SẴN SÀNG -> MỚI CHO PHÉP LOGIN
+          setUser(currentUser);
         } catch (error) {
-          console.error("❌ Error syncing user on auth state change:", error);
+          console.error("Auth init error:", error);
         }
       } else {
-        // User logged out
-        setSyncedUserId(null);
+        // Logout logic
+        setUserData(null);
+        isSyncedRef.current = false;
+        setUser(null);
       }
       
-      setUser(currentUser);
       setIsLoading(false);
     });
+
     return unsubscribe;
-  }, [syncedUserId]);
+  }, []);
 
   const register = async (
     email: string,
@@ -131,8 +174,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const sqliteDb = await getDatabase();
       await logTableData(sqliteDb, "users");
 
-      // User tự động login và navigate vào app
+      // Update State ngay lập tức
+      setUserData(fullUserData);
+      isSyncedRef.current = true; // Đánh dấu là data đã mới nhất, không cần sync lại ở useEffect
 
+      // User tự động login và navigate vào app
       return true;
     } catch (error: any) {
       let msg = "Registration failed";
@@ -153,33 +199,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       );
       const firebaseUser = userCredential.user;
 
-      // Sync user data từ Firestore về SQLite
-      const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
+      // Khi login chủ động, ta buộc phải sync từ cloud về để đảm bảo data mới nhất
+      await syncCloudUserToLocal(firebaseUser.uid);
+      await saveCurrentUserId(firebaseUser.uid);
+      isSyncedRef.current = true;
 
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-
-        // Upsert user vào SQLite (Tải user data từ Firestore)
-        await upsertUser({
-          id: firebaseUser.uid,
-          email: userData.email,
-          display_name: userData.display_name || userData.name,
-          picture: userData.picture || userData.profile_picture_url,
-          streak_days: userData.streak_days || 0,
-          last_active_date: userData.last_active_date,
-          daily_new_cards_limit: userData.daily_new_cards_limit || 25,
-          daily_review_cards_limit: userData.daily_review_cards_limit || 50,
-        });
-
-        // Lưu userId vào AsyncStorage
-        await saveCurrentUserId(firebaseUser.uid);
-
-        console.log("Login successful, data synced:", firebaseUser.uid);
-
-        // 🐛 DEBUG: Log dữ liệu users sau khi login (Lưu session vào AsyncStorage)
-        const sqliteDb = await getDatabase();
-        await logTableData(sqliteDb, "users");
-      }
+      // 🐛 DEBUG: Log dữ liệu users sau khi login (Lưu session vào AsyncStorage)
+      const sqliteDb = await getDatabase();
+      await logTableData(sqliteDb, "users");
 
       return true;
     } catch (error: any) {
@@ -190,14 +217,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const logout = async () => {
     try {
-      await signOut(auth);
-      // Clear local session data and token
-      await clearAllData();
-      await clearFirebaseAuthToken();
-      console.log("Logout successful, local data cleared");
-    } catch (error) {
-      console.error("Logout error:", error);
+    setIsLoading(true);
+
+    // 1. Cố gắng PUSH thay đổi lên Cloud trước khi xóa (Best Effort)
+    // Chỉ PUSH, không Pull (tiết kiệm thời gian)
+    // Nếu đang không có mạng hoặc lỗi, bước này sẽ fail nhanh chóng
+    try {
+      console.log("📤 Attempting final push before logout...");
+      await syncService.sync(user?.uid || "", { push: true, pull: false });
+      console.log("✅ Final push complete.");
+    } catch (syncError) {
+      console.warn("⚠️ Final push failed (Network issue?), proceeding to logout anyway.", syncError);
+      // Không throw error, vẫn cho phép logout tiếp
     }
+
+    // 2. Tiến hành Logout & Dọn dẹp
+    setUser(null);
+    setUserData(null);
+    
+    await signOut(auth);
+    await clearAllData();
+    await clearFirebaseAuthToken();
+    await clearLocalDatabase(); 
+    
+    console.log("Logout successful & clean.");
+  } catch (error) {
+    console.error("Logout error:", error);
+    Alert.alert("Logout Error", "Something went wrong, but local session is cleared.");
+  } finally {
+    setIsLoading(false);
+  }
   };
 
   // Context Provider: Chia sẻ trạng thái auth cho toàn app
@@ -205,11 +254,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     <AuthContext.Provider
       value={{
         user,
+        userData,
         isAuthenticated: !!user,
         isLoading,
         register,
         login,
         logout,
+        refreshUser,
       }}
     >
       {children}

@@ -269,3 +269,31 @@ export const upsertReview = async (
     throw error;
   }
 };
+
+/**
+ * Get list of distinct dates user has studied
+ * Used for Streak Calendar
+ */
+export const getUserStudyDates = async (userId: string): Promise<string[]> => {
+  try {
+    // Lấy chuỗi ngày YYYY-MM-DD từ field reviewed_at
+    // SQLite: substr(reviewed_at, 1, 10) lấy 10 ký tự đầu (YYYY-MM-DD)
+    const result = await executeQuery(
+      `SELECT DISTINCT substr(reviewed_at, 1, 10) as study_date 
+       FROM reviews 
+       WHERE user_id = ? 
+       ORDER BY study_date ASC`,
+      [userId]
+    );
+
+    const dates: string[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      dates.push(result.rows.item(i).study_date);
+    }
+    
+    return dates;
+  } catch (error) {
+    console.error("Error getting user study dates:", error);
+    throw error;
+  }
+};

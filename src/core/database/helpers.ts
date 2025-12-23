@@ -246,3 +246,22 @@ export const removeSyncQueueItems = async (ids: string[]): Promise<void> => {
     throw error;
   }
 };
+
+/**
+ * Xóa toàn bộ dữ liệu Local (Dùng khi Logout)
+ */
+export const clearLocalDatabase = async (): Promise<void> => {
+  try {
+    console.log("🧹 Clearing local database...");
+    await executeQuery("DELETE FROM sync_queue");
+    await executeQuery("DELETE FROM reviews");
+    await executeQuery("DELETE FROM cards");
+    await executeQuery("DELETE FROM collections");
+    await executeQuery("DELETE FROM users"); // Xóa user cuối cùng
+    await executeQuery("DELETE FROM usage_logs");
+    console.log("✅ Local database cleared successfully");
+  } catch (error) {
+    console.error("Error clearing local database:", error);
+    throw error;
+  }
+};

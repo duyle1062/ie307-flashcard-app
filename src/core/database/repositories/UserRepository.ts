@@ -193,3 +193,72 @@ export const updateUserProfile = async (
     throw error;
   }
 };
+
+/**
+ * Helper: Reset time to start of day (00:00:00) for date comparison
+ */
+const getStartOfDay = (dateStr: string | Date): number => {
+  const d = new Date(dateStr);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+};
+
+/**
+ * Check and increment daily streak based on logic
+ * Called when user finishes a study session
+ */
+export const checkAndIncrementStreak = async (userId: string): Promise<User | null> => {
+  try {
+    const user = await getUserById(userId);
+    if (!user) return null;
+
+    const today = new Date();
+    const todayStr = today.toISOString(); // Lưu full timestamp để chính xác last_active
+    const todayStart = getStartOfDay(today);
+
+    let lastActiveStart = 0;
+    if (user.last_active_date) {
+      lastActiveStart = getStartOfDay(user.last_active_date);
+    }
+
+    // 1. Nếu hôm nay đã học rồi (Ngày bắt đầu trùng nhau) -> Không làm gì
+    if (lastActiveStart === todayStart) {
+      console.log("🔥 Streak already updated for today.");
+      return user;
+    }
+
+    let newStreak = user.streak_days;
+
+    // 2. Tính khoảng cách ngày
+    // (Today - LastActive) / (24 * 60 * 60 * 1000)
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const diffDays = Math.round((todayStart - lastActiveStart) / oneDayMs);
+
+    if (diffDays === 1) {
+      // Học ngày hôm qua -> Tăng chuỗi
+      newStreak += 1;
+    } else {
+      // Bỏ lỡ 1 ngày trở lên hoặc user mới -> Reset về 1
+      newStreak = 1;
+    }
+
+    console.log(`🔥 Updating streak: ${user.streak_days} -> ${newStreak} (Diff: ${diffDays} days)`);
+
+    // 3. Update DB & Sync Queue
+    await updateWithSync(
+      "users",
+      userId,
+      { 
+        streak_days: newStreak, 
+        last_active_date: todayStr 
+      },
+      ["streak_days", "last_active_date"]
+    );
+
+    // Trả về user mới nhất
+    return await getUserById(userId);
+  } catch (error) {
+    console.error("Error checking streak:", error);
+    throw error;
+  }
+};
