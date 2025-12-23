@@ -1,6 +1,5 @@
 import * as SQLite from "expo-sqlite";
 import { CREATE_TABLES, CREATE_INDEXES, DB_NAME } from "./schema";
-import { SQLResultSet, SQLTransaction } from "./types";
 // Removed seedDatabase import - no longer auto-creating collections on init
 
 let database: SQLite.SQLiteDatabase | null = null;
@@ -24,7 +23,6 @@ export const initDatabase = async (): Promise<SQLite.SQLiteDatabase> => {
     // Run migrations BEFORE creating indexes
     await migrateSyncQueueTable();
     await migrateToIsDeleted();
-
     await migrateUsersTable();
 
     // Create indexes AFTER migrations (so new columns exist)
@@ -319,9 +317,9 @@ export const migrateToIsDeleted = async (): Promise<void> => {
     );
     const cardsHasUserId = cardsInfo.some((col: any) => col.name === "user_id");
 
-    if (!cardsHasIsDeleted || cardsHasDeletedAt || cardsHasUserId) {
+    if (!cardsHasIsDeleted || cardsHasDeletedAt) {
       console.log(
-        "Migrating cards table to is_deleted and removing user_id..."
+        "Migrating cards table to is_deleted schema..."
       );
 
       // Clean up any leftover temp table from failed migration
@@ -330,6 +328,7 @@ export const migrateToIsDeleted = async (): Promise<void> => {
       await db.execAsync(`
         CREATE TABLE cards_new (
           id TEXT PRIMARY KEY,
+          user_id TEXT,
           collection_id TEXT NOT NULL,
           front TEXT NOT NULL,
           back TEXT NOT NULL,
@@ -340,6 +339,7 @@ export const migrateToIsDeleted = async (): Promise<void> => {
           is_deleted INTEGER DEFAULT 0,
           created_at TEXT DEFAULT CURRENT_TIMESTAMP,
           updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
           FOREIGN KEY (collection_id) REFERENCES collections(id) ON DELETE CASCADE
         );
       `);
@@ -348,8 +348,8 @@ export const migrateToIsDeleted = async (): Promise<void> => {
       if (cardsHasDeletedAt) {
         // Old schema with deleted_at
         await db.execAsync(`
-          INSERT INTO cards_new (id, collection_id, front, back, status, interval, ef, due_date, is_deleted, created_at, updated_at)
-          SELECT id, collection_id, front, back, status, interval, ef, due_date,
+          INSERT INTO cards_new (id, user_id, collection_id, front, back, status, interval, ef, due_date, is_deleted, created_at, updated_at)
+          SELECT id, user_id, collection_id, front, back, status, interval, ef, due_date,
                  CASE WHEN deleted_at IS NOT NULL THEN 1 ELSE 0 END,
                  created_at, updated_at
           FROM cards;
@@ -357,8 +357,8 @@ export const migrateToIsDeleted = async (): Promise<void> => {
       } else {
         // New schema or fresh install - just copy data
         await db.execAsync(`
-          INSERT INTO cards_new (id, collection_id, front, back, status, interval, ef, due_date, is_deleted, created_at, updated_at)
-          SELECT id, collection_id, front, back, status, interval, ef, due_date, 
+          INSERT INTO cards_new (id, user_id, collection_id, front, back, status, interval, ef, due_date, is_deleted, created_at, updated_at)
+          SELECT id, user_id, collection_id, front, back, status, interval, ef, due_date, 
                  COALESCE(is_deleted, 0),
                  created_at, updated_at
           FROM cards;

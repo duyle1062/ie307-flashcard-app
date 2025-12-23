@@ -6,9 +6,11 @@
 import {
   getUserById,
   updateUserProfile as updateUserProfileRepo,
+  checkAndIncrementStreak,
 } from "../../../core/database/repositories/UserRepository";
 import { getCurrentUserId } from "../../../core/database/storage";
 import { User } from "../../../shared/types";
+import { getUserStudyDates } from "../../../core/database/repositories/ReviewRepository";
 
 export class UserService {
   /**
@@ -46,7 +48,7 @@ export class UserService {
         console.log("✅ UserService: Profile updated successfully");
         console.log("   Updated data:", {
           id: result.id,
-          name: result.name,
+          name: result.display_name,
           email: result.email,
         });
       } else {
@@ -69,6 +71,30 @@ export class UserService {
     } catch (error) {
       console.error("UserService: Error getting user by ID:", error);
       throw error;
+    }
+  }
+
+  /**
+   * Check and update streak when user completes a session
+   */
+  static async updateDailyStreak(userId: string): Promise<User | null> {
+    try {
+      return await checkAndIncrementStreak(userId);
+    } catch (error) {
+      console.error("UserService: Error updating streak:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all dates user has studied (Streak history)
+   */
+  static async getStudyHistory(userId: string): Promise<string[]> {
+    try {
+      return await getUserStudyDates(userId);
+    } catch (error) {
+      console.error("UserService: Error getting study history:", error);
+      return [];
     }
   }
 }

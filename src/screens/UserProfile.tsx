@@ -11,16 +11,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import AntDesign from "@expo/vector-icons/AntDesign";
-
 import { Colors } from "../shared/constants/Color";
 import { Shadows } from "../shared/constants/Shadow";
-
 import DottedBackground from "@/components/DottedBackground";
-
 import { useUserProfile } from "../features/user";
 
 export default function UserProfile() {

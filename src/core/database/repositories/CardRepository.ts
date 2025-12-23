@@ -66,9 +66,16 @@ export const createCard = async (
   try {
     const id = generateUUID();
     const now = new Date().toISOString();
+    
+    // ✅ Get current user_id from storage
+    const userId = await getCurrentUserId();
+    if (!userId) {
+      throw new Error("No user logged in. Cannot create card.");
+    }
 
     await insertWithSync("cards", {
       id,
+      user_id: userId,
       collection_id: collectionId,
       front,
       back,
@@ -97,18 +104,23 @@ export const updateCard = async (
   back: string
 ): Promise<Card | null> => {
   try {
-    // ⚠️ IMPORTANT: Fetch card first to get collection_id
-    // Firestore rules need collection_id to verify ownership
+    // ⚠️ IMPORTANT: Fetch card first to get collection_id and user_id
+    // Firestore rules need both to verify ownership
     const existingCard = await getCardById(cardId);
     if (!existingCard) {
       throw new Error("Card not found");
     }
 
-    // Include collection_id in update data for Firestore sync
+    // Include user_id and collection_id in update data for Firestore sync
     await updateWithSync(
       "cards",
       cardId,
-      { front, back, collection_id: existingCard.collection_id },
+      { 
+        front, 
+        back, 
+        user_id: existingCard.user_id,
+        collection_id: existingCard.collection_id 
+      },
       ["front", "back"]
     );
 
@@ -130,8 +142,8 @@ export const updateCardSRS = async (
   dueDate: string
 ): Promise<Card | null> => {
   try {
-    // ⚠️ IMPORTANT: Fetch card first to get collection_id
-    // Firestore rules need collection_id to verify ownership
+    // ⚠️ IMPORTANT: Fetch card first to get collection_id and user_id
+    // Firestore rules need both to verify ownership
     const existingCard = await getCardById(cardId);
     if (!existingCard) {
       throw new Error("Card not found");
@@ -145,6 +157,7 @@ export const updateCardSRS = async (
         interval,
         ef,
         due_date: dueDate,
+        user_id: existingCard.user_id,
         collection_id: existingCard.collection_id,
       },
       ["status", "interval", "ef", "due_date"]
@@ -162,15 +175,16 @@ export const updateCardSRS = async (
  */
 export const deleteCard = async (cardId: string): Promise<boolean> => {
   try {
-    // ⚠️ IMPORTANT: Fetch card first to get collection_id
-    // Firestore rules need collection_id to verify ownership
+    // ⚠️ IMPORTANT: Fetch card first to get collection_id and user_id
+    // Firestore rules need both to verify ownership
     const existingCard = await getCardById(cardId);
     if (!existingCard) {
       throw new Error("Card not found");
     }
 
-    // Include collection_id in delete data for Firestore sync
+    // Include user_id and collection_id in delete data for Firestore sync
     await softDeleteWithSync("cards", cardId, {
+      user_id: existingCard.user_id,
       collection_id: existingCard.collection_id,
     });
     return true;
@@ -299,6 +313,8 @@ export const upsertCard = async (
       // Update existing card (including soft-deleted ones)
       await executeQuery(
         `UPDATE cards SET 
+          user_id = ?,
+          collection_id = ?,
           front = ?, 
           back = ?,
           status = ?,
@@ -309,6 +325,8 @@ export const upsertCard = async (
           updated_at = ?
         WHERE id = ?`,
         [
+          cardData.user_id,
+          cardData.collection_id,
           cardData.front,
           cardData.back,
           cardData.status ?? "new",
@@ -324,12 +342,13 @@ export const upsertCard = async (
       // Insert new card
       await executeQuery(
         `INSERT INTO cards (
-          id, collection_id, front, back,
+          id, user_id, collection_id, front, back,
           status, interval, ef, due_date, is_deleted,
           created_at, updated_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           cardData.id,
+          cardData.user_id,
           cardData.collection_id,
           cardData.front,
           cardData.back,

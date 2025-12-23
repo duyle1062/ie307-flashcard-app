@@ -49,6 +49,7 @@ export interface CollectionWithStats extends Collection {
 // Card model
 export interface Card {
   id: string;
+  user_id: string;
   collection_id: string;
   front: string;
   back: string;

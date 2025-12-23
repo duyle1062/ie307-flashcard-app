@@ -3,7 +3,7 @@
  * Custom hook for managing collections list and operations
  */
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Alert } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import { CollectionService } from "../services/CollectionService";
@@ -30,9 +30,12 @@ interface UseCollectionsReturn {
 
 export const useCollections = (): UseCollectionsReturn => {
   const { user } = useAuth();
-  const { checkAndSyncIfNeeded } = useSync();
+  const { checkAndSyncIfNeeded, syncStatus } = useSync();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // ✅ Track if initial sync-triggered load has completed
+  const hasLoadedAfterSyncRef = useRef(false);
 
   /**
    * Load collections from database
@@ -46,13 +49,17 @@ export const useCollections = (): UseCollectionsReturn => {
       const data = await CollectionService.getCollections(user.uid);
       
       setCollections(data);
+      hasLoadedAfterSyncRef.current = true;
     } catch (error) {
       console.error("Error loading collections:", error);
-      Alert.alert("Error", "Failed to load collections");
+      // ✅ Only show alert if not during initial sync
+      if (!syncStatus.isRunning && hasLoadedAfterSyncRef.current) {
+        Alert.alert("Error", "Failed to load collections");
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user, syncStatus.isRunning]);
 
   /**
    * Create a new collection
@@ -141,14 +148,21 @@ export const useCollections = (): UseCollectionsReturn => {
     await loadCollections();
   }, [loadCollections]);
 
-  // ❌ REMOVED: useEffect load on mount (causes duplicate with useFocusEffect)
-  // Chỉ dùng useFocusEffect để load collections khi screen được focus
-  // Điều này tránh duplicate Firestore reads khi component mount
+  // ✅ OPTIMIZED: Load collections ONLY after initial sync completes
+  useEffect(() => {
+    if (!syncStatus.isRunning && syncStatus.lastSyncTime && user) {
+      console.log("✅ Sync completed, reloading collections...");
+      loadCollections();
+    }
+  }, [syncStatus.isRunning, syncStatus.lastSyncTime, user, loadCollections]);
 
-  // Refresh collections khi màn hình được focus (ví dụ: quay về từ Study)
+  // ✅ Refresh collections when screen gains focus (e.g., returning from Study)
+  // CRITICAL: Only load if initial sync has already completed at least once
   useFocusEffect(
     useCallback(() => {
-      loadCollections();
+      if (hasLoadedAfterSyncRef.current) {
+        loadCollections();
+      }
     }, [loadCollections])
   );
 

@@ -1,8 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Alert } from "react-native";
 import { CardService } from "../services/CardService";
 import { Card} from "../../../shared/types";
 import { calculateSRSResult } from "../../../core/database/spacedRepetition";
+import { UserService } from "../../../features/user/services/UserService";
+import { useAuth } from "../../../shared/context/AuthContext";
 
 export interface StudyStats {
   new: number;
@@ -43,6 +45,10 @@ export const useStudy = ({ collectionId, userId }: UseStudyParams): UseStudyRetu
     learning: 0, 
     review: 0 
   });
+
+  // Ref để đánh dấu đã cập nhật streak cho session này chưa
+  const { refreshUser } = useAuth();
+  const streakUpdatedRef = useRef(false);
 
   // --- ACTIONS ---
 
@@ -176,6 +182,29 @@ export const useStudy = ({ collectionId, userId }: UseStudyParams): UseStudyRetu
   // Kiểm tra collection có trống trơn không (chưa có thẻ nào được tạo)
   // isEmpty chỉ khi: không có queue VÀ stats = 0 (nghĩa là collection thực sự rỗng)
   const isEmpty = !isLoading && queueCards.length === 0 && stats.new === 0 && stats.learning === 0 && stats.review === 0;
+
+  useEffect(() => {
+    const updateStreak = async () => {
+      // Chỉ chạy khi đã finish, có userId và chưa chạy lần nào trong session này
+      if (isFinished && userId && !streakUpdatedRef.current) {
+        streakUpdatedRef.current = true; // Mark as done immediately
+        
+        try {
+          console.log("🎓 Session finished! Checking streak...");
+          const updatedUser = await UserService.updateDailyStreak(userId);
+          
+          if (updatedUser) {
+             await refreshUser();
+             console.log("✅ Global User State refreshed with new streak:", updatedUser.streak_days);
+          }
+        } catch (error) {
+          console.error("Failed to update streak:", error);
+        }
+      }
+    };
+
+    updateStreak();
+  }, [isFinished, userId, refreshUser]);
 
   return {
     currentCard: queueCards[currentIndex],

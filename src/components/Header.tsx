@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,18 +9,18 @@ import {
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import { Colors } from "../shared/constants/Color";
-
 import Feather from "@expo/vector-icons/Feather";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+import { useAuth } from "../shared/context/AuthContext";
+import { UserService } from "../features/user/services/UserService";
+import StreakModal from "./StreakModal";
 
 interface HeaderProps {
   onMenuPress?: () => void;
   onAvatarPress: () => void;
   onRefreshPress?: () => void;
-  onStreakPress?: () => void;
   streak?: number;
   isSyncing?: boolean;
   pendingChanges?: number;
@@ -30,12 +30,16 @@ const Header: React.FC<HeaderProps> = ({
   onMenuPress,
   onAvatarPress,
   onRefreshPress,
-  onStreakPress,
-  streak = 3,
   isSyncing = false,
   pendingChanges = 0,
 }) => {
   const insets = useSafeAreaInsets();
+  const { userData } = useAuth(); // Lấy streak từ Global State
+  const displayStreak = userData?.streak_days || 0;
+
+  // STATE STREAK MODAL
+  const [isStreakModalVisible, setStreakModalVisible] = useState(false);
+  const [studyHistory, setStudyHistory] = useState<string[]>([]);
 
   // Animation for pulse effect
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -65,10 +69,23 @@ const Header: React.FC<HeaderProps> = ({
     }
   }, [pendingChanges, isSyncing, pulseAnim]);
 
-  const handleRefreshPress = () => {
-    if (onRefreshPress) {
-      onRefreshPress();
+  const handleStreakPress = async () => {
+    setStreakModalVisible(true);
+    if (userData?.id) {
+      try {
+        // Lấy lịch sử học tập thực tế từ DB
+        const history = await UserService.getStudyHistory(userData.id);
+        setStudyHistory(history);
+      } catch (error) {
+        console.error("Failed to load streak history", error);
+        // Vẫn mở modal dù lỗi (hiển thị lịch trống)
+        setStreakModalVisible(true);
+      }
     }
+  };
+
+  const handleRefreshPress = () => {
+    if (onRefreshPress) onRefreshPress();
   };
 
   const handleRefreshLongPress = () => {
@@ -99,11 +116,11 @@ const Header: React.FC<HeaderProps> = ({
           {/* Streak Section */}
           <TouchableOpacity
             style={styles.streakTouchable}
-            onPress={onStreakPress}
+            onPress={handleStreakPress}
           >
             <View style={styles.streak}>
               <AntDesign name="fire" size={24} color="orange" />
-              <Text style={styles.streakText}>{streak}</Text>
+              <Text style={styles.streakText}>{displayStreak}</Text>
             </View>
           </TouchableOpacity>
 
@@ -156,6 +173,14 @@ const Header: React.FC<HeaderProps> = ({
           </View>
         </View>
       </View>
+
+      {/* --- MODAL HIỂN THỊ LỊCH STREAK --- */}
+      <StreakModal
+        visible={isStreakModalVisible}
+        onClose={() => setStreakModalVisible(false)}
+        currentStreak={displayStreak}
+        studyHistory={studyHistory}
+      />
     </View>
   );
 };
