@@ -7,6 +7,20 @@ import { Review, ReviewStats } from "../types";
  * Reviews track each card study session for daily limit enforcement
  */
 
+export interface TopCollectionStat {
+  id: string;
+  name: string;
+  review_count: number;
+}
+
+export interface TopCardStat {
+  id: string;
+  front: string;
+  back: string;
+  review_count: number;
+  collection_name: string;
+}
+
 /**
  * Get review by ID
  */
@@ -295,5 +309,61 @@ export const getUserStudyDates = async (userId: string): Promise<string[]> => {
   } catch (error) {
     console.error("Error getting user study dates:", error);
     throw error;
+  }
+};
+
+/**
+ * Get Top 5 Collections by number of reviews
+ */
+export const getTopCollectionsByReviews = async (userId: string): Promise<TopCollectionStat[]> => {
+  try {
+    const result = await executeQuery(
+      `SELECT c.id, c.name, COUNT(r.id) as review_count
+       FROM reviews r
+       JOIN cards ca ON r.card_id = ca.id
+       JOIN collections c ON ca.collection_id = c.id
+       WHERE r.user_id = ?
+       GROUP BY c.id
+       ORDER BY review_count DESC
+       LIMIT 5`,
+      [userId]
+    );
+
+    const stats: TopCollectionStat[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      stats.push(result.rows.item(i));
+    }
+    return stats;
+  } catch (error) {
+    console.error("Error getting top collections:", error);
+    return [];
+  }
+};
+
+/**
+ * Get Top 5 Most Reviewed Cards (Often the hardest ones)
+ */
+export const getTopCardsByReviews = async (userId: string): Promise<TopCardStat[]> => {
+  try {
+    const result = await executeQuery(
+      `SELECT ca.id, ca.front, ca.back, c.name as collection_name, COUNT(r.id) as review_count
+       FROM reviews r
+       JOIN cards ca ON r.card_id = ca.id
+       JOIN collections c ON ca.collection_id = c.id
+       WHERE r.user_id = ?
+       GROUP BY ca.id
+       ORDER BY review_count DESC
+       LIMIT 5`,
+      [userId]
+    );
+
+    const stats: TopCardStat[] = [];
+    for (let i = 0; i < result.rows.length; i++) {
+      stats.push(result.rows.item(i));
+    }
+    return stats;
+  } catch (error) {
+    console.error("Error getting top cards:", error);
+    return [];
   }
 };

@@ -5,6 +5,7 @@ import { Card} from "../../../shared/types";
 import { calculateSRSResult } from "../../../core/database/spacedRepetition";
 import { UserService } from "../../../features/user/services/UserService";
 import { useAuth } from "../../../shared/context/AuthContext";
+import { logUserAction } from "../../../core/database/repositories/UsageLogRepository";
 
 export interface StudyStats {
   new: number;
@@ -49,6 +50,7 @@ export const useStudy = ({ collectionId, userId }: UseStudyParams): UseStudyRetu
   // Ref để đánh dấu đã cập nhật streak cho session này chưa
   const { refreshUser } = useAuth();
   const streakUpdatedRef = useRef(false);
+  const loggedStartRef = useRef(false);
 
   // --- ACTIONS ---
 
@@ -83,6 +85,12 @@ export const useStudy = ({ collectionId, userId }: UseStudyParams): UseStudyRetu
         learning: countLearning,
         review: countReview
       });
+
+      // 4. Log start session action (for Statistics)
+      if (!loggedStartRef.current && combinedCards.length > 0) {
+        logUserAction(userId, 'start_review', `${collectionId}` );
+        loggedStartRef.current = true;
+      }
 
       // Reset vị trí
       setCurrentIndex(0);

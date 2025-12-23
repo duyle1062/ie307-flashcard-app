@@ -548,6 +548,7 @@ class SyncService {
       collections: "collections",
       cards: "cards",
       reviews: "reviews",
+      usage_logs: "usage_logs",
     };
 
     return mapping[entityType] || null;
