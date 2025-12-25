@@ -1,7 +1,14 @@
-import React from "react";
-import { View, Image, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
+import {
+  View,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from "react-native";
+
 import { Shadows } from "../shared/constants/Shadow";
 import { Colors } from "../shared/constants/Color";
+
 import { TextBlock, ImageDimensions } from "../features/ocr/services";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -17,9 +24,6 @@ interface OCRImagePreviewProps {
   onBlockPress: (blockId: string) => void;
 }
 
-/**
- * OCR Image Preview - Displays image with text block overlays
- */
 export function OCRImagePreview({
   imageUri,
   imageDimensions,

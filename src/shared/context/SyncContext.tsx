@@ -15,9 +15,7 @@ export const SyncProvider = ({ children }: { children: ReactNode }) => {
   const syncMethods = useSyncHook();
 
   return (
-    <SyncContext.Provider value={syncMethods}>
-      {children}
-    </SyncContext.Provider>
+    <SyncContext.Provider value={syncMethods}>{children}</SyncContext.Provider>
   );
 };
 

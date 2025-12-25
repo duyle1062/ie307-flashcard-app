@@ -4,7 +4,7 @@ import { DrawerActions } from "@react-navigation/native";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { DrawerScreenProps } from "@react-navigation/drawer";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useFocusEffect } from "@react-navigation/native";
+import { useTranslation } from "react-i18next";
 
 import { Colors } from "../shared/constants/Color";
 import type { DrawerParamList, AppStackParamList } from "../navigation/types";
@@ -17,8 +17,10 @@ import CollectionList from "../components/CollectionList";
 import FloatingAddButton from "../components/FloatingAddButton";
 import CollectionActionModal from "../components/CollectionActionModal";
 import CreateCardSheet from "../components/CreateCardSheet";
+
 import { useAuth } from "../shared/context/AuthContext";
 import { useSync } from "../shared/context/SyncContext";
+
 import { useCollections, Collection } from "../features/collection";
 import { CardService } from "../features/card/services/CardService";
 import { ExportService } from "../features/collection/services/ExportService";
@@ -32,8 +34,8 @@ type Props = CompositeScreenProps<
 export default function Home({ navigation }: Readonly<Props>) {
   const { user, logout } = useAuth();
   const { forceSync, syncStatus, checkAndSyncIfNeeded } = useSync();
+  const { t } = useTranslation();
 
-  // Use custom hook for collections management
   const {
     collections,
     createCollection: createCollectionHook,
@@ -49,65 +51,58 @@ export default function Home({ navigation }: Readonly<Props>) {
     useState<Collection | null>(null);
 
   const [isImporting, setIsImporting] = useState(false);
-  
-  // State for CreateCardSheet from CollectionActionModal
+
   const [showCreateCardFromModal, setShowCreateCardFromModal] = useState(false);
 
-  /**
-   * Handle manual sync (triggered by refresh button)
-   */
   const handleManualSync = async () => {
     if (!user) {
-      Alert.alert("Error", "User not authenticated");
+      Alert.alert(t("common.error"), t("alerts.userNotAuthenticated"));
       return;
     }
 
     if (syncStatus.isRunning) {
-      console.log("⏳ Sync already in progress, skipping...");
+      console.log("Sync already in progress, skipping...");
       return;
     }
 
     try {
-      console.log("🔄 Manual sync triggered by user");
+      console.log("Manual sync triggered by user");
       const result = await forceSync();
 
       if (result?.success) {
         Alert.alert(
-          "Sync Complete",
-          `Synced ${result.pushedCount} local changes and pulled ${result.pulledCount} updates from cloud`
+          t("alerts.syncComplete"),
+          t("alerts.syncInfo", {
+            pushedCount: result.pushedCount,
+            pulledCount: result.pulledCount,
+          })
         );
       } else if (result) {
         Alert.alert(
-          "Sync Failed",
-          result.errors.length > 0 ? result.errors[0] : "Unknown error"
+          t("alerts.syncFailed"),
+          result.errors.length > 0 ? result.errors[0] : t("alerts.unknownError")
         );
       }
     } catch (error) {
       console.error("Error during manual sync:", error);
-      Alert.alert("Sync Error", "Failed to sync data");
+      Alert.alert(t("alerts.syncError"), t("alerts.failedToSyncData"));
     }
   };
 
-  /**
-   * Handle create collection
-   */
   const handleCreateCollection = async (name: string) => {
     const success = await createCollectionHook(name);
     if (success) {
-      Alert.alert("Success", `Collection "${name}" created successfully`);
+      Alert.alert(t("common.success"), t("collection.createSuccess"));
     }
   };
 
-  /**
-   * Handle delete collection (soft delete)
-   */
   const handleDeleteCollection = async (
     collectionId: string,
     collectionName: string
   ) => {
     const success = await deleteCollectionHook(collectionId);
     if (success) {
-      Alert.alert("Success", `Collection "${collectionName}" deleted`);
+      Alert.alert(t("common.success"), t("collection.deleteSuccess"));
     }
   };
 
@@ -128,16 +123,13 @@ export default function Home({ navigation }: Readonly<Props>) {
     setSelectedCollection(null);
   };
 
-  /**
-   * Handle create card
-   */
   const handleCreateCard = async (data: {
     collectionId: string;
     front: string;
     back: string;
   }) => {
     if (!user) {
-      Alert.alert("Error", "User not authenticated");
+      Alert.alert(t("common.error"), t("alerts.userNotAuthenticated"));
       return;
     }
 
@@ -151,22 +143,19 @@ export default function Home({ navigation }: Readonly<Props>) {
       if (card) {
         console.log("Card created:", card.id);
 
-        // ✅ Check if queue threshold reached and auto-sync if needed
         await checkAndSyncIfNeeded();
 
-        // ✅ Refresh collections ngay lập tức để cập nhật count
         await refreshCollections();
 
-        Alert.alert("Success", "Card created successfully");
+        Alert.alert(t("common.success"), t("card.createSuccess"));
       }
     } catch (error) {
       console.error("Error creating card:", error);
-      Alert.alert("Error", "Failed to create card");
+      Alert.alert(t("common.error"), t("alerts.failedToCreateCard"));
     }
   };
 
   const onAddCard = () => {
-    // Đóng CollectionActionModal và mở CreateCardSheet
     setActionModalVisible(false);
     setShowCreateCardFromModal(true);
   };
@@ -213,7 +202,7 @@ export default function Home({ navigation }: Readonly<Props>) {
         ...selectedCollection,
         name: selectedCollection.title,
       };
-      
+
       await ExportService.exportToCSV(collectionToExport as any);
     }
   };
@@ -225,17 +214,17 @@ export default function Home({ navigation }: Readonly<Props>) {
         ...selectedCollection,
         name: selectedCollection.title,
       };
-      
+
       await ExportService.exportToJSON(collectionToExport as any);
     }
   };
 
   const handleImport = async (type: "csv" | "json") => {
     if (!user) {
-      Alert.alert("Error", "User not authenticated");
+      Alert.alert(t("common.error"), t("alerts.userNotAuthenticated"));
       return;
     }
-    
+
     try {
       setIsImporting(true);
       const result = await ImportService.pickAndImport(user.uid, type);
@@ -243,12 +232,18 @@ export default function Home({ navigation }: Readonly<Props>) {
       if (result && result.success) {
         await refreshCollections();
         setTimeout(() => {
-          Alert.alert("Success", `Imported "${result.collectionName}" with ${result.count} cards.`);
+          Alert.alert(
+            t("common.success"),
+            t("alerts.importSuccess", {
+              collectionName: result.collectionName,
+              count: result.count,
+            })
+          );
         }, 500);
       }
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "Import failed.");
+      Alert.alert(t("common.error"), t("alerts.importFailed"));
     } finally {
       setIsImporting(false);
     }
@@ -260,12 +255,14 @@ export default function Home({ navigation }: Readonly<Props>) {
     if (!selectedCollection) return;
 
     Alert.alert(
-      "Delete Collection",
-      `Are you sure you want to delete "${selectedCollection.title}"?`,
+      t("alerts.deleteCollection"),
+      t("alerts.deleteCollectionConfirm", {
+        collectionName: selectedCollection.title,
+      }),
       [
-        { text: "Cancel", style: "cancel" },
+        { text: t("common.cancel"), style: "cancel" },
         {
-          text: "Delete",
+          text: t("common.delete"),
           style: "destructive",
           onPress: () => {
             handleDeleteCollection(
@@ -312,7 +309,7 @@ export default function Home({ navigation }: Readonly<Props>) {
         />
       ) : (
         <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No collection found</Text>
+          <Text style={styles.emptyText}>{t("home.noCollectionsFound")}</Text>
         </View>
       )}
 
@@ -326,7 +323,6 @@ export default function Home({ navigation }: Readonly<Props>) {
         }))}
       />
 
-      {/* CreateCardSheet from CollectionActionModal */}
       {selectedCollection && (
         <CreateCardSheet
           visible={showCreateCardFromModal}
@@ -339,10 +335,12 @@ export default function Home({ navigation }: Readonly<Props>) {
             setShowCreateCardFromModal(false);
             setSelectedCollection(null);
           }}
-          collections={[{
-            id: selectedCollection.id,
-            name: selectedCollection.title,
-          }]}
+          collections={[
+            {
+              id: selectedCollection.id,
+              name: selectedCollection.title,
+            },
+          ]}
           preSelectedCollectionId={selectedCollection.id}
         />
       )}

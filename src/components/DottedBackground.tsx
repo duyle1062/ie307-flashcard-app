@@ -1,5 +1,6 @@
 import { View, StyleSheet, Dimensions } from "react-native";
 import Svg, { Defs, Pattern, Circle, Rect } from "react-native-svg";
+
 import { Colors } from "../shared/constants/Color";
 
 const DottedBackground: React.FC = () => {

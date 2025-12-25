@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { View, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import { useState } from "react";
+import { View, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { Colors } from "../shared/constants/Color";
 
 interface TextBlock {
   id: string;
   text: string;
-  type: 'front' | 'back' | null;
+  type: "front" | "back" | null;
   selected: boolean;
   frame: {
     x: number;
@@ -22,17 +23,8 @@ interface ImageWithOverlayProps {
   containerWidth: number;
   containerHeight: number;
   onBlockPress: (blockId: string) => void;
-  colors: {
-    primary: string;
-    green: string;
-    blue: string;
-  };
 }
 
-/**
- * Component hiển thị ảnh với text block overlays
- * Sử dụng Image.onLoad để đảm bảo dimensions chính xác
- */
 export const ImageWithOverlay: React.FC<ImageWithOverlayProps> = ({
   imageUri,
   textBlocks,
@@ -41,20 +33,23 @@ export const ImageWithOverlay: React.FC<ImageWithOverlayProps> = ({
   containerWidth,
   containerHeight,
   onBlockPress,
-  colors,
 }) => {
-  const [actualImageDimensions, setActualImageDimensions] = useState({ width: 0, height: 0 });
+  const [actualImageDimensions, setActualImageDimensions] = useState({
+    width: 0,
+    height: 0,
+  });
 
-  // Calculate scale factors based on actual rendered image size
-  const scaleX = actualImageDimensions.width > 0 && imageDimensions.width > 0
-    ? actualImageDimensions.width / imageDimensions.width
-    : 0;
+  const scaleX =
+    actualImageDimensions.width > 0 && imageDimensions.width > 0
+      ? actualImageDimensions.width / imageDimensions.width
+      : 0;
 
-  const scaleY = actualImageDimensions.height > 0 && imageDimensions.height > 0
-    ? actualImageDimensions.height / imageDimensions.height
-    : 0;
+  const scaleY =
+    actualImageDimensions.height > 0 && imageDimensions.height > 0
+      ? actualImageDimensions.height / imageDimensions.height
+      : 0;
 
-  console.log('ImageWithOverlay render:', {
+  console.log("ImageWithOverlay render:", {
     imageDimensions,
     actualImageDimensions,
     containerWidth,
@@ -64,7 +59,12 @@ export const ImageWithOverlay: React.FC<ImageWithOverlayProps> = ({
   });
 
   return (
-    <View style={[styles.container, { width: containerWidth, height: containerHeight }]}>
+    <View
+      style={[
+        styles.container,
+        { width: containerWidth, height: containerHeight },
+      ]}
+    >
       <Image
         source={{ uri: imageUri }}
         style={{
@@ -73,10 +73,15 @@ export const ImageWithOverlay: React.FC<ImageWithOverlayProps> = ({
         }}
         onLoad={(event) => {
           const { width, height } = event.nativeEvent.source;
-          console.log('Image onLoad:', { width, height, container: { containerWidth, containerHeight } });
-          // onLoad gives us the actual image dimensions, which should match imageDimensions
-          // The container dimensions are what we calculate to display
-          setActualImageDimensions({ width: containerWidth, height: containerHeight });
+          console.log("Image onLoad:", {
+            width,
+            height,
+            container: { containerWidth, containerHeight },
+          });
+          setActualImageDimensions({
+            width: containerWidth,
+            height: containerHeight,
+          });
         }}
         resizeMode="contain"
       />
@@ -91,26 +96,26 @@ export const ImageWithOverlay: React.FC<ImageWithOverlayProps> = ({
             const height = block.frame.height * scaleY;
 
             const isSelected = selectedBlocks.includes(block.id);
-            const isFront = block.type === 'front';
-            const isBack = block.type === 'back';
+            const isFront = block.type === "front";
+            const isBack = block.type === "back";
 
-            let backgroundColor = 'rgba(0, 0, 0, 0.1)';
-            let borderColor = 'rgba(255, 255, 255, 0.5)';
-            let borderWidth = 1;
+            const backgroundColor = isSelected
+              ? Colors.primary + "66"
+              : isFront
+              ? Colors.green + "66"
+              : isBack
+              ? Colors.blue + "66"
+              : Colors.black + "1A";
 
-            if (isSelected) {
-              backgroundColor = 'rgba(230, 126, 34, 0.4)';
-              borderColor = colors.primary;
-              borderWidth = 2;
-            } else if (isFront) {
-              backgroundColor = 'rgba(46, 204, 113, 0.4)';
-              borderColor = colors.green;
-              borderWidth = 2;
-            } else if (isBack) {
-              backgroundColor = 'rgba(52, 152, 219, 0.4)';
-              borderColor = colors.blue;
-              borderWidth = 2;
-            }
+            const borderColor = isSelected
+              ? Colors.primary
+              : isFront
+              ? Colors.green
+              : isBack
+              ? Colors.blue
+              : Colors.white + "80";
+
+            const borderWidth = isSelected || isFront || isBack ? 2 : 1;
 
             return (
               <TouchableOpacity
@@ -139,14 +144,15 @@ export const ImageWithOverlay: React.FC<ImageWithOverlayProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'relative',
-    overflow: 'hidden',
+    position: "relative",
+    overflow: "hidden",
     borderRadius: 8,
-    backgroundColor: '#333',
+    backgroundColor: Colors.gray,
   },
+
   overlay: {
-    position: 'absolute',
-    justifyContent: 'center',
-    alignItems: 'center',
+    position: "absolute",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

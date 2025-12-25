@@ -1,7 +1,8 @@
-import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import { Colors } from "../shared/constants/Color";
+
 import { TextBlock } from "../features/ocr/services";
 
 interface OCRActionBarProps {
@@ -12,9 +13,6 @@ interface OCRActionBarProps {
   onCreateCard: () => void;
 }
 
-/**
- * OCR Action Bar - Bottom bar with action buttons
- */
 export function OCRActionBar({
   selectedBlocks,
   textBlocks,
@@ -31,16 +29,26 @@ export function OCRActionBar({
     <View style={[styles.container, { paddingBottom: insets.bottom + 10 }]}>
       {selectedBlocks.length > 0 ? (
         <View style={styles.assignButtons}>
-          <TouchableOpacity style={[styles.button, styles.frontButton]} onPress={onAssignToFront}>
+          <TouchableOpacity
+            style={[styles.button, styles.frontButton]}
+            onPress={onAssignToFront}
+          >
             <Text style={styles.buttonText}>To Front</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.button, styles.backButton]} onPress={onAssignToBack}>
+          <TouchableOpacity
+            style={[styles.button, styles.backButton]}
+            onPress={onAssignToBack}
+          >
             <Text style={styles.buttonText}>To Back</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <TouchableOpacity
-          style={[styles.button, styles.createButton, !canCreateCard && styles.buttonDisabled]}
+          style={[
+            styles.button,
+            styles.createButton,
+            !canCreateCard && styles.buttonDisabled,
+          ]}
           onPress={onCreateCard}
           disabled={!canCreateCard}
         >
@@ -64,30 +72,37 @@ const styles = StyleSheet.create({
     borderTopColor: Colors.border,
     zIndex: 20,
   },
+
   assignButtons: {
     flexDirection: "row",
     gap: 12,
   },
+
   button: {
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
+
   frontButton: {
     flex: 1,
     backgroundColor: Colors.green,
   },
+
   backButton: {
     flex: 1,
     backgroundColor: Colors.blue,
   },
+
   createButton: {
     backgroundColor: Colors.primary,
   },
+
   buttonDisabled: {
     backgroundColor: Colors.subText,
   },
+
   buttonText: {
     fontSize: 16,
     fontWeight: "700",

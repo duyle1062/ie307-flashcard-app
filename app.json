@@ -23,7 +23,10 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.thanhdanhdo1701.flashcardapp",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,16 +37,16 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The application needs access to the image library to scan the text.",
-          "cameraPermission": "The application needs access to the camera to take photos and scan the text."
+          "photosPermission": "The application needs access to the image library to scan the text",
+          "cameraPermission": "The application needs access to the camera to take photos and scan the text"
         }
-      ]
+      ],
+      "expo-localization"
     ],
     "extra": {
       "eas": {
-        "projectId": "70cd2f55-fc1b-4049-b43e-762abb2103e9"
+        "projectId": "a1a86501-103a-4549-a755-9644bc9913c4"
       }
-    },
-    "owner": "thanhdanhdo1701"
+    }
   }
 }

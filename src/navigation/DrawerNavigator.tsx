@@ -10,10 +10,12 @@ import Setting from "../screens/Setting";
 import DownloadExample from "../screens/DownloadExample";
 
 import { DrawerParamList } from "./types";
+import { useTranslation } from "react-i18next";
 
 const Drawer = createDrawerNavigator<DrawerParamList>();
 
 export default function DrawerNavigator() {
+  const { t } = useTranslation();
   return (
     <Drawer.Navigator
       screenOptions={{
@@ -33,7 +35,7 @@ export default function DrawerNavigator() {
         name="Home"
         component={Home}
         options={{
-          title: "All Collections",
+          title: t("drawer.home"),
           headerShown: false,
           drawerIcon: ({ color, size }) => (
             <Feather name="list" size={size} color={color} />
@@ -45,7 +47,7 @@ export default function DrawerNavigator() {
         name="Statistical"
         component={Statistical}
         options={{
-          title: "Statistical",
+          title: t("drawer.statistics"),
           drawerIcon: ({ color, size }) => (
             <Feather name="bar-chart-2" size={size} color={color} />
           ),
@@ -56,7 +58,7 @@ export default function DrawerNavigator() {
         name="Setting"
         component={Setting}
         options={{
-          title: "Setting",
+          title: t("drawer.settings"),
           drawerIcon: ({ color, size }) => (
             <Feather name="settings" size={size} color={color} />
           ),
@@ -67,7 +69,7 @@ export default function DrawerNavigator() {
         name="DownloadExample"
         component={DownloadExample}
         options={{
-          title: "Download CSV example",
+          title: t("drawer.downloadExample"),
           drawerIcon: ({ color, size }) => (
             <Feather name="download" size={size} color={color} />
           ),

@@ -3,7 +3,7 @@
  */
 
 // Card status enum
-export type CardStatus = 'new' | 'learning' | 'review';
+export type CardStatus = "new" | "learning" | "review";
 
 // Sync queue operation enum
 export type SyncOperation = "INSERT" | "UPDATE" | "DELETE";
