@@ -1,7 +1,8 @@
-import React from "react";
 import { View, Text, StyleSheet } from "react-native";
+
 import { Colors } from "../shared/constants/Color";
 import { Shadows } from "../shared/constants/Shadow";
+
 import { TextBlock } from "../features/ocr/services";
 
 interface OCRStatsBarProps {
@@ -9,10 +10,10 @@ interface OCRStatsBarProps {
   selectedBlocks: string[];
 }
 
-/**
- * OCR Stats Bar - Shows count of Front, Back, and Selected blocks
- */
-export function OCRStatsBar({ textBlocks, selectedBlocks }: Readonly<OCRStatsBarProps>) {
+export function OCRStatsBar({
+  textBlocks,
+  selectedBlocks,
+}: Readonly<OCRStatsBarProps>) {
   const frontBlocks = textBlocks.filter((b) => b.type === "front");
   const backBlocks = textBlocks.filter((b) => b.type === "back");
 
@@ -58,7 +59,7 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: Colors.title,
   },
 });

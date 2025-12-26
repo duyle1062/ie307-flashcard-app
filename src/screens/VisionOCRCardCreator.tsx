@@ -1,25 +1,43 @@
-import React, { useEffect } from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
+import { useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import { NativeStackScreenProps } from "@react-navigation/native-stack";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
+
+import AntDesign from "@expo/vector-icons/AntDesign";
 import Feather from "@expo/vector-icons/Feather";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 
 import { Colors } from "../shared/constants/Color";
+
 import DottedBackground from "../components/DottedBackground";
 import { OCRImagePreview } from "../components/OCRImagePreview";
 import { OCRStatsBar } from "../components/OCRStatsBar";
 import { OCRTextEditor } from "../components/OCRTextEditor";
 import { OCRActionBar } from "../components/OCRActionBar";
+
 import { AppStackParamList } from "../navigation/types";
+
 import { useVisionOCR } from "../features/ocr/hooks/useVisionOCR";
 import { CardService } from "../features/card/services";
+
 import { useSync } from "../shared/context/SyncContext";
 
 type Props = NativeStackScreenProps<AppStackParamList, "VisionOCRCardCreator">;
 
-export default function VisionOCRCardCreator({ navigation, route }: Readonly<Props>) {
-  const insets = useSafeAreaInsets();
+export default function VisionOCRCardCreator({
+  navigation,
+  route,
+}: Readonly<Props>) {
+  const { t } = useTranslation();
   const { collectionId } = route.params;
   const { checkAndSyncIfNeeded } = useSync();
 
@@ -34,7 +52,7 @@ export default function VisionOCRCardCreator({ navigation, route }: Readonly<Pro
     const backText = visionOCR.getBackText();
 
     if (!frontText || !backText) {
-      Alert.alert("Error", "Please assign text to both Front and Back");
+      Alert.alert(t("common.error"), t("ocr.assignTextError"));
       return;
     }
 
@@ -44,47 +62,53 @@ export default function VisionOCRCardCreator({ navigation, route }: Readonly<Pro
 
       visionOCR.resetSelections();
 
-      Alert.alert(
-        "Success",
-        "Card created successfully! You can continue creating more cards from this image.",
-        [{ text: "OK" }]
-      );
+      Alert.alert(t("common.success"), t("ocr.cardCreatedSuccess"), [
+        { text: t("common.ok") },
+      ]);
     } catch (error) {
       console.error("Create card error:", error);
-      Alert.alert("Error", "Failed to create card");
+      Alert.alert(t("common.error"), t("alerts.failedToCreateCard"));
     }
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <DottedBackground />
 
-      <View style={[styles.header, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Feather name="chevron-left" size={28} color={Colors.title} />
+          <AntDesign name="arrow-left" size={24} color={Colors.primary} />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Add Card by Image</Text>
+          <Text style={styles.headerTitle}>{t("ocr.addCardByImage")}</Text>
           <View style={styles.badge}>
             <Feather name="cloud" size={12} color={Colors.white} />
-            <Text style={styles.badgeText}>ONLINE</Text>
+            <Text style={styles.badgeText}>
+              {t("ocr.online").toUpperCase()}
+            </Text>
           </View>
         </View>
-        <View style={styles.headerActions}>
-          <TouchableOpacity onPress={visionOCR.retakeImage} style={styles.headerButton}>
-            <MaterialIcons name="photo-camera" size={24} color={Colors.primary} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={visionOCR.retakeImage}
+          style={styles.headerButton}
+        >
+          <MaterialIcons name="photo-camera" size={24} color={Colors.primary} />
+        </TouchableOpacity>
       </View>
 
       {visionOCR.isProcessing ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Processing image with Vision AI...</Text>
-          <Text style={styles.loadingSubText}>This may take a few seconds</Text>
+          <Text style={styles.loadingText}>
+            {t("ocr.processingWithVision")}
+          </Text>
+          <Text style={styles.loadingSubText}>{t("ocr.mayTakeSeconds")}</Text>
         </View>
       ) : (
-        <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 100 }}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={{ paddingBottom: 100 }}
+        >
           {visionOCR.imageUri && (
             <OCRImagePreview
               imageUri={visionOCR.imageUri}
@@ -95,7 +119,10 @@ export default function VisionOCRCardCreator({ navigation, route }: Readonly<Pro
             />
           )}
 
-          <OCRStatsBar textBlocks={visionOCR.textBlocks} selectedBlocks={visionOCR.selectedBlocks} />
+          <OCRStatsBar
+            textBlocks={visionOCR.textBlocks}
+            selectedBlocks={visionOCR.selectedBlocks}
+          />
 
           <OCRTextEditor
             textBlocks={visionOCR.textBlocks}
@@ -118,7 +145,7 @@ export default function VisionOCRCardCreator({ navigation, route }: Readonly<Pro
           onCreateCard={handleCreateCard}
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -127,30 +154,31 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+
   scrollView: {
     flex: 1,
   },
+
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingBottom: 12,
-    backgroundColor: Colors.white,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    zIndex: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 15,
   },
+
   headerTitleContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
   },
+
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: Colors.title,
+    fontSize: 20,
+    fontWeight: "bold",
+    color: Colors.primary,
   },
+
   badge: {
     flexDirection: "row",
     alignItems: "center",
@@ -160,31 +188,32 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: Colors.primary,
   },
+
   badgeText: {
     fontSize: 10,
     fontWeight: "700",
     color: Colors.white,
   },
-  headerActions: {
-    flexDirection: "row",
-    gap: 12,
-  },
+
   headerButton: {
     padding: 4,
   },
+
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     paddingHorizontal: 32,
   },
+
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: Colors.title,
     textAlign: "center",
   },
+
   loadingSubText: {
     marginTop: 8,
     fontSize: 14,

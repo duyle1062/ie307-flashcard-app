@@ -7,6 +7,7 @@ import {
 import { getDueCards, getNewCards } from "./repositories/CardRepository";
 import { Card, CardStatus, StudyQueue, DailyLimits } from "./types";
 import { executeQuery } from "./database";
+import i18next from "i18next";
 
 // Helper: Chuyển đổi đơn vị thời gian sang hiển thị
 export const formatInterval = (interval: number): string => {
@@ -21,44 +22,47 @@ export const formatInterval = (interval: number): string => {
  * Format interval cho button preview (hiển thị chính xác theo spec)
  * Dùng để hiển thị trên các nút Again, Hard, Good, Easy
  */
-export const formatIntervalForButton = (card: Card, rating: 1 | 2 | 3 | 4): string => {
+export const formatIntervalForButton = (
+  card: Card,
+  rating: 1 | 2 | 3 | 4
+): string => {
   const currentStatus = (card.status || "new") as CardStatus;
   const interval = card.interval || 0;
   const ef = card.ef || 2.5;
 
   // NEW cards
   if (currentStatus === "new") {
-    if (rating === 1) return "1m";  // Again: 1 phút
-    if (rating === 2) return "6m";  // Hard: 6 phút
-    if (rating === 3) return "10m"; // Good: 10 phút
-    if (rating === 4) return "5d";  // Easy: 5 ngày
+    if (rating === 1) return i18next.t("study.time_1min"); // Again: 1 phút
+    if (rating === 2) return i18next.t("study.time_6min"); // Hard: 6 phút
+    if (rating === 3) return i18next.t("study.time_10min"); // Good: 10 phút
+    if (rating === 4) return i18next.t("study.time_5d"); // Easy: 5 ngày
   }
 
   // LEARNING cards
   if (currentStatus === "learning") {
-    if (rating === 1) return "1m";  // Again: 1 phút
-    if (rating === 2) return "10m"; // Hard: 10 phút
-    if (rating === 3) return "1d";  // Good: 1 ngày
-    if (rating === 4) return "5d";  // Easy: 5 ngày
+    if (rating === 1) return i18next.t("study.time_1min"); // Again: 1 phút
+    if (rating === 2) return i18next.t("study.time_10min"); // Hard: 10 phút
+    if (rating === 3) return i18next.t("study.time_1d"); // Good: 1 ngày
+    if (rating === 4) return i18next.t("study.time_5d"); // Easy: 5 ngày
   }
 
   // REVIEW cards
   if (currentStatus === "review") {
-    if (rating === 1) return "1m";  // Again: 1 phút (quay lại Learning)
+    if (rating === 1) return i18next.t("study.time_1min"); // Again: 1 phút (quay lại Learning)
     if (rating === 2) {
       // Hard: interval × 1.2
       const newInterval = Math.round(interval * 1.2);
-      return `${newInterval}d`;
+      return i18next.t("study.time_days", { count: newInterval });
     }
     if (rating === 3) {
       // Good: interval × EF
       const newInterval = Math.round(interval * ef);
-      return `${newInterval}d`;
+      return i18next.t("study.time_days", { count: newInterval });
     }
     if (rating === 4) {
       // Easy: interval × EF × 1.3
       const newInterval = Math.round(interval * ef * 1.3);
-      return `${newInterval}d`;
+      return i18next.t("study.time_days", { count: newInterval });
     }
   }
 
@@ -80,49 +84,61 @@ export const calculateSRSResult = (card: Card, rating: 1 | 2 | 3 | 4) => {
 
   // --- 1. LOGIC NEW ---
   if (currentStatus === "new") {
-    if (rating === 1) { // Again
+    if (rating === 1) {
+      // Again
       newInterval = 0.02; // 1 phút (~0.02 ngày)
       newStatus = "learning";
-    } else if (rating === 2) { // Hard
+    } else if (rating === 2) {
+      // Hard
       newInterval = 0.06; // 6 phút (~0.06 ngày)
       newStatus = "learning";
-    } else if (rating === 3) { // Good
+    } else if (rating === 3) {
+      // Good
       newInterval = 0.1; // 10 phút (~0.1 ngày)
       newStatus = "learning"; // Vẫn ở LEARNING theo spec
-    } else if (rating === 4) { // Easy
+    } else if (rating === 4) {
+      // Easy
       newInterval = 5; // 5 ngày
       newStatus = "review"; // Chỉ Easy mới chuyển sang review
     }
-  } 
+  }
   // --- 2. LOGIC LEARNING ---
   else if (currentStatus === "learning") {
-    if (rating === 1) { // Again
+    if (rating === 1) {
+      // Again
       newInterval = 0.02; // 1 phút
       newStatus = "learning";
-    } else if (rating === 2) { // Hard
+    } else if (rating === 2) {
+      // Hard
       newInterval = 0.1; // 10 phút
       newStatus = "learning";
-    } else if (rating === 3) { // Good
+    } else if (rating === 3) {
+      // Good
       newInterval = 1; // 1 ngày -> Graduate
       newStatus = "review";
-    } else if (rating === 4) { // Easy
+    } else if (rating === 4) {
+      // Easy
       newInterval = 5; // 5 ngày -> Graduate
       newStatus = "review";
     }
-  } 
+  }
   // --- 3. LOGIC REVIEW ---
   else if (currentStatus === "review") {
-    if (rating === 1) { // Again
+    if (rating === 1) {
+      // Again
       newInterval = 0.02; // 1 phút (~0.02 ngày)
       newStatus = "learning"; // Lapse
       // EF giảm (bên dưới)
-    } else if (rating === 2) { // Hard
+    } else if (rating === 2) {
+      // Hard
       newInterval = oldInterval * 1.2;
       newStatus = "review";
-    } else if (rating === 3) { // Good
+    } else if (rating === 3) {
+      // Good
       newInterval = oldInterval * oldEf;
       newStatus = "review";
-    } else if (rating === 4) { // Easy
+    } else if (rating === 4) {
+      // Easy
       newInterval = oldInterval * oldEf * 1.3;
       newStatus = "review";
     }
@@ -130,7 +146,7 @@ export const calculateSRSResult = (card: Card, rating: 1 | 2 | 3 | 4) => {
     // Cập nhật EF (Chỉ áp dụng khi ở Review hoặc Lapse từ Review)
     // Công thức: EF' = EF + (0.1 - (3-q)*(0.08+(3-q)*0.02))
     // q: 1=Again, 2=Hard, 3=Good, 4=Easy
-    const modifier = (0.1 - (3 - rating) * (0.08 + (3 - rating) * 0.02));
+    const modifier = 0.1 - (3 - rating) * (0.08 + (3 - rating) * 0.02);
     newEf = Math.max(1.3, oldEf + modifier);
   }
 
@@ -200,13 +216,13 @@ export const onAnswer = async (
  */
 const calculateNewEf = (oldEf: number, rating: number): number => {
   // Công thức: EF' = EF + (0.1 - (5-q)*(0.08+(5-q)*0.02))
-  // Mapping rating của ta: 1(Again) -> q=? 
+  // Mapping rating của ta: 1(Again) -> q=?
   // Pseudo-code của bạn: EF' = EF + (0.1 - (3 - rating) * (0.08 + (3 - rating) * 0.02))
   // Rating: 1=Again, 2=Hard, 3=Good, 4=Easy
-  
-  const modifier = (0.1 - (3 - rating) * (0.08 + (3 - rating) * 0.02));
+
+  const modifier = 0.1 - (3 - rating) * (0.08 + (3 - rating) * 0.02);
   const newEf = oldEf + modifier;
-  
+
   // EF không bao giờ giảm dưới 1.3
   return Math.max(1.3, newEf);
 };
@@ -230,13 +246,13 @@ export const getTodaysQueue = async (
     );
 
     if (userRes.rows.length === 0) throw new Error("User not found");
-    
+
     const settings = userRes.rows.item(0);
-    const limitNew = settings.daily_new_cards_limit || 25;  // Default 25 theo spec
+    const limitNew = settings.daily_new_cards_limit || 25; // Default 25 theo spec
     const limitReview = settings.daily_review_cards_limit || 50;
 
     // 2. Đếm số lượng đã học hôm nay (Từ bảng reviews)
-    // ⚠️ QUAN TRỌNG: Chỉ đếm New và Review, KHÔNG đếm Learning
+    // QUAN TRỌNG: Chỉ đếm New và Review, KHÔNG đếm Learning
     // Learning là KẾT QUẢ của việc học New/Review, không phải input
     const countNewDone = await countNewCardsStudiedToday(userId);
     const countReviewDone = await countReviewCardsStudiedToday(userId);
@@ -264,7 +280,7 @@ export const getTodaysQueue = async (
        ORDER BY due_date ASC`,
       [collectionId, nowISO]
     );
-    
+
     for (let i = 0; i < learningRes.rows.length; i++) {
       learningCards.push(learningRes.rows.item(i));
     }
@@ -282,7 +298,7 @@ export const getTodaysQueue = async (
          LIMIT ?`,
         [collectionId, nowISO, remainingReview]
       );
-      
+
       for (let i = 0; i < reviewRes.rows.length; i++) {
         reviewCards.push(reviewRes.rows.item(i));
       }
@@ -306,7 +322,7 @@ export const getTodaysQueue = async (
     }
 
     // 5. Trả về cấu trúc StudyQueue
-    // ⚠️ reviewCards bây giờ bao gồm: Learning (không giới hạn) + Review (có giới hạn)
+    // reviewCards bây giờ bao gồm: Learning (không giới hạn) + Review (có giới hạn)
     return {
       reviewCards: [...learningCards, ...reviewCards], // Learning ưu tiên trước
       newCards,
@@ -316,12 +332,12 @@ export const getTodaysQueue = async (
         reviewCardsStudied: countReviewDone,
         reviewCardsRemaining: remainingReview,
         totalCardsToday: countNewDone + countReviewDone,
-        totalCardsRemaining: remainingNew + remainingReview + learningCards.length
-      }
+        totalCardsRemaining:
+          remainingNew + remainingReview + learningCards.length,
+      },
     };
-
   } catch (error) {
-    console.error("❌ Queue Error:", error);
+    console.error("Queue Error:", error);
     throw error;
   }
 };

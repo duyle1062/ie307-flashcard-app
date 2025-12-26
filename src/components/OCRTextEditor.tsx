@@ -1,7 +1,15 @@
-import React from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+} from "react-native";
+
 import Feather from "@expo/vector-icons/Feather";
+
 import { Colors } from "../shared/constants/Color";
+
 import { TextBlock } from "../features/ocr/services";
 
 interface OCRTextEditorProps {
@@ -14,9 +22,6 @@ interface OCRTextEditorProps {
   onCancel: () => void;
 }
 
-/**
- * OCR Text Editor - Shows editable front/back text previews
- */
 export function OCRTextEditor({
   textBlocks,
   editingType,
@@ -38,14 +43,18 @@ export function OCRTextEditor({
       {frontBlocks.length > 0 && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: Colors.green }]}>Front Text</Text>
+            <Text style={[styles.sectionTitle, { color: Colors.green }]}>
+              Front Text
+            </Text>
             {editingType !== "front" && (
               <TouchableOpacity
                 onPress={() => onStartEditing("front")}
                 style={styles.editButton}
               >
                 <Feather name="edit-2" size={16} color={Colors.green} />
-                <Text style={[styles.editButtonText, { color: Colors.green }]}>Edit</Text>
+                <Text style={[styles.editButtonText, { color: Colors.green }]}>
+                  Edit
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -61,7 +70,10 @@ export function OCRTextEditor({
                   placeholder="Enter front text..."
                 />
                 <View style={styles.editActions}>
-                  <TouchableOpacity onPress={onCancel} style={styles.cancelButton}>
+                  <TouchableOpacity
+                    onPress={onCancel}
+                    style={styles.cancelButton}
+                  >
                     <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={onSave} style={styles.saveButton}>
@@ -70,7 +82,9 @@ export function OCRTextEditor({
                 </View>
               </View>
             ) : (
-              <Text style={styles.previewText}>{frontBlocks.map((b) => b.text).join("\n")}</Text>
+              <Text style={styles.previewText}>
+                {frontBlocks.map((b) => b.text).join("\n")}
+              </Text>
             )}
           </View>
         </View>
@@ -79,11 +93,18 @@ export function OCRTextEditor({
       {backBlocks.length > 0 && (
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: Colors.blue }]}>Back Text</Text>
+            <Text style={[styles.sectionTitle, { color: Colors.blue }]}>
+              Back Text
+            </Text>
             {editingType !== "back" && (
-              <TouchableOpacity onPress={() => onStartEditing("back")} style={styles.editButton}>
+              <TouchableOpacity
+                onPress={() => onStartEditing("back")}
+                style={styles.editButton}
+              >
                 <Feather name="edit-2" size={16} color={Colors.blue} />
-                <Text style={[styles.editButtonText, { color: Colors.blue }]}>Edit</Text>
+                <Text style={[styles.editButtonText, { color: Colors.blue }]}>
+                  Edit
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -99,7 +120,10 @@ export function OCRTextEditor({
                   placeholder="Enter back text..."
                 />
                 <View style={styles.editActions}>
-                  <TouchableOpacity onPress={onCancel} style={styles.cancelButton}>
+                  <TouchableOpacity
+                    onPress={onCancel}
+                    style={styles.cancelButton}
+                  >
                     <Text style={styles.cancelButtonText}>Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity onPress={onSave} style={styles.saveButton}>
@@ -108,7 +132,9 @@ export function OCRTextEditor({
                 </View>
               </View>
             ) : (
-              <Text style={styles.previewText}>{backBlocks.map((b) => b.text).join("\n")}</Text>
+              <Text style={styles.previewText}>
+                {backBlocks.map((b) => b.text).join("\n")}
+              </Text>
             )}
           </View>
         </View>
@@ -121,20 +147,24 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
   },
+
   section: {
     marginBottom: 16,
   },
+
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 8,
   },
+
   sectionTitle: {
     fontSize: 14,
     fontWeight: "700",
     textTransform: "uppercase",
   },
+
   editButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -144,10 +174,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     backgroundColor: Colors.background,
   },
+
   editButtonText: {
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "bold",
   },
+
   previewCard: {
     padding: 16,
     borderRadius: 12,
@@ -155,19 +187,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
+
   frontCard: {
     borderLeftWidth: 4,
     borderLeftColor: Colors.green,
   },
+
   backCard: {
     borderLeftWidth: 4,
     borderLeftColor: Colors.blue,
   },
+
   previewText: {
     fontSize: 16,
     color: Colors.title,
     lineHeight: 24,
   },
+
   textInput: {
     fontSize: 16,
     color: Colors.title,
@@ -180,11 +216,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     backgroundColor: Colors.background,
   },
+
   editActions: {
     flexDirection: "row",
     gap: 8,
     justifyContent: "flex-end",
   },
+
   cancelButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
@@ -192,20 +230,23 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
+
   cancelButtonText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: Colors.title,
   },
+
   saveButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 6,
     backgroundColor: Colors.primary,
   },
+
   saveButtonText: {
     fontSize: 14,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: Colors.white,
   },
 });

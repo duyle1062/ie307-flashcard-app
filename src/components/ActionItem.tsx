@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+
 import { Colors } from "../shared/constants/Color";
 
 interface ActionItemProps {
@@ -19,7 +20,7 @@ const ActionItem: React.FC<ActionItemProps> = ({
     <Text
       style={[
         styles.actionLabel,
-        isDestructive && { color: Colors.red, fontWeight: "600" },
+        isDestructive && { color: Colors.red, fontWeight: "bold" },
       ]}
     >
       {label}

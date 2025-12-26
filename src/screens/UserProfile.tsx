@@ -21,7 +21,7 @@ import { useUserProfile } from "../features/user";
 
 export default function UserProfile() {
   const navigation = useNavigation();
-  
+
   // Use custom hook for user profile management
   const { userData, isLoading, isUpdating, updateProfile } = useUserProfile();
 
@@ -71,6 +71,7 @@ export default function UserProfile() {
   return (
     <SafeAreaView style={styles.container}>
       <DottedBackground />
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <AntDesign name="arrow-left" size={24} color={Colors.primary} />
@@ -243,13 +244,13 @@ const styles = StyleSheet.create({
 
   streakLabel: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: Colors.subText,
   },
 
   label: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: Colors.title,
     marginBottom: 8,
     marginTop: 15,
@@ -283,7 +284,7 @@ const styles = StyleSheet.create({
 
   collectionButtonText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: Colors.title,
   },
 

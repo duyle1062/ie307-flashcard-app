@@ -1,5 +1,7 @@
 import { View, TouchableOpacity, StyleSheet } from "react-native";
+
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+
 import { Colors } from "../shared/constants/Color";
 
 export default function AuthSocial() {

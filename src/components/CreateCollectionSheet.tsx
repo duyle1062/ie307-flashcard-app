@@ -11,6 +11,7 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { Colors } from "../shared/constants/Color";
 import { Shadows } from "../shared/constants/Shadow";
@@ -28,6 +29,7 @@ const CreateCollectionSheet: React.FC<Props> = ({
   onClose,
   onCreate,
 }) => {
+  const { t } = useTranslation();
   const [collectionName, setCollectionName] = useState("");
 
   const handleCreate = () => {
@@ -60,11 +62,13 @@ const CreateCollectionSheet: React.FC<Props> = ({
 
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Create Collection</Text>
+              <Text style={styles.modalTitle}>
+                {t("collection.createCollection")}
+              </Text>
 
               <TextInput
                 style={styles.input}
-                placeholder="Collection Name"
+                placeholder={t("collection.collectionName")}
                 placeholderTextColor={Colors.gray}
                 value={collectionName}
                 onChangeText={setCollectionName}
@@ -78,7 +82,9 @@ const CreateCollectionSheet: React.FC<Props> = ({
                   style={styles.cancelButton}
                   onPress={handleClose}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Text style={styles.cancelButtonText}>
+                    {t("common.cancel")}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -89,7 +95,9 @@ const CreateCollectionSheet: React.FC<Props> = ({
                   onPress={handleCreate}
                   disabled={!collectionName.trim()}
                 >
-                  <Text style={styles.createButtonText}>Create</Text>
+                  <Text style={styles.createButtonText}>
+                    {t("common.save")}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -103,7 +111,7 @@ const CreateCollectionSheet: React.FC<Props> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: Colors.modalbg,
     justifyContent: "flex-end",
   },
 
@@ -164,7 +172,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: Colors.title,
     fontSize: 17,
-    fontWeight: "600",
+    fontWeight: "bold",
   },
 
   createButton: {
@@ -183,7 +191,7 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: Colors.white,
     fontSize: 17,
-    fontWeight: "600",
+    fontWeight: "bold",
   },
 });
 

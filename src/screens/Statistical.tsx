@@ -1,22 +1,30 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  RefreshControl, 
+import { useCallback, useEffect, useState } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
   ActivityIndicator,
-  Dimensions
+  Dimensions,
 } from "react-native";
+import { useTranslation } from "react-i18next";
+
 import { Colors } from "../shared/constants/Color";
 import { Shadows } from "../shared/constants/Shadow";
 import { useAuth } from "../shared/context/AuthContext";
-import { StatisticalService, DashboardData } from "../features/usage/services/StatisticalService";
+
+import {
+  StatisticalService,
+  DashboardData,
+} from "../features/usage/services/StatisticalService";
+
 import { Ionicons } from "@expo/vector-icons";
 
 const { width } = Dimensions.get("window");
 
 export default function Statistical() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -53,93 +61,104 @@ export default function Statistical() {
   }
 
   return (
-    <ScrollView 
+    <ScrollView
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[Colors.primary]} />
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={[Colors.primary]}
+        />
       }
     >
-      <Text style={styles.screenTitle}>Statistics</Text>
-
-      {/* 1. Tổng quan Reviews */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Review Activity</Text>
+        <Text style={styles.sectionTitle}>
+          {t("statistics.reviewActivity")}
+        </Text>
         <View style={styles.statsGrid}>
-          <StatBox 
-            label="Today" 
-            value={data?.reviewStats.today_count || 0} 
-            color={Colors.blue} 
-            icon="today-outline" 
+          <StatBox
+            label={t("statistics.today")}
+            value={data?.reviewStats.today_count || 0}
+            color={Colors.blue}
+            icon="today-outline"
           />
-          <StatBox 
-            label="This Week" 
-            value={data?.reviewStats.week_count || 0} 
-            color={Colors.green} 
-            icon="calendar-outline" 
+          <StatBox
+            label={t("statistics.thisWeek")}
+            value={data?.reviewStats.week_count || 0}
+            color={Colors.green}
+            icon="calendar-outline"
           />
-          <StatBox 
-            label="All Time" 
-            value={data?.reviewStats.total_count || 0} 
-            color={Colors.secondary} 
-            icon="infinite-outline" 
+          <StatBox
+            label={t("statistics.allTime")}
+            value={data?.reviewStats.total_count || 0}
+            color={Colors.secondary}
+            icon="infinite-outline"
           />
         </View>
       </View>
 
-      {/* 2. Giờ học vàng */}
       {data?.mostFrequentHour && (
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-             <Ionicons name="time" size={24} color={Colors.primary} />
-             <Text style={styles.cardTitle}>Golden Hour</Text>
+            <Ionicons name="time" size={24} color={Colors.primary} />
+            <Text style={styles.cardTitle}>{t("statistics.goldenHour")}</Text>
           </View>
           <Text style={styles.goldenHourText}>
-            You focus best around{" "}
+            {t("statistics.focusBestAround")}{" "}
             <Text style={styles.highlightText}>
-              {data.mostFrequentHour.hour}:00 - {data.mostFrequentHour.hour + 1}:00
+              {data.mostFrequentHour.hour}:00 - {data.mostFrequentHour.hour + 1}
+              :00
             </Text>
           </Text>
           <Text style={styles.subText}>
-            Based on {data.mostFrequentHour.count} study sessions
+            {t("statistics.basedOnSessions", {
+              count: data.mostFrequentHour.count,
+            })}
           </Text>
         </View>
       )}
 
-      {/* 3. Top Collections (Biểu đồ thanh đơn giản) */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Top Collections</Text>
+        <Text style={styles.sectionTitle}>
+          {t("statistics.topCollections")}
+        </Text>
         <View style={styles.card}>
-           {data?.topCollections.length === 0 ? (
-             <Text style={styles.emptyText}>No data yet. Start learning!</Text>
-           ) : (
-             data?.topCollections.map((item, index) => {
-               const maxVal = data.topCollections[0].review_count || 1;
-               const percent = (item.review_count / maxVal) * 100;
-               
-               return (
-                 <View key={item.id} style={styles.barContainer}>
-                   <View style={styles.barLabelContainer}>
-                     <Text style={styles.barLabel} numberOfLines={1}>{item.name}</Text>
-                     <Text style={styles.barValue}>{item.review_count} revs</Text>
-                   </View>
-                   <View style={styles.barBackground}>
-                     <View style={[styles.barFill, { width: `${percent}%` }]} />
-                   </View>
-                 </View>
-               );
-             })
-           )}
+          {data?.topCollections.length === 0 ? (
+            <Text style={styles.emptyText}>{t("statistics.noDataYet")}</Text>
+          ) : (
+            data?.topCollections.map((item, index) => {
+              const maxVal = data.topCollections[0].review_count || 1;
+              const percent = (item.review_count / maxVal) * 100;
+
+              return (
+                <View key={item.id} style={styles.barContainer}>
+                  <View style={styles.barLabelContainer}>
+                    <Text style={styles.barLabel} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                    <Text style={styles.barValue}>
+                      {item.review_count} {t("statistics.revs")}
+                    </Text>
+                  </View>
+                  <View style={styles.barBackground}>
+                    <View style={[styles.barFill, { width: `${percent}%` }]} />
+                  </View>
+                </View>
+              );
+            })
+          )}
         </View>
       </View>
 
-      {/* 4. Top Hardest Cards */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Most Reviewed Cards (Hardest)</Text>
+        <Text style={styles.sectionTitle}>
+          {t("statistics.mostReviewedCards")}
+        </Text>
         {data?.topCards.length === 0 ? (
-           <View style={styles.card}>
-             <Text style={styles.emptyText}>No reviews yet.</Text>
-           </View>
+          <View style={styles.card}>
+            <Text style={styles.emptyText}>{t("statistics.noReviewsYet")}</Text>
+          </View>
         ) : (
           data?.topCards.map((card, index) => (
             <View key={card.id} style={styles.cardItem}>
@@ -147,8 +166,12 @@ export default function Statistical() {
                 <Text style={styles.rankText}>{index + 1}</Text>
               </View>
               <View style={styles.cardInfo}>
-                <Text style={styles.cardFront} numberOfLines={1}>{card.front}</Text>
-                <Text style={styles.cardCollection}>{card.collection_name}</Text>
+                <Text style={styles.cardFront} numberOfLines={1}>
+                  {card.front}
+                </Text>
+                <Text style={styles.cardCollection}>
+                  {card.collection_name}
+                </Text>
               </View>
               <View style={styles.reviewBadge}>
                 <Text style={styles.reviewBadgeText}>{card.review_count}</Text>
@@ -157,7 +180,7 @@ export default function Statistical() {
           ))
         )}
       </View>
-      
+
       <View style={{ height: 40 }} />
     </ScrollView>
   );
@@ -176,118 +199,133 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+
   contentContainer: {
     padding: 20,
-    paddingTop: 60, // Space for header
   },
+
   center: {
     justifyContent: "center",
     alignItems: "center",
   },
-  screenTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: Colors.title,
-    marginBottom: 24,
-  },
+
   section: {
     marginBottom: 24,
   },
+
   sectionTitle: {
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: Colors.subText,
     marginBottom: 12,
   },
+
   statsGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
   },
+
   statBox: {
     backgroundColor: Colors.white,
     borderRadius: 12,
-    width: (width - 40 - 24) / 3, // (Screen - padding - gap) / 3
+    width: (width - 40 - 24) / 3,
     padding: 12,
     alignItems: "center",
     justifyContent: "center",
   },
+
   statValue: {
     fontSize: 20,
     fontWeight: "bold",
     marginVertical: 4,
   },
+
   statLabel: {
     fontSize: 12,
     color: Colors.gray,
   },
+
   card: {
     backgroundColor: Colors.white,
     borderRadius: 16,
     padding: 16,
     ...Shadows.medium,
+    marginBottom: 24,
   },
+
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: 8,
   },
+
   cardTitle: {
     fontSize: 16,
     fontWeight: "bold",
     color: Colors.title,
     marginLeft: 8,
   },
+
   goldenHourText: {
     fontSize: 16,
     color: Colors.title,
     marginBottom: 4,
   },
+
   highlightText: {
     color: Colors.primary,
     fontWeight: "bold",
     fontSize: 18,
   },
+
   subText: {
     fontSize: 12,
     color: Colors.gray,
+    marginTop: 5,
   },
+
   emptyText: {
     textAlign: "center",
     color: Colors.gray,
     fontStyle: "italic",
     padding: 10,
   },
-  // Bar Chart Styles
+
   barContainer: {
     marginBottom: 12,
   },
+
   barLabelContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     marginBottom: 4,
   },
+
   barLabel: {
     fontSize: 14,
     color: Colors.title,
     fontWeight: "500",
     flex: 1,
   },
+
   barValue: {
     fontSize: 12,
     color: Colors.subText,
   },
+
   barBackground: {
     height: 8,
     backgroundColor: Colors.silver,
     borderRadius: 4,
     overflow: "hidden",
   },
+
   barFill: {
     height: "100%",
     backgroundColor: Colors.secondary,
     borderRadius: 4,
   },
-  // List Styles
+
   cardItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -297,6 +335,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     ...Shadows.light,
   },
+
   rankCircle: {
     width: 24,
     height: 24,
@@ -306,29 +345,35 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginRight: 12,
   },
+
   rankText: {
     fontSize: 12,
     fontWeight: "bold",
     color: Colors.title,
   },
+
   cardInfo: {
     flex: 1,
   },
+
   cardFront: {
     fontSize: 15,
     fontWeight: "500",
     color: Colors.title,
   },
+
   cardCollection: {
     fontSize: 12,
     color: Colors.gray,
   },
+
   reviewBadge: {
     backgroundColor: Colors.surface,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
   },
+
   reviewBadgeText: {
     fontSize: 12,
     fontWeight: "bold",

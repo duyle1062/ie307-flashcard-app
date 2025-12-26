@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+
 import { Colors } from "../shared/constants/Color";
 
 type AuthNavigateProps = {

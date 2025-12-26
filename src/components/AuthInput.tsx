@@ -6,7 +6,9 @@ import {
   TextInputProps,
   TouchableOpacity,
 } from "react-native";
+
 import { Colors } from "../shared/constants/Color";
+
 import { Ionicons } from "@expo/vector-icons";
 
 interface AuthInputProps extends TextInputProps {
