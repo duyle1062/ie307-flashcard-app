@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import { Colors } from "../shared/constants/Color";
 
@@ -20,6 +21,7 @@ export function OCRActionBar({
   onAssignToBack,
   onCreateCard,
 }: Readonly<OCRActionBarProps>) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const frontBlocks = textBlocks.filter((b) => b.type === "front");
   const backBlocks = textBlocks.filter((b) => b.type === "back");
@@ -33,13 +35,13 @@ export function OCRActionBar({
             style={[styles.button, styles.frontButton]}
             onPress={onAssignToFront}
           >
-            <Text style={styles.buttonText}>To Front</Text>
+            <Text style={styles.buttonText}>{t("ocr.toFront")}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.button, styles.backButton]}
             onPress={onAssignToBack}
           >
-            <Text style={styles.buttonText}>To Back</Text>
+            <Text style={styles.buttonText}>{t("ocr.toBack")}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -52,7 +54,9 @@ export function OCRActionBar({
           onPress={onCreateCard}
           disabled={!canCreateCard}
         >
-          <Text style={styles.buttonText}>Create Card</Text>
+          <Text style={styles.buttonText}>
+            {t("components.createCard").toUpperCase()}
+          </Text>
         </TouchableOpacity>
       )}
     </View>
@@ -67,7 +71,7 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 16,
     paddingTop: 12,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     zIndex: 20,
@@ -100,7 +104,8 @@ const styles = StyleSheet.create({
   },
 
   buttonDisabled: {
-    backgroundColor: Colors.subText,
+    backgroundColor: Colors.primary,
+    opacity: 0.8,
   },
 
   buttonText: {

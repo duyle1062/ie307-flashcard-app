@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Alert } from "react-native";
+import { useTranslation } from "react-i18next";
 import { UserService } from "../services/UserService";
 import { useSync } from "../../../shared/context/SyncContext";
 import { User } from "../../../shared/types";
@@ -19,6 +20,7 @@ interface UseUserProfileReturn {
 }
 
 export const useUserProfile = (): UseUserProfileReturn => {
+  const { t } = useTranslation();
   const [userData, setUserData] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -31,15 +33,15 @@ export const useUserProfile = (): UseUserProfileReturn => {
     try {
       setIsLoading(true);
       const user = await UserService.getCurrentUser();
-      
+
       if (user) {
         setUserData(user);
       } else {
-        Alert.alert("Error", "User data not found");
+        Alert.alert(t("common.error"), t("alerts.userDataNotFound"));
       }
     } catch (error) {
       console.error("Error loading user data:", error);
-      Alert.alert("Error", "Failed to load user data");
+      Alert.alert(t("common.error"), t("alerts.failedToLoadUserData"));
     } finally {
       setIsLoading(false);
     }
@@ -51,26 +53,26 @@ export const useUserProfile = (): UseUserProfileReturn => {
   const updateProfile = useCallback(
     async (name: string, picture?: string): Promise<boolean> => {
       if (!userData) {
-        console.log("❌ useUserProfile: No user data available");
-        Alert.alert("Error", "User data not available");
+        console.log("useUserProfile: No user data available");
+        Alert.alert(t("common.error"), t("alerts.userDataNotAvailable"));
         return false;
       }
 
       if (!name.trim()) {
-        console.log("❌ useUserProfile: Name is empty");
-        Alert.alert("Error", "Name cannot be empty");
+        console.log("useUserProfile: Name is empty");
+        Alert.alert(t("common.error"), t("alerts.nameCannotBeEmpty"));
         return false;
       }
 
       try {
-        console.log("🔄 useUserProfile: Starting profile update...");
-        console.log("   Current userData:", {
+        console.log("useUserProfile: Starting profile update...");
+        console.log("Current userData:", {
           id: userData.id,
           name: userData.display_name,
           email: userData.email,
         });
-        console.log("   New name:", name.trim());
-        
+        console.log("New name:", name.trim());
+
         setIsUpdating(true);
 
         // Update local DB first (adds to sync_queue automatically)
@@ -81,29 +83,34 @@ export const useUserProfile = (): UseUserProfileReturn => {
         );
 
         if (updatedUser) {
-          console.log("✅ useUserProfile: Local DB updated successfully");
-          console.log("   Updated user data:", {
+          console.log("useUserProfile: Local DB updated successfully");
+          console.log("Updated user data:", {
             id: updatedUser.id,
             name: updatedUser.display_name,
             email: updatedUser.email,
           });
-          
+
           setUserData(updatedUser);
 
           // Trigger sync
-          console.log("🔄 useUserProfile: Triggering sync...");
+          console.log("useUserProfile: Triggering sync...");
           checkAndSyncIfNeeded();
 
-          Alert.alert("useUserProfile: Profile update process completed successfully");
+          Alert.alert(t("common.success"), t("profile.updateSuccess"));
           return true;
         } else {
-          console.log("❌ useUserProfile: Failed to update profile - returned null");
-          Alert.alert("Error", "Failed to update profile");
+          console.log(
+            "useUserProfile: Failed to update profile - returned null"
+          );
+          Alert.alert(t("common.error"), t("alerts.failedToUpdateProfile"));
           return false;
         }
       } catch (error: any) {
-        console.error("❌ useUserProfile: Error updating profile:", error);
-        Alert.alert("Error", "Failed to update profile: " + error.message);
+        console.error("useUserProfile: Error updating profile:", error);
+        Alert.alert(
+          t("common.error"),
+          t("alerts.failedToUpdateProfile") + ": " + error.message
+        );
         return false;
       } finally {
         setIsUpdating(false);

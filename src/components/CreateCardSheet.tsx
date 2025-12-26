@@ -21,6 +21,8 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import { Colors } from "../shared/constants/Color";
 import { Shadows } from "../shared/constants/Shadow";
 
+import DottedBackground from "./DottedBackground";
+
 interface Collection {
   id: string;
   name: string;
@@ -101,6 +103,8 @@ const CreateCardSheet: React.FC<Props> = ({
         onRequestClose={handleClose}
       >
         <SafeAreaView style={styles.container}>
+          <DottedBackground />
+
           <KeyboardAvoidingView
             style={{ flex: 1 }}
             behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -180,7 +184,7 @@ const CreateCardSheet: React.FC<Props> = ({
                   disabled={!canCreate}
                 >
                   <Text style={styles.createButtonText}>
-                    {t("common.save")}
+                    {t("common.save").toUpperCase()}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -210,7 +214,7 @@ const CreateCardSheet: React.FC<Props> = ({
                   onPress={() => setShowCollectionPopup(false)}
                   style={styles.closePopupButton}
                 >
-                  <AntDesign name="close" size={24} color={Colors.title} />
+                  <AntDesign name="close" size={24} color={Colors.primary} />
                 </TouchableOpacity>
               </View>
 
@@ -270,7 +274,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
 
   backButton: {
@@ -294,7 +298,7 @@ const styles = StyleSheet.create({
   },
 
   formCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: 20,
     padding: 24,
     ...Shadows.medium,
@@ -341,18 +345,19 @@ const styles = StyleSheet.create({
     fontSize: 17,
     backgroundColor: Colors.background,
     minHeight: 120,
+    color: Colors.subText,
   },
 
   createButton: {
-    backgroundColor: Colors.blue,
-    paddingVertical: 18,
+    backgroundColor: Colors.primary,
+    paddingVertical: 14,
     borderRadius: 14,
     alignItems: "center",
     marginTop: 12,
   },
 
   createButtonDisabled: {
-    backgroundColor: Colors.blueLight,
+    backgroundColor: Colors.primary,
     opacity: 0.6,
   },
 
@@ -373,11 +378,12 @@ const styles = StyleSheet.create({
     marginTop: 30,
     width: "80%",
     maxHeight: "50%",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: 24,
     ...Shadows.strong,
     overflow: "hidden",
   },
+
   popupHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -387,14 +393,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+
   popupTitle: {
     fontSize: 19,
     fontWeight: "700",
-    color: Colors.title,
+    color: Colors.primary,
   },
+
   closePopupButton: {
     padding: 4,
   },
+
   popupItem: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -402,17 +411,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 18,
   },
+
   popupItemSelected: {
-    backgroundColor: `${Colors.primary}10`,
+    backgroundColor: Colors.primary + "10",
   },
+
   popupItemText: {
     fontSize: 17,
     color: Colors.title,
   },
+
   popupItemTextSelected: {
     fontWeight: "bold",
-    color: Colors.primary,
+    color: Colors.secondary,
   },
+
   separator: {
     height: 1,
     backgroundColor: Colors.border,

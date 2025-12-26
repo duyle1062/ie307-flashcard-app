@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { View, StyleSheet, Alert, Text } from "react-native";
+import { View, StyleSheet, Alert, Text, ActivityIndicator } from "react-native";
 import { DrawerActions } from "@react-navigation/native";
 import type { CompositeScreenProps } from "@react-navigation/native";
 import type { DrawerScreenProps } from "@react-navigation/drawer";
@@ -41,6 +41,7 @@ export default function Home({ navigation }: Readonly<Props>) {
     createCollection: createCollectionHook,
     deleteCollection: deleteCollectionHook,
     refreshCollections,
+    isLoading,
   } = useCollections();
 
   const [search, setSearch] = useState<string>("");
@@ -301,7 +302,12 @@ export default function Home({ navigation }: Readonly<Props>) {
 
       <SearchBar value={search} onChangeText={setSearch} />
 
-      {filteredCollections.length > 0 ? (
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={Colors.subText} />
+          <Text style={styles.loadingText}>{t("common.loading")}</Text>
+        </View>
+      ) : filteredCollections.length > 0 ? (
         <CollectionList
           data={filteredCollections}
           onPressItem={handlePressCollection}
@@ -366,6 +372,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loadingText: {
+    color: Colors.subText,
+    fontSize: 16,
+    marginTop: 12,
   },
 
   emptyContainer: {

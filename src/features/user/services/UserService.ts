@@ -38,26 +38,26 @@ export class UserService {
     picture?: string
   ): Promise<User | null> {
     try {
-      console.log("🔄 UserService: Updating profile for user:", userId);
-      console.log("   Name:", name);
-      console.log("   Picture:", picture || "(no change)");
-      
+      console.log("UserService: Updating profile for user:", userId);
+      console.log("Name:", name);
+      console.log("Picture:", picture || "(no change)");
+
       const result = await updateUserProfileRepo(userId, name, picture);
-      
+
       if (result) {
-        console.log("✅ UserService: Profile updated successfully");
-        console.log("   Updated data:", {
+        console.log("UserService: Profile updated successfully");
+        console.log("Updated data:", {
           id: result.id,
           name: result.display_name,
           email: result.email,
         });
       } else {
-        console.log("❌ UserService: Profile update returned null");
+        console.log("UserService: Profile update returned null");
       }
-      
+
       return result;
     } catch (error) {
-      console.error("❌ UserService: Error updating profile:", error);
+      console.error("UserService: Error updating profile:", error);
       throw error;
     }
   }

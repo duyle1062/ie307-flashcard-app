@@ -214,7 +214,8 @@
     "editProfile": "Edit Profile",
     "deleteAccount": "Delete Account",
     "deleteAccountConfirm": "Are you sure? This action cannot be undone",
-    "username": "Username"
+    "username": "Username",
+    "updateSuccess": "Profile updated successfully"
   },
   "drawer": {
     "home": "All Collections",
@@ -256,6 +257,11 @@
   },
   "alerts": {
     "userNotAuthenticated": "User not authenticated",
+    "userDataNotFound": "User data not found",
+    "failedToLoadUserData": "Failed to load user data",
+    "userDataNotAvailable": "User data not available",
+    "nameCannotBeEmpty": "Name cannot be empty",
+    "failedToUpdateProfile": "Failed to update profile",
     "syncComplete": "Sync Complete",
     "syncFailed": "Sync Failed",
     "unknownError": "Unknown error",
@@ -275,6 +281,34 @@
     "cardCreatedSuccess": "Card created successfully! You can continue creating more cards from this image",
     "online": "Online",
     "processingWithVision": "Processing image with Vision AI...",
-    "mayTakeSeconds": "This may take a few seconds"
+    "mayTakeSeconds": "This may take a few seconds",
+    "front": "Front",
+    "back": "Back",
+    "selected": "Selected",
+    "toFront": "To Front",
+    "toBack": "To Back",
+    "frontText": "Front Text",
+    "backText": "Back Text",
+    "enterFrontText": "Enter front text...",
+    "enterBackText": "Enter back text...",
+    "chooseImageSource": "Choose Image Source",
+    "selectImageSource": "Select where to get the image from",
+    "camera": "Camera",
+    "gallery": "Gallery",
+    "permissionRequired": "Permission Required",
+    "cameraPermissionRequired": "Camera permission is required to take photos.",
+    "failedToOpenCamera": "Failed to open camera",
+    "failedToOpenGallery": "Failed to open gallery",
+    "noTextDetected": "No Text Detected",
+    "noTextDetectedMessage": "No text was found in the image. Tips:\n• Ensure good lighting\n• Hold camera steady\n• Use high contrast text\n• Avoid blurry images",
+    "retry": "Retry",
+    "failedToRecognizeText": "Failed to recognize text from image. Please try again with a clearer photo.",
+    "configurationRequired": "Configuration Required",
+    "visionApiKeyNotConfigured": "Google Cloud Vision API key is not configured. Please add your API key in VisionAIService.ts",
+    "noTextFound": "No Text Found",
+    "noTextFoundMessage": "No text was detected in the image. Please try another image.",
+    "detectedTextBlocks": "Detected {{count}} text blocks using Google Cloud Vision API",
+    "processingFailed": "Processing Failed",
+    "processingFailedMessage": "Failed to process image with Vision AI. Please check your internet connection and API key."
   }
 }

@@ -32,11 +32,12 @@ const styles = StyleSheet.create({
 
   text: {
     fontSize: 16,
+    color: Colors.subText,
   },
 
   link: {
     fontSize: 16,
-    color: Colors.midnightBlue,
+    color: Colors.secondary,
     fontWeight: "bold",
   },
 });

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Alert } from "react-native";
+import { useTranslation } from "react-i18next";
 import * as ImagePicker from "expo-image-picker";
 import { OCRService, TextBlock, ImageDimensions } from "../services";
 
@@ -30,8 +31,12 @@ interface UseOCRReturn {
  * Custom hook to manage OCR state and operations
  */
 export function useOCR(onCancel?: () => void): UseOCRReturn {
+  const { t } = useTranslation();
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [imageDimensions, setImageDimensions] = useState<ImageDimensions>({ width: 0, height: 0 });
+  const [imageDimensions, setImageDimensions] = useState<ImageDimensions>({
+    width: 0,
+    height: 0,
+  });
   const [textBlocks, setTextBlocks] = useState<TextBlock[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedBlocks, setSelectedBlocks] = useState<string[]>([]);
@@ -39,21 +44,21 @@ export function useOCR(onCancel?: () => void): UseOCRReturn {
   const [editedText, setEditedText] = useState("");
 
   const promptImageSource = () => {
-    Alert.alert("Choose Image Source", "Select where to get the image from", [
+    Alert.alert(t("ocr.chooseImageSource"), t("ocr.selectImageSource"), [
       {
-        text: "Camera",
+        text: t("ocr.camera"),
         onPress: () => {
           void openCamera();
         },
       },
       {
-        text: "Gallery",
+        text: t("ocr.gallery"),
         onPress: () => {
           void openGallery();
         },
       },
       {
-        text: "Cancel",
+        text: t("common.cancel"),
         style: "cancel",
         onPress: onCancel,
       },
@@ -62,16 +67,20 @@ export function useOCR(onCancel?: () => void): UseOCRReturn {
 
   const openCamera = async () => {
     try {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      const permissionResult =
+        await ImagePicker.requestCameraPermissionsAsync();
       if (!permissionResult.granted) {
-        Alert.alert("Permission Required", "Camera permission is required to take photos.");
+        Alert.alert(
+          t("ocr.permissionRequired"),
+          t("ocr.cameraPermissionRequired")
+        );
         return;
       }
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.8,
-        allowsEditing: false
+        allowsEditing: false,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -79,7 +88,7 @@ export function useOCR(onCancel?: () => void): UseOCRReturn {
       }
     } catch (error) {
       console.error("Camera error:", error);
-      Alert.alert("Error", "Failed to open camera");
+      Alert.alert(t("common.error"), t("ocr.failedToOpenCamera"));
     }
   };
 
@@ -88,7 +97,7 @@ export function useOCR(onCancel?: () => void): UseOCRReturn {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         quality: 0.8,
-        allowsEditing: false
+        allowsEditing: false,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -96,7 +105,7 @@ export function useOCR(onCancel?: () => void): UseOCRReturn {
       }
     } catch (error) {
       console.error("Gallery error:", error);
-      Alert.alert("Error", "Failed to open gallery");
+      Alert.alert(t("common.error"), t("ocr.failedToOpenGallery"));
     }
   };
 
@@ -111,26 +120,16 @@ export function useOCR(onCancel?: () => void): UseOCRReturn {
       setTextBlocks(result.blocks);
 
       if (result.blocks.length === 0) {
-        Alert.alert(
-          "No Text Detected",
-          "No text was found in the image. Tips:\n" +
-            "• Ensure good lighting\n" +
-            "• Hold camera steady\n" +
-            "• Use high contrast text\n" +
-            "• Avoid blurry images",
-          [{ text: "Retry", onPress: retakeImage }]
-        );
+        Alert.alert(t("ocr.noTextDetected"), t("ocr.noTextDetectedMessage"), [
+          { text: t("ocr.retry"), onPress: retakeImage },
+        ]);
       }
     } catch (error) {
       console.error("OCR error:", error);
-      Alert.alert(
-        "Error",
-        "Failed to recognize text from image. Please try again with a clearer photo.",
-        [
-          { text: "Retry", onPress: retakeImage },
-          { text: "Cancel", style: "cancel" },
-        ]
-      );
+      Alert.alert(t("common.error"), t("ocr.failedToRecognizeText"), [
+        { text: t("ocr.retry"), onPress: retakeImage },
+        { text: t("common.cancel"), style: "cancel" },
+      ]);
     } finally {
       setIsProcessing(false);
     }
@@ -147,14 +146,18 @@ export function useOCR(onCancel?: () => void): UseOCRReturn {
 
   const handleBlockPress = (blockId: string) => {
     setSelectedBlocks((prev) =>
-      prev.includes(blockId) ? prev.filter((id) => id !== blockId) : [...prev, blockId]
+      prev.includes(blockId)
+        ? prev.filter((id) => id !== blockId)
+        : [...prev, blockId]
     );
   };
 
   const assignToFront = () => {
     setTextBlocks((prev) =>
       prev.map((block) =>
-        selectedBlocks.includes(block.id) ? { ...block, type: "front", selected: false } : block
+        selectedBlocks.includes(block.id)
+          ? { ...block, type: "front", selected: false }
+          : block
       )
     );
     setSelectedBlocks([]);
@@ -163,7 +166,9 @@ export function useOCR(onCancel?: () => void): UseOCRReturn {
   const assignToBack = () => {
     setTextBlocks((prev) =>
       prev.map((block) =>
-        selectedBlocks.includes(block.id) ? { ...block, type: "back", selected: false } : block
+        selectedBlocks.includes(block.id)
+          ? { ...block, type: "back", selected: false }
+          : block
       )
     );
     setSelectedBlocks([]);
@@ -203,7 +208,9 @@ export function useOCR(onCancel?: () => void): UseOCRReturn {
   };
 
   const resetSelections = () => {
-    setTextBlocks((prev) => prev.map((block) => ({ ...block, type: null, selected: false })));
+    setTextBlocks((prev) =>
+      prev.map((block) => ({ ...block, type: null, selected: false }))
+    );
     setSelectedBlocks([]);
   };
 

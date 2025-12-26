@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     marginLeft: 6,
-    color: Colors.black,
+    color: Colors.subText,
   },
 });
 

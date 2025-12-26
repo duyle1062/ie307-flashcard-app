@@ -25,6 +25,7 @@ import AuthNavigate from "../components/AuthNavigate";
 import AuthSocial from "../components/AuthSocial";
 
 import { useAuth } from "../shared/context/AuthContext";
+import DottedBackground from "@/components/DottedBackground";
 
 export default function Register() {
   const { t } = useTranslation();
@@ -63,12 +64,14 @@ export default function Register() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      <DottedBackground />
+
       <AuthHeader title={t("auth.signUp")} />
 
       <View style={styles.field}>
         <Text style={styles.label}>{t("auth.email")}</Text>
         <AuthInput
-          icon={<Fontisto name="email" size={18} color={Colors.black} />}
+          icon={<Fontisto name="email" size={18} color={Colors.title} />}
           placeholder={t("auth.emailPlaceholder")}
           value={email}
           onChangeText={setEmail}
@@ -80,7 +83,7 @@ export default function Register() {
       <View style={styles.field}>
         <Text style={styles.label}>{t("auth.createPassword")}</Text>
         <AuthInput
-          icon={<Fontisto name="key" size={18} color={Colors.black} />}
+          icon={<Fontisto name="key" size={18} color={Colors.title} />}
           placeholder={t("auth.passwordPlaceholder")}
           secureTextEntry
           value={password}
@@ -91,7 +94,7 @@ export default function Register() {
       <View style={styles.field}>
         <Text style={styles.label}>{t("auth.confirmPassword")}</Text>
         <AuthInput
-          icon={<Fontisto name="key" size={18} color={Colors.black} />}
+          icon={<Fontisto name="key" size={18} color={Colors.title} />}
           placeholder={t("auth.repeatPasswordPlaceholder")}
           secureTextEntry
           value={confirmPassword}
@@ -138,7 +141,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: "500",
-    color: Colors.black,
+    color: Colors.primary,
   },
 
   dividerContainer: {
@@ -158,6 +161,6 @@ const styles = StyleSheet.create({
   dividerText: {
     marginHorizontal: 10,
     fontSize: 14,
-    color: Colors.black,
+    color: Colors.subText,
   },
 });
