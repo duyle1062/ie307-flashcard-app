@@ -9,6 +9,8 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -121,10 +123,14 @@ export default function ChangePassword() {
         <View style={{ width: 100 }} />
       </View>
 
-      <View style={styles.contentContainer}>
+      <KeyboardAvoidingView
+        style={styles.contentContainer}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <View style={styles.card}>
             <View style={styles.topSection}>
@@ -134,9 +140,8 @@ export default function ChangePassword() {
             </View>
 
             <Text style={styles.label}>{t("auth.oldPassword")}</Text>
-
             <AuthInput
-              icon={<Fontisto name="key" size={18} color={Colors.black} />}
+              icon={<Fontisto name="key" size={18} color={Colors.title} />}
               value={oldPassword}
               onChangeText={setOldPassword}
               placeholder={t("auth.oldPasswordPlaceholder")}
@@ -146,9 +151,8 @@ export default function ChangePassword() {
             />
 
             <Text style={styles.label}>{t("auth.newPassword")}</Text>
-
             <AuthInput
-              icon={<Fontisto name="key" size={18} color={Colors.black} />}
+              icon={<Fontisto name="key" size={18} color={Colors.title} />}
               value={newPassword}
               onChangeText={setNewPassword}
               placeholder={t("auth.newPasswordPlaceholder")}
@@ -156,9 +160,10 @@ export default function ChangePassword() {
               editable={!isUpdating}
               placeholderTextColor={Colors.subText}
             />
+
             <Text style={styles.label}>{t("auth.confirmNewPassword")}</Text>
             <AuthInput
-              icon={<Fontisto name="key" size={18} color={Colors.black} />}
+              icon={<Fontisto name="key" size={18} color={Colors.title} />}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               placeholder={t("auth.confirmNewPasswordPlaceholder")}
@@ -182,7 +187,7 @@ export default function ChangePassword() {
             </Text>
           )}
         </TouchableOpacity>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }

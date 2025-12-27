@@ -1,4 +1,11 @@
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
 import { useState } from "react";
 
 import { Colors } from "../shared/constants/Color";
@@ -16,6 +23,8 @@ import AuthButton from "../components/AuthButton";
 import AuthNavigate from "../components/AuthNavigate";
 import AuthSocial from "../components/AuthSocial";
 
+import DottedBackground from "@/components/DottedBackground";
+
 import { useAuth } from "../shared/context/AuthContext";
 
 import { useTranslation } from "react-i18next";
@@ -27,16 +36,13 @@ export default function Login() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
 
-  const { login } = useAuth();
+  const { login, isLoading: authLoading } = useAuth();
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
 
   const handleLogin = async () => {
     if (!email || !password) {
-      Alert.alert(
-        "Missing Information",
-        "Please enter both email and password."
-      );
+      Alert.alert(t("auth.missingInformation"), t("auth.fillAllFields"));
       return;
     }
 
@@ -45,14 +51,25 @@ export default function Login() {
     setLoading(false);
   };
 
+  if (authLoading) {
+    return (
+      <View style={styles.loadingScreen}>
+        <ActivityIndicator size="large" color={Colors.subText} />
+        <Text style={styles.loadingText}>{t("common.loading")}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
+      <DottedBackground />
+
       <AuthHeader title={t("auth.login")} />
 
       <View style={styles.field}>
         <Text style={styles.label}>{t("auth.email")}</Text>
         <AuthInput
-          icon={<Fontisto name="email" size={18} color={Colors.black} />}
+          icon={<Fontisto name="email" size={18} color={Colors.title} />}
           placeholder={t("auth.loginEmailPlaceholder")}
           value={email}
           onChangeText={setEmail}
@@ -62,7 +79,7 @@ export default function Login() {
       <View style={styles.field}>
         <Text style={styles.label}>{t("auth.password")}</Text>
         <AuthInput
-          icon={<Fontisto name="key" size={18} color={Colors.black} />}
+          icon={<Fontisto name="key" size={18} color={Colors.title} />}
           placeholder={t("auth.loginPasswordPlaceholder")}
           secureTextEntry
           value={password}
@@ -103,6 +120,19 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
+  loadingScreen: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  loadingText: {
+    color: Colors.subText,
+    fontSize: 16,
+    marginTop: 12,
+  },
+
   container: {
     flex: 1,
     backgroundColor: Colors.white,
@@ -118,7 +148,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: "500",
-    color: Colors.black,
+    color: Colors.primary,
   },
 
   forgotPassword: {
@@ -127,7 +157,7 @@ const styles = StyleSheet.create({
   },
 
   forgotPasswordText: {
-    color: Colors.midnightBlue,
+    color: Colors.subText,
     fontWeight: "500",
   },
 
@@ -148,6 +178,6 @@ const styles = StyleSheet.create({
   dividerText: {
     marginHorizontal: 10,
     fontSize: 14,
-    color: Colors.black,
+    color: Colors.subText,
   },
 });

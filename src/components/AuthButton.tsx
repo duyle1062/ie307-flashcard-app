@@ -34,7 +34,7 @@ export default function AuthButton({
 const styles = StyleSheet.create({
   btn: {
     width: "100%",
-    backgroundColor: Colors.black,
+    backgroundColor: Colors.primary,
     borderRadius: 10,
     paddingVertical: 10,
     marginVertical: 15,

@@ -153,17 +153,20 @@ const styles = StyleSheet.create({
     marginVertical: 16,
     width: "100%",
   },
+
   container: {
     borderRadius: 8,
     overflow: "hidden",
-    backgroundColor: "#333",
+    backgroundColor: Colors.surface,
     ...Shadows.medium,
     position: "relative",
   },
+
   overlayContainer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1,
   },
+
   overlay: {
     position: "absolute",
     justifyContent: "center",

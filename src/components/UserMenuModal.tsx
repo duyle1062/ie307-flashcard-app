@@ -44,7 +44,7 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
               onAccountPress();
             }}
           >
-            <Feather name="user" size={18} color={Colors.black} />
+            <Feather name="user" size={18} color={Colors.title} />
             <Text style={styles.menuText}>{t("components.account")}</Text>
           </TouchableOpacity>
 
@@ -55,7 +55,7 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
               onChangePassword();
             }}
           >
-            <AntDesign name="lock" size={18} color={Colors.black} />
+            <AntDesign name="lock" size={18} color={Colors.title} />
             <Text style={styles.menuText}>{t("auth.changePassword")}</Text>
           </TouchableOpacity>
 
@@ -66,7 +66,7 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
               onClose();
             }}
           >
-            <AntDesign name="logout" size={18} color={Colors.black} />
+            <AntDesign name="logout" size={18} color={Colors.title} />
             <Text style={styles.menuText}>{t("components.signOut")}</Text>
           </TouchableOpacity>
         </View>
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   menuText: {
     marginLeft: 10,
     fontSize: 15,
-    color: Colors.black,
+    color: Colors.title,
   },
 });
 

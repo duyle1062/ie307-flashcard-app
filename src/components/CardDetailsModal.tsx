@@ -199,7 +199,9 @@ export default function CardDetailsModal({
                 style={styles.updateButton}
                 onPress={handleUpdateCard}
               >
-                <Text style={styles.updateButtonText}>{t("card.update")}</Text>
+                <Text style={styles.updateButtonText}>
+                  {t("card.update").toUpperCase()}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -209,18 +209,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       );
       const firebaseUser = userCredential.user;
 
-      // Khi login chủ động, ta buộc phải sync từ cloud về để đảm bảo data mới nhất
       await syncCloudUserToLocal(firebaseUser.uid);
       await saveCurrentUserId(firebaseUser.uid);
       isSyncedRef.current = true;
 
-      // DEBUG: Log dữ liệu users sau khi login (Lưu session vào AsyncStorage)
       const sqliteDb = await getDatabase();
       await logTableData(sqliteDb, "users");
 
       return true;
     } catch (error: any) {
-      Alert.alert("Login Failed", "Incorrect email or password.");
+      Alert.alert("Login Failed", "Incorrect email or password");
       return false;
     }
   };

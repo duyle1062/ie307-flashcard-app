@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     paddingVertical: 10,
-    color: Colors.title,
+    color: Colors.subText,
   },
 
   listContent: {
