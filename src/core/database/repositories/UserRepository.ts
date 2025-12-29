@@ -11,10 +11,9 @@ import { User } from "../types";
  */
 export const getUserById = async (userId: string): Promise<User | null> => {
   try {
-    const result = await executeQuery(
-      "SELECT * FROM users WHERE id = ?",
-      [userId]
-    );
+    const result = await executeQuery("SELECT * FROM users WHERE id = ?", [
+      userId,
+    ]);
 
     if (result.rows.length > 0) {
       return result.rows.item(0) as User;
@@ -31,10 +30,9 @@ export const getUserById = async (userId: string): Promise<User | null> => {
  */
 export const getUserByEmail = async (email: string): Promise<User | null> => {
   try {
-    const result = await executeQuery(
-      "SELECT * FROM users WHERE email = ?",
-      [email]
-    );
+    const result = await executeQuery("SELECT * FROM users WHERE email = ?", [
+      email,
+    ]);
 
     if (result.rows.length > 0) {
       return result.rows.item(0) as User;
@@ -59,14 +57,16 @@ export const upsertUser = async (
         "SELECT id FROM users WHERE email = ? AND id != ?",
         [userData.email, userData.id]
       );
-      
+
       if (emailConflict.rows.length > 0) {
         const oldId = emailConflict.rows.item(0).id;
-        console.log(`⚠️ Email ${userData.email} exists with different ID ${oldId}, deleting old user...`);
+        console.log(
+          `⚠️ Email ${userData.email} exists with different ID ${oldId}, deleting old user...`
+        );
         await executeQuery("DELETE FROM users WHERE id = ?", [oldId]);
       }
     }
-    
+
     // Use INSERT OR REPLACE to handle both insert and update atomically
     // COALESCE preserves original created_at if user already exists
     await executeQuery(
@@ -162,7 +162,7 @@ export const updateUserProfile = async (
     console.log("   User ID:", userId);
     console.log("   Display Name:", displayName);
     console.log("   Profile Picture:", profilePictureUrl || "(no change)");
-    
+
     await updateWithSync(
       "users",
       userId,
@@ -172,11 +172,11 @@ export const updateUserProfile = async (
       },
       ["display_name", "picture"]
     );
-    
+
     console.log("✅ UserRepository: Update query executed");
 
     const updatedUser = await getUserById(userId);
-    
+
     if (updatedUser) {
       console.log("✅ UserRepository: Retrieved updated user:", {
         id: updatedUser.id,
@@ -186,7 +186,7 @@ export const updateUserProfile = async (
     } else {
       console.log("❌ UserRepository: Could not retrieve updated user");
     }
-    
+
     return updatedUser;
   } catch (error) {
     console.error("❌ UserRepository: Error updating user profile:", error);
@@ -207,7 +207,9 @@ const getStartOfDay = (dateStr: string | Date): number => {
  * Check and increment daily streak based on logic
  * Called when user finishes a study session
  */
-export const checkAndIncrementStreak = async (userId: string): Promise<User | null> => {
+export const checkAndIncrementStreak = async (
+  userId: string
+): Promise<User | null> => {
   try {
     const user = await getUserById(userId);
     if (!user) return null;
@@ -232,25 +234,32 @@ export const checkAndIncrementStreak = async (userId: string): Promise<User | nu
     // 2. Tính khoảng cách ngày
     // (Today - LastActive) / (24 * 60 * 60 * 1000)
     const oneDayMs = 24 * 60 * 60 * 1000;
-    const diffDays = Math.round((todayStart - lastActiveStart) / oneDayMs);
+    const diffDays = user.last_active_date
+      ? Math.round((todayStart - lastActiveStart) / oneDayMs)
+      : 0; // For new users with no last_active_date
 
-    if (diffDays === 1) {
+    if (user.last_active_date === null || user.last_active_date === undefined) {
+      // First time studying -> Start streak at 1
+      newStreak = 1;
+    } else if (diffDays === 1) {
       // Học ngày hôm qua -> Tăng chuỗi
       newStreak += 1;
-    } else {
-      // Bỏ lỡ 1 ngày trở lên hoặc user mới -> Reset về 1
+    } else if (diffDays > 1) {
+      // Bỏ lỡ 1 ngày trở lên -> Reset về 1
       newStreak = 1;
     }
 
-    console.log(`🔥 Updating streak: ${user.streak_days} -> ${newStreak} (Diff: ${diffDays} days)`);
+    console.log(
+      `🔥 Updating streak: ${user.streak_days} -> ${newStreak} (Diff: ${diffDays} days)`
+    );
 
     // 3. Update DB & Sync Queue
     await updateWithSync(
       "users",
       userId,
-      { 
-        streak_days: newStreak, 
-        last_active_date: todayStr 
+      {
+        streak_days: newStreak,
+        last_active_date: todayStr,
       },
       ["streak_days", "last_active_date"]
     );

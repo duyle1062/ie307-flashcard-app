@@ -97,9 +97,9 @@
     "addCardByImageOnline": "Thêm thẻ từ hình ảnh (Google Vision)",
     "viewAllCards": "Xem tất cả thẻ",
     "rename": "Đổi tên",
-    "renameTitle": "Đổi tên bộ thẻ",
-    "renameSuccess": "Đổi tên bộ thẻ thành công",
-    "collectionName": "Tên bộ thẻ",
+    "renameTitle": "Đổi tên bộ sưu tập",
+    "renameSuccess": "Đổi tên bộ sưu tập thành công",
+    "collectionName": "Tên bộ sưu tập",
     "exportAsCSV": "Xuất dưới dạng CSV",
     "exportAsJSON": "Xuất dưới dạng JSON",
     "deleteCollection": "Xóa bộ sưu tập"

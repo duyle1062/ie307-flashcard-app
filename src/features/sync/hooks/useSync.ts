@@ -9,9 +9,18 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AppState, AppStateStatus } from "react-native";
-import { syncService, SyncStatus, SyncResult, SyncOptions } from "../services/syncService";
+import {
+  syncService,
+  SyncStatus,
+  SyncResult,
+  SyncOptions,
+} from "../services/syncService";
 import { useAuth } from "../../../shared/context/AuthContext";
 import NetInfo from "@react-native-community/netinfo";
+import {
+  registerBackgroundSync,
+  unregisterBackgroundSync,
+} from "../services/backgroundSyncTask";
 // Removed seedDatabase import - no longer auto-creating collections
 
 export const useSync = () => {
@@ -22,7 +31,7 @@ export const useSync = () => {
     pendingChanges: 0,
     error: null,
   });
-  
+
   // ✅ FIX: Track initial sync to prevent duplicate
   const initialSyncDoneRef = useRef(false);
 
@@ -41,35 +50,38 @@ export const useSync = () => {
   /**
    * Perform sync
    */
-  const performSync = useCallback(async (options?: SyncOptions): Promise<SyncResult | null> => {
-    if (!user) {
-      console.warn("No user logged in, cannot sync");
-      return null;
-    }
-
-    try {
-      // Early guard: avoid redundant call if a sync is already in progress
-      if (syncService.isSyncing) {
-        console.log("⚠️ Sync already running, skipping trigger");
+  const performSync = useCallback(
+    async (options?: SyncOptions): Promise<SyncResult | null> => {
+      if (!user) {
+        console.warn("No user logged in, cannot sync");
         return null;
       }
-      setSyncStatus((prev) => ({ ...prev, isRunning: true }));
-      const result = await syncService.sync(user.uid, options);
-      await refreshStatus();
-      return result;
-    } catch (error: any) {
-      console.error("Sync failed:", error);
-      return {
-        success: false,
-        pushedCount: 0,
-        pulledCount: 0,
-        failedCount: 1,
-        errors: [error.message],
-      };
-    } finally {
-      setSyncStatus((prev) => ({ ...prev, isRunning: false }));
-    }
-  }, [user, refreshStatus]);
+
+      try {
+        // Early guard: avoid redundant call if a sync is already in progress
+        if (syncService.isSyncing) {
+          console.log("⚠️ Sync already running, skipping trigger");
+          return null;
+        }
+        setSyncStatus((prev) => ({ ...prev, isRunning: true }));
+        const result = await syncService.sync(user.uid, options);
+        await refreshStatus();
+        return result;
+      } catch (error: any) {
+        console.error("Sync failed:", error);
+        return {
+          success: false,
+          pushedCount: 0,
+          pulledCount: 0,
+          failedCount: 1,
+          errors: [error.message],
+        };
+      } finally {
+        setSyncStatus((prev) => ({ ...prev, isRunning: false }));
+      }
+    },
+    [user, refreshStatus]
+  );
 
   /**
    * Force sync (manual trigger)
@@ -128,8 +140,15 @@ export const useSync = () => {
     if (!user) {
       // Reset initial sync flag when user logs out
       initialSyncDoneRef.current = false;
+      // Unregister background sync on logout
+      unregisterBackgroundSync();
       return;
     }
+
+    // ✅ Register background sync task when user logs in
+    registerBackgroundSync().catch((error) => {
+      console.error("Failed to register background sync:", error);
+    });
 
     // ✅ FIX: Perform initial sync ONCE using ref
     if (!initialSyncDoneRef.current && !syncService.isSyncing) {
@@ -140,11 +159,10 @@ export const useSync = () => {
 
     // Handle AppState changes (Active <-> Background)
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
-      // if (nextAppState === "background" && !syncService.isSyncing) {
-      //   console.log("📱 App going to background, syncing...");
-      //   performSync();
-      // } else 
-      if (nextAppState === "active") {
+      if (nextAppState === "background" && !syncService.isSyncing) {
+        console.log("📱 App going to background, syncing...");
+        performSync();
+      } else if (nextAppState === "active") {
         console.log("📱 App became active, refreshing status...");
         refreshStatus();
       }
