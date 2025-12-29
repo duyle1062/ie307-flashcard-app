@@ -229,7 +229,7 @@ const calculateNewEf = (oldEf: number, rating: number): number => {
 
 /**
  * Lấy hàng đợi học tập cho ngày hôm nay
- * Logic: Independent Queues (New limit độc lập với Review limit)
+ * Logic: Independent Queues per Collection (New limit và Review limit độc lập cho từng collection)
  */
 export const getTodaysQueue = async (
   userId: string,
@@ -251,15 +251,17 @@ export const getTodaysQueue = async (
     const limitNew = settings.daily_new_cards_limit || 25; // Default 25 theo spec
     const limitReview = settings.daily_review_cards_limit || 50;
 
-    // 2. Đếm số lượng đã học hôm nay (Từ bảng reviews)
-    // QUAN TRỌNG: Chỉ đếm New và Review, KHÔNG đếm Learning
-    // Learning là KẾT QUẢ của việc học New/Review, không phải input
-    const countNewDone = await countNewCardsStudiedToday(userId);
-    const countReviewDone = await countReviewCardsStudiedToday(userId);
+    // 2. Đếm số lượng đã học hôm nay CHO COLLECTION NÀY
+    // QUAN TRỌNG: Mỗi collection có quota riêng
+    const countNewDone = await countNewCardsStudiedToday(userId, collectionId);
+    const countReviewDone = await countReviewCardsStudiedToday(
+      userId,
+      collectionId
+    );
 
-    // 3. Tính Quota còn lại
-    // New limit: Giới hạn số new cards được giới thiệu
-    // Review limit: Giới hạn số review cards due
+    // 3. Tính Quota còn lại cho collection này
+    // New limit: Giới hạn số new cards được giới thiệu per collection
+    // Review limit: Giới hạn số review cards due per collection
     // Learning: KHÔNG GIỚI HẠN (theo chuẩn Anki)
     const remainingNew = Math.max(0, limitNew - countNewDone);
     const remainingReview = Math.max(0, limitReview - countReviewDone);
@@ -285,7 +287,7 @@ export const getTodaysQueue = async (
       learningCards.push(learningRes.rows.item(i));
     }
 
-    // 4.2 Get Review Cards (CÓ GIỚI HẠN)
+    // 4.2 Get Review Cards (CÓ GIỚI HẠN per collection)
     // Chỉ lấy review cards, không bao gồm learning
     if (remainingReview > 0) {
       const reviewRes = await executeQuery(
@@ -343,16 +345,23 @@ export const getTodaysQueue = async (
 };
 
 /**
- * Check if user has reached daily limits
+ * Check if user has reached daily limits (per collection)
  */
 export const checkDailyLimits = async (
   userId: string,
   dailyNewLimit: number = 25,
-  dailyReviewLimit: number = 50
+  dailyReviewLimit: number = 50,
+  collectionId?: string
 ): Promise<DailyLimits> => {
   try {
-    const newCardsStudied = await countNewCardsStudiedToday(userId);
-    const reviewCardsStudied = await countReviewCardsStudiedToday(userId);
+    const newCardsStudied = await countNewCardsStudiedToday(
+      userId,
+      collectionId
+    );
+    const reviewCardsStudied = await countReviewCardsStudiedToday(
+      userId,
+      collectionId
+    );
 
     return {
       newCards: {
