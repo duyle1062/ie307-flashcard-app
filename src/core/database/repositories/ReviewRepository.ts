@@ -99,24 +99,31 @@ export const createReview = async (
 };
 
 /**
- * Count new cards studied today by user
+ * Count new cards studied today by user (per collection)
  */
 export const countNewCardsStudiedToday = async (
-  userId: string
+  userId: string,
+  collectionId?: string
 ): Promise<number> => {
   try {
     const today = new Date().toISOString().split("T")[0];
 
-    const result = await executeQuery(
-      `SELECT COUNT(DISTINCT card_id) as count 
+    let query = `SELECT COUNT(DISTINCT card_id) as count 
        FROM reviews r
        INNER JOIN cards c ON r.card_id = c.id
        WHERE r.user_id = ? 
        AND DATE(r.reviewed_at) = ?
        AND r.old_interval = 0
-       AND c.is_deleted = 0`,
-      [userId, today]
-    );
+       AND c.is_deleted = 0`;
+
+    const params: any[] = [userId, today];
+
+    if (collectionId) {
+      query += ` AND c.collection_id = ?`;
+      params.push(collectionId);
+    }
+
+    const result = await executeQuery(query, params);
 
     if (result.rows.length > 0) {
       return result.rows.item(0).count;
@@ -129,34 +136,41 @@ export const countNewCardsStudiedToday = async (
 };
 
 /**
- * Count review cards studied today by user
- * 
+ * Count review cards studied today by user (per collection)
+ *
  * ⚠️ QUAN TRỌNG: Chỉ đếm cards có old_interval >= 1 (Review cards đã graduate)
  * KHÔNG đếm Learning cards vì Learning không tính vào review limit
- * 
+ *
  * Logic phân biệt:
  * - New cards: old_interval = 0 (chưa học bao giờ)
  * - Review cards: old_interval >= 1 (đã graduate, đang ôn định kỳ)
  * - Learning cards: 0 < old_interval < 1 (đang học dở, chưa graduate)
  */
 export const countReviewCardsStudiedToday = async (
-  userId: string
+  userId: string,
+  collectionId?: string
 ): Promise<number> => {
   try {
     const today = new Date().toISOString().split("T")[0];
 
     // Chỉ đếm cards có old_interval >= 1 (Review cards)
     // Learning cards (0 < interval < 1) KHÔNG tính
-    const result = await executeQuery(
-      `SELECT COUNT(DISTINCT card_id) as count 
+    let query = `SELECT COUNT(DISTINCT card_id) as count 
        FROM reviews r
        INNER JOIN cards c ON r.card_id = c.id
        WHERE r.user_id = ? 
        AND DATE(r.reviewed_at) = ?
        AND r.old_interval >= 1
-       AND c.is_deleted = 0`,
-      [userId, today]
-    );
+       AND c.is_deleted = 0`;
+
+    const params: any[] = [userId, today];
+
+    if (collectionId) {
+      query += ` AND c.collection_id = ?`;
+      params.push(collectionId);
+    }
+
+    const result = await executeQuery(query, params);
 
     if (result.rows.length > 0) {
       return result.rows.item(0).count;
@@ -304,7 +318,7 @@ export const getUserStudyDates = async (userId: string): Promise<string[]> => {
     for (let i = 0; i < result.rows.length; i++) {
       dates.push(result.rows.item(i).study_date);
     }
-    
+
     return dates;
   } catch (error) {
     console.error("Error getting user study dates:", error);
@@ -315,7 +329,9 @@ export const getUserStudyDates = async (userId: string): Promise<string[]> => {
 /**
  * Get Top 5 Collections by number of reviews
  */
-export const getTopCollectionsByReviews = async (userId: string): Promise<TopCollectionStat[]> => {
+export const getTopCollectionsByReviews = async (
+  userId: string
+): Promise<TopCollectionStat[]> => {
   try {
     const result = await executeQuery(
       `SELECT c.id, c.name, COUNT(r.id) as review_count
@@ -343,7 +359,9 @@ export const getTopCollectionsByReviews = async (userId: string): Promise<TopCol
 /**
  * Get Top 5 Most Reviewed Cards (Often the hardest ones)
  */
-export const getTopCardsByReviews = async (userId: string): Promise<TopCardStat[]> => {
+export const getTopCardsByReviews = async (
+  userId: string
+): Promise<TopCardStat[]> => {
   try {
     const result = await executeQuery(
       `SELECT ca.id, ca.front, ca.back, c.name as collection_name, COUNT(r.id) as review_count

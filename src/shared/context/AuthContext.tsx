@@ -7,6 +7,7 @@ import {
   useRef,
 } from "react";
 import { Alert } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { toFirestoreData } from "../../core/utils/mapper";
 
@@ -53,6 +54,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userData, setUserData] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const { t } = useTranslation();
 
   const isSyncedRef = useRef<boolean>(false);
 
@@ -218,7 +220,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       return true;
     } catch (error: any) {
-      Alert.alert("Login Failed", "Incorrect email or password");
+      Alert.alert(t("auth.loginFailed"), t("auth.incorrectCredentials"));
       return false;
     }
   };
