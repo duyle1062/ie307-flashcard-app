@@ -8,6 +8,7 @@
     "save": "Save",
     "close": "Close",
     "back": "Back",
+    "rename": "Rename",
     "logout": "Logout",
     "loading": "Loading...",
     "error": "Error",
@@ -96,6 +97,9 @@
     "addCardByImageOnline": "Add card by image (Google Vision)",
     "viewAllCards": "View all cards",
     "rename": "Rename",
+    "renameTitle": "Rename Collection",
+    "renameSuccess": "Collection renamed successfully",
+    "collectionName": "Collection name",
     "exportAsCSV": "Export as CSV",
     "exportAsJSON": "Export as JSON",
     "deleteCollection": "Delete collection"

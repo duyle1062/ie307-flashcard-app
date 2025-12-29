@@ -17,6 +17,7 @@ import CollectionList from "../components/CollectionList";
 import FloatingAddButton from "../components/FloatingAddButton";
 import CollectionActionModal from "../components/CollectionActionModal";
 import CreateCardSheet from "../components/CreateCardSheet";
+import RenameCollectionModal from "../components/RenameCollectionModal";
 
 import { useAuth } from "../shared/context/AuthContext";
 import { useSync } from "../shared/context/SyncContext";
@@ -39,6 +40,7 @@ export default function Home({ navigation }: Readonly<Props>) {
   const {
     collections,
     createCollection: createCollectionHook,
+    renameCollection: renameCollectionHook,
     deleteCollection: deleteCollectionHook,
     refreshCollections,
     isLoading,
@@ -54,6 +56,7 @@ export default function Home({ navigation }: Readonly<Props>) {
   const [isImporting, setIsImporting] = useState(false);
 
   const [showCreateCardFromModal, setShowCreateCardFromModal] = useState(false);
+  const [showRenameModal, setShowRenameModal] = useState(false);
 
   const handleManualSync = async () => {
     if (!user) {
@@ -192,8 +195,24 @@ export default function Home({ navigation }: Readonly<Props>) {
   };
 
   const onRename = () => {
-    handleCloseActionModal();
-    console.log("Rename:", selectedCollection?.title);
+    setActionModalVisible(false);
+    setShowRenameModal(true);
+  };
+
+  const handleRename = async (newName: string) => {
+    if (!selectedCollection) return;
+
+    const success = await renameCollectionHook(selectedCollection.id, newName);
+    if (success) {
+      Alert.alert(t("common.success"), t("collection.renameSuccess"));
+      setShowRenameModal(false);
+      setSelectedCollection(null);
+    }
+  };
+
+  const handleCloseRenameModal = () => {
+    setShowRenameModal(false);
+    setSelectedCollection(null);
   };
 
   const onExportCSV = async () => {
@@ -363,6 +382,13 @@ export default function Home({ navigation }: Readonly<Props>) {
         onExportCSV={onExportCSV}
         onExportJSON={onExportJSON}
         onDelete={onDelete}
+      />
+
+      <RenameCollectionModal
+        visible={showRenameModal}
+        onClose={handleCloseRenameModal}
+        currentName={selectedCollection?.title || ""}
+        onRename={handleRename}
       />
     </View>
   );
