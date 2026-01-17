@@ -1,240 +1,154 @@
-# Flashcard App - Frontend
+<p align="center">
+  <a href="https://www.uit.edu.vn/" title="Trường Đại học Công nghệ Thông tin" style="border: none;">
+    <img src="https://i.imgur.com/WmMnSRt.png" alt="Trường Đại học Công nghệ Thông tin | University of Information Technology">
+  </a>
+</p>
 
-React Native mobile application built with Expo SDK 54 with SQLite local database and Firebase backend.
+<h1 align="center"><b>CÔNG NGHỆ LẬP TRÌNH ĐA NỀN TẢNG CHO ỨNG DỤNG DI ĐỘNG</b></h1>
 
-## 🚀 Quick Start
+## THÀNH VIÊN NHÓM:
 
-```powershell
-# Install dependencies
+| STT | MSSV     | Họ và Tên         | Email |
+| --- | -------- | ----------------- | -------------------------------- |
+| 1   | 22520315 | Lê Đức Anh Duy    | 22520315@gm.uit.edu.vn |
+| 2   | 22520198 | Đỗ Thành Danh     | 22520198@gm.uit.edu.vn |
+| 3   | 22520309 | Phạm Hải Dương    | 22520309@gm.uit.edu.vn |
+| 4   | 22520316 | Lê Thanh Duy      | 22520316@gm.uit.edu.vn |
+
+## GIỚI THIỆU MÔN HỌC
+* **Tên môn học:** Công nghệ lập trình đa nền tảng cho ứng dụng di động
+* **Mã môn học:** IE307
+* **Mã lớp:** IE307.Q12
+* **Năm học:** HK1 (2025 - 2026)
+* **Giảng viên hướng dẫn:** ThS. Phạm Nhật Duy
+
+## ĐỀ TÀI: FLASHCARD APP
+Ứng dụng Flashcard trên thiết bị di động hỗ trợ học tập và ghi nhớ kiến thức thông qua phương pháp **Spaced Repetition (Lặp lại ngắt quãng)**. Ứng dụng được thiết kế theo kiến trúc **Offline-first**, cho phép học mọi lúc mọi nơi và tự động đồng bộ dữ liệu khi có kết nối mạng.
+
+## TÍNH NĂNG NỔI BẬT 
+
+### Quản lý học tập
+* **CRUD Collection/Card:** Tạo, sửa, xóa bộ thẻ và thẻ học. Hỗ trợ import/export dữ liệu dạng CSV/JSON.
+* **Spaced Repetition System (SRS):** Sử dụng thuật toán SM-2 tùy chỉnh để tính toán thời điểm ôn tập.
+* **Study Modes:** Hỗ trợ các trạng thái thẻ: New (Mới), Learning (Đang học), Review (Ôn tập).
+
+### Công cụ hỗ trợ
+* **OCR:** Quét văn bản từ ảnh để tạo thẻ. Hỗ trợ scan Offline (ML Kit) và Online (Google Cloud Vision API).
+* **Offline-first:** Cơ sở dữ liệu SQLite cục bộ đóng vai trò là nguồn dữ liệu chính, đảm bảo trải nghiệm không cần internet.
+* **Sync Data:** Đồng bộ 2 chiều với Firestore, xử lý xung đột và hàng đợi khi có mạng.
+
+### Thống kê
+* **Statistics:** Biểu đồ thống kê lượt ôn tập, tỷ lệ nhớ, thẻ khó nhất.
+* **Streak:** Theo dõi chuỗi ngày học liên tiếp để duy trì động lực.
+* **Dark/Light Mode:** Giao diện trực quan, hỗ trợ chế độ tối.
+
+## CÔNG NGHỆ SỬ DỤNG 
+
+| Category | Technology | Description |
+| --- | --- | --- |
+| **Framework** | **React Native / Expo SDK** | Nền tảng phát triển ứng dụng đa nền tảng. |
+| **Language** | **TypeScript** | Đảm bảo an toàn kiểu dữ liệu và dễ bảo trì. |
+| **Local DB** | **Expo SQLite** | Lưu trữ dữ liệu offline (Users, Collections, Cards...). |
+| **Cloud DB** | **Firebase Firestore** | Lưu trữ đám mây và đồng bộ dữ liệu. |
+| **Auth** | **Firebase Auth** | Xác thực người dùng (Email/Password). |
+| **State** | **React Context / Hooks** | Quản lý trạng thái ứng dụng. |
+| **UI/UX** | **Reanimated / Gesture Handler** | Xử lý Animation và thao tác cử chỉ. |
+| **OCR** | **ML Kit / Google Vision** | Nhận diện văn bản từ hình ảnh. |
+
+## CẤU TRÚC THƯ MỤC
+```
+ie307-flashcard-app/
+├── assets/                          # Tài nguyên tĩnh
+├── src/
+│   ├── components/                  # Component UI tái sử dụng 
+│   ├── core/                        # Cấu hình cốt lõi
+│   │   └── config/
+│   │       └── firebaseConfig.ts    # Cấu hình Firebase 
+│   ├── database/                    # Quản lý SQLite Local 
+│   │   ├── repositories/            # Data access layer
+│   │   │   ├── CardRepository.ts      
+│   │   │   ├── CollectionRepository.ts 
+│   │   │   ├── ReviewRepository.ts    
+│   │   │   └── UserRepository.ts      
+│   │   ├── database.ts              # Khởi tạo database 
+│   │   ├── schema.ts                # Định nghĩa schema bảng 
+│   │   ├── helpers.ts               # Các hàm hỗ trợ database 
+│   │   ├── spacedRepetition.ts      # Thuật toán SM-2 (SRS) 
+│   │   ├── storage.ts               # AsyncStorage wrapper 
+│   │   └── types.ts                 # Các định nghĩa kiểu dữ liệu DB 
+│   ├── features/                    # Modules chức năng
+│   │   ├── card/                    # Quản lý thẻ flashcard 
+│   │   ├── collection/              # Quản lý bộ thẻ 
+│   │   ├── ocr/                     # Nhận dạng văn bản từ ảnh
+│   │   ├── sync/                    # Đồng bộ dữ liệu
+│   │   ├── usage/                   # Thống kê & phân tích 
+│   │   └── user/                    # Quản lý người dùng 
+│   ├── navigation/                  # Cấu hình điều hướng màn hình 
+│   ├── screens/                     # Các màn hình chính của ứng dụng 
+│   ├── shared/                      # Tài nguyên dùng chung 
+│   │   ├── constants/               # Hằng số (màu sắc, config) 
+│   │   ├── context/                 # React Context
+│   │   ├── hooks/                   # Custom hooks chung 
+│   │   ├── i18n/                    # Cài đặt đa ngôn ngữ 
+│   │   ├── types/                   # TypeScript types chung 
+│   │   └── utils/                   # Các tiện ích khác 
+│   └── App.tsx                      # Root component
+├── app.json                         # Cấu hình Expo
+├── index.js                         # Entry point
+├── package.json                     # Dependencies
+└── tsconfig.json                    # Cấu hình TypeScript
+```
+## CÀI ĐẶT & CẤU HÌNH
+### Yêu cầu
+* Node.js
+* Expo Go hoặc Android Emulator
+
+### Các bước thực hiện
+#### 1. Clone Repository
+```
+git clone https://github.com/duyle1062/ie307-flashcard-app.git
+cd ie307-flashcard-app
+```
+#### 2. Cài đặt Dependencies
+```
 npm install
-
-# Setup Firebase (IMPORTANT!)
-# See QUICKSTART.md for 3-minute setup guide
-
-# Start development server
-npx expo start
-
-# Run on platforms
-# Press 'a' for Android
-# Press 'i' for iOS
-# Press 'w' for web (limited support)
+# Hoặc sử dụng yarn
+yarn install
 ```
-
-## 📚 Documentation
-
-**Start here:**
-- 📖 [QUICKSTART.md](./QUICKSTART.md) - 3-minute Firebase setup
-- ✅ [CHECKLIST.md](./CHECKLIST.md) - Verify your implementation
-
-**Deep dive:**
-- 🔥 [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) - Detailed Firebase configuration
-- 🏗️ [AUTH_FLOW.md](./AUTH_FLOW.md) - Authentication architecture
-- 📋 [IMPLEMENTATION_SUMMARY.md](./IMPLEMENTATION_SUMMARY.md) - What's implemented
-
-## 📱 Features
-
-### ✅ Implemented
-- ✅ Email/Password authentication (Firebase)
-- ✅ User registration & login
-- ✅ Persistent sessions (auto-login)
-- ✅ SQLite local database (offline-first)
-- ✅ User data sync (Firebase ↔ SQLite)
-- ✅ Flashcard deck management
-- ✅ Spaced repetition study system
-- ✅ Progress tracking
-
-### 🔜 Coming Soon
-- 🔜 Google OAuth
-- 🔜 Facebook OAuth
-- 🔜 Password reset
-- 🔜 Email verification
-- 🔜 Profile picture upload
-
-## 🏗️ Project Structure
-
+#### 3. Cấu hình biến môi trường
+Tạo tệp .env tại thư mục gốc và điền thông tin cấu hình từ Firebase Console và Google Cloud:
 ```
-src/
-├── config/
-│   └── firebaseConfig.ts    # Firebase initialization
-├── context/
-│   └── AuthContext.tsx       # Authentication state
-├── database/
-│   ├── database.tsx          # SQLite setup
-│   ├── repositories/         # Database queries
-│   │   ├── UserRepository.tsx
-│   │   ├── CollectionRepository.tsx
-│   │   ├── CardRepository.tsx
-│   │   └── ReviewRepository.tsx
-│   └── storage.tsx           # AsyncStorage helpers
-├── navigation/
-│   ├── RootNavigator.tsx     # Auth routing
-│   ├── AuthStack.tsx         # Login/Register screens
-│   └── AppStack.tsx          # Main app screens
-├── pages/
-│   ├── Login.tsx             # Login screen
-│   ├── Register.tsx          # Registration screen
-│   ├── Home.tsx              # Home screen
-│   └── Study.tsx             # Study screen
-└── components/
-    ├── AuthButton.tsx        # Authentication button
-    ├── AuthInput.tsx         # Input with validation
-    └── AuthSocial.tsx        # OAuth buttons (prepared)
-```
-
-## 🔧 Configuration
-
-### 1. Firebase Setup
-
-Follow [QUICKSTART.md](./QUICKSTART.md) for 3-minute setup:
-
-1. Create Firebase project
-2. Enable Authentication (Email/Password)
-3. Enable Firestore Database
-4. Copy config to `.env`
-
-### 2. Environment Variables
-
-```bash
-cp .env.example .env
-```
-
-Then fill in your Firebase credentials:
-
-```env
+# Firebase Configuration
 EXPO_PUBLIC_FIREBASE_API_KEY=your_api_key
-EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your-app.firebaseapp.com
-EXPO_PUBLIC_FIREBASE_PROJECT_ID=your-project-id
-EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your-app.appspot.com
-EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=123456789
-EXPO_PUBLIC_FIREBASE_APP_ID=1:123:web:abc
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+EXPO_PUBLIC_FIREBASE_APP_ID=your_app_id
+
+# Google Cloud Vision API (Cho tính năng OCR Online)
+EXPO_PUBLIC_GOOGLE_VISION_API_KEY=your_google_vision_api_key
 ```
-
-## 📦 Dependencies
-
-**Core:**
-- `expo` - SDK 54
-- `react-navigation` - Navigation library
-- `firebase` - Backend & authentication
-- `@react-native-async-storage/async-storage` - Local storage
-- `expo-sqlite` - Local database
-
-**Authentication:**
-- Firebase Authentication (Email/Password)
-- Future: Google OAuth, Facebook OAuth
-
-**Database:**
-- SQLite (local, offline-first)
-- Firestore (cloud, sync)
-
-## 🔐 Authentication Flow
-
+#### 4. Cài đặt EAS CLI
 ```
-User Register/Login
-        ↓
-Firebase Authentication
-        ↓
-Create/Fetch user from Firestore
-        ↓
-Sync to SQLite local database
-        ↓
-Save session to AsyncStorage
-        ↓
-Navigate to App
+npm install -g eas-cli
 ```
-
-See [AUTH_FLOW.md](./AUTH_FLOW.md) for detailed architecture.
-
-## 🧪 Testing
-
-**Manual Testing:**
-1. Register new account
-2. Check Firebase Console > Authentication
-3. Check Firestore Database > users collection
-4. Login with registered account
-5. Close and reopen app (auto-login test)
-6. Logout test
-
-See [CHECKLIST.md](./CHECKLIST.md) for full testing checklist.
-
-## 🏗️ Building
-
-```powershell
-# Development build
-npx expo start
-
-# Production build (requires EAS)
-npx eas build --platform android
-npx eas build --platform ios
+#### 5. Đăng nhập vào Expo
 ```
+eas login
+```
+#### 6. Build cho Android (APK/AAB)
+```
+# Build bản phát triển
+eas build --profile development --platform android
 
-## 🆘 Troubleshooting
-
-**App won't start:**
-```bash
-rm -rf node_modules
-npm install
+# Build bản chính thức
+eas build --profile production --platform android
+```
+#### 7. Khởi chạy ứng dụng
+```
 npx expo start -c
 ```
 
-**Firebase errors:**
-- Check `.env` file exists and has correct values
-- Verify Firebase project is active
-- Check Authentication is enabled in Firebase Console
-
-**SQLite errors:**
-- Check `expo-sqlite` plugin in `app.json`
-- Try clearing app data
-
-**Common Issues:**
-- "Email already in use" → Use different email
-- "Weak password" → Use 8+ characters
-- Auto-login not working → Check AsyncStorage permissions
-
-See [CHECKLIST.md](./CHECKLIST.md) for detailed verification.
-
-## 📝 Environment Variables
-
-See `.env.example` for all required environment variables.
-
-Required variables:
-- `EXPO_PUBLIC_FIREBASE_API_KEY`
-- `EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN`
-- `EXPO_PUBLIC_FIREBASE_PROJECT_ID`
-- `EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET`
-- `EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
-- `EXPO_PUBLIC_FIREBASE_APP_ID`
-
-## 🔒 Security
-
-- ✅ Firebase credentials in `.env` (not committed)
-- ✅ Firestore Security Rules restrict data access
-- ✅ Password minimum 8 characters
-- ✅ Email validation
-- ✅ Secure password hashing (Firebase handled)
-
-## 🚀 Next Steps
-
-1. ✅ Complete Firebase setup ([QUICKSTART.md](./QUICKSTART.md))
-2. ✅ Test authentication flow ([CHECKLIST.md](./CHECKLIST.md))
-3. 🔜 Implement Google OAuth
-4. 🔜 Add password reset feature
-5. 🔜 Add email verification
-6. 🔜 Implement card sync with Firestore
-
-## 🐛 Known Issues
-
-- OAuth buttons are placeholders (show "Coming Soon" alert)
-- Password reset not yet implemented
-- Email verification not yet implemented
-
-## 🤝 Contributing
-
-1. Fork the repo
-2. Create feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open Pull Request
-
-## 📄 License
-
-MIT
+## TÀI LIỆU THAM KHẢO
+* EAS BUILD: https://docs.expo.dev/build/setup/
