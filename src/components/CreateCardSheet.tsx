@@ -11,20 +11,23 @@ import {
   ScrollView,
   FlatList,
   Keyboard,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
 
 import AntDesign from "@expo/vector-icons/AntDesign";
 
 import { Colors } from "../shared/constants/Color";
 import { Shadows } from "../shared/constants/Shadow";
 
+import DottedBackground from "./DottedBackground";
+
 interface Collection {
   id: string;
   name: string;
 }
 
-// Props interface
 interface Props {
   visible: boolean;
   onClose: () => void;
@@ -34,7 +37,7 @@ interface Props {
     back: string;
   }) => void;
   collections?: Collection[];
-  preSelectedCollectionId?: string; // Auto-select collection
+  preSelectedCollectionId?: string;
 }
 
 const CreateCardSheet: React.FC<Props> = ({
@@ -44,7 +47,8 @@ const CreateCardSheet: React.FC<Props> = ({
   collections: externalCollections,
   preSelectedCollectionId,
 }) => {
- const collections = externalCollections || [];
+  const { t } = useTranslation();
+  const collections = externalCollections || [];
 
   const [selectedCollection, setSelectedCollection] =
     useState<Collection | null>(null);
@@ -52,10 +56,11 @@ const CreateCardSheet: React.FC<Props> = ({
   const [backText, setBackText] = useState("");
   const [showCollectionPopup, setShowCollectionPopup] = useState(false);
 
-  // Auto-select collection khi mở sheet với preSelectedCollectionId
   useEffect(() => {
     if (visible && preSelectedCollectionId) {
-      const preSelected = collections.find(c => c.id === preSelectedCollectionId);
+      const preSelected = collections.find(
+        (c) => c.id === preSelectedCollectionId
+      );
       if (preSelected) {
         setSelectedCollection(preSelected);
       }
@@ -98,6 +103,8 @@ const CreateCardSheet: React.FC<Props> = ({
         onRequestClose={handleClose}
       >
         <SafeAreaView style={styles.container}>
+          <DottedBackground />
+
           <KeyboardAvoidingView
             style={{ flex: 1 }}
             behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -106,7 +113,7 @@ const CreateCardSheet: React.FC<Props> = ({
               <TouchableOpacity onPress={handleClose} style={styles.backButton}>
                 <AntDesign name="left" size={24} color={Colors.title} />
               </TouchableOpacity>
-              <Text style={styles.title}>Create Card</Text>
+              <Text style={styles.title}>{t("card.createCard")}</Text>
               <View style={{ width: 40 }} />
             </View>
 
@@ -117,7 +124,7 @@ const CreateCardSheet: React.FC<Props> = ({
             >
               <View style={styles.formCard}>
                 <View style={styles.fieldContainer}>
-                  <Text style={styles.label}>Card Collection</Text>
+                  <Text style={styles.label}>{t("card.cardCollection")}</Text>
                   <TouchableOpacity
                     style={styles.cardCollection}
                     onPress={() => {
@@ -132,7 +139,7 @@ const CreateCardSheet: React.FC<Props> = ({
                         !selectedCollection && styles.placeholder,
                       ]}
                     >
-                      {selectedCollection?.name || "Choose a collection"}
+                      {selectedCollection?.name || t("card.chooseCollection")}
                     </Text>
                     <AntDesign
                       name={showCollectionPopup ? "down" : "right"}
@@ -143,10 +150,10 @@ const CreateCardSheet: React.FC<Props> = ({
                 </View>
 
                 <View style={styles.fieldContainer}>
-                  <Text style={styles.label}>Front Text</Text>
+                  <Text style={styles.label}>{t("card.frontText")}</Text>
                   <TextInput
                     style={styles.textInput}
-                    placeholder="Example: 漢字"
+                    placeholder={t("card.enterFront")}
                     placeholderTextColor={Colors.gray}
                     value={frontText}
                     onChangeText={setFrontText}
@@ -156,10 +163,10 @@ const CreateCardSheet: React.FC<Props> = ({
                 </View>
 
                 <View style={styles.fieldContainer}>
-                  <Text style={styles.label}>Back Text</Text>
+                  <Text style={styles.label}>{t("card.backText")}</Text>
                   <TextInput
                     style={styles.textInput}
-                    placeholder="Example: Hán tự"
+                    placeholder={t("card.enterBack")}
                     placeholderTextColor={Colors.gray}
                     value={backText}
                     onChangeText={setBackText}
@@ -176,7 +183,9 @@ const CreateCardSheet: React.FC<Props> = ({
                   onPress={handleCreate}
                   disabled={!canCreate}
                 >
-                  <Text style={styles.createButtonText}>Create</Text>
+                  <Text style={styles.createButtonText}>
+                    {t("common.save").toUpperCase()}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
@@ -198,12 +207,14 @@ const CreateCardSheet: React.FC<Props> = ({
           <TouchableWithoutFeedback>
             <View style={styles.popupContainer}>
               <View style={styles.popupHeader}>
-                <Text style={styles.popupTitle}>Select Collection</Text>
+                <Text style={styles.popupTitle}>
+                  {t("card.selectCollection")}
+                </Text>
                 <TouchableOpacity
                   onPress={() => setShowCollectionPopup(false)}
                   style={styles.closePopupButton}
                 >
-                  <AntDesign name="close" size={24} color={Colors.title} />
+                  <AntDesign name="close" size={24} color={Colors.primary} />
                 </TouchableOpacity>
               </View>
 
@@ -249,13 +260,12 @@ const CreateCardSheet: React.FC<Props> = ({
   );
 };
 
-import { TouchableWithoutFeedback } from "react-native";
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
   },
+
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -264,11 +274,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
   },
+
   backButton: {
     padding: 8,
   },
+
   title: {
     fontSize: 20,
     fontWeight: "700",
@@ -279,25 +291,30 @@ const styles = StyleSheet.create({
     textAlign: "center",
     zIndex: -1,
   },
+
   scrollContent: {
     padding: 20,
     paddingBottom: 40,
   },
+
   formCard: {
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: 20,
     padding: 24,
     ...Shadows.medium,
   },
+
   fieldContainer: {
     marginBottom: 24,
   },
+
   label: {
     fontSize: 15,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: Colors.title,
     marginBottom: 8,
   },
+
   cardCollection: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -309,13 +326,16 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     backgroundColor: Colors.background,
   },
+
   collectionText: {
     fontSize: 17,
     color: Colors.title,
   },
+
   placeholder: {
     color: Colors.gray,
   },
+
   textInput: {
     borderWidth: 1.5,
     borderColor: Colors.border,
@@ -325,39 +345,45 @@ const styles = StyleSheet.create({
     fontSize: 17,
     backgroundColor: Colors.background,
     minHeight: 120,
+    color: Colors.subText,
   },
+
   createButton: {
-    backgroundColor: Colors.blue,
-    paddingVertical: 18,
+    backgroundColor: Colors.primary,
+    paddingVertical: 14,
     borderRadius: 14,
     alignItems: "center",
     marginTop: 12,
   },
+
   createButtonDisabled: {
-    backgroundColor: Colors.blueLight,
+    backgroundColor: Colors.primary,
     opacity: 0.6,
   },
+
   createButtonText: {
     color: Colors.white,
     fontSize: 18,
-    fontWeight: "600",
+    fontWeight: "bold",
   },
 
   popupOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    backgroundColor: Colors.modalbg,
     justifyContent: "center",
     alignItems: "center",
   },
+
   popupContainer: {
     marginTop: 30,
     width: "80%",
     maxHeight: "50%",
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderRadius: 24,
     ...Shadows.strong,
     overflow: "hidden",
   },
+
   popupHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -367,14 +393,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+
   popupTitle: {
     fontSize: 19,
     fontWeight: "700",
-    color: Colors.title,
+    color: Colors.primary,
   },
+
   closePopupButton: {
     padding: 4,
   },
+
   popupItem: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -382,17 +411,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 18,
   },
+
   popupItemSelected: {
-    backgroundColor: `${Colors.primary}10`,
+    backgroundColor: Colors.primary + "10",
   },
+
   popupItemText: {
     fontSize: 17,
     color: Colors.title,
   },
+
   popupItemTextSelected: {
-    fontWeight: "600",
-    color: Colors.primary,
+    fontWeight: "bold",
+    color: Colors.secondary,
   },
+
   separator: {
     height: 1,
     backgroundColor: Colors.border,

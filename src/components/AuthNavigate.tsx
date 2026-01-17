@@ -1,4 +1,5 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
+
 import { Colors } from "../shared/constants/Color";
 
 type AuthNavigateProps = {
@@ -31,11 +32,12 @@ const styles = StyleSheet.create({
 
   text: {
     fontSize: 16,
+    color: Colors.subText,
   },
 
   link: {
     fontSize: 16,
-    color: Colors.midnightBlue,
+    color: Colors.secondary,
     fontWeight: "bold",
   },
 });

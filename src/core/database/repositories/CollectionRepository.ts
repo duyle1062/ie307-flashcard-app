@@ -161,71 +161,39 @@ export const getCollectionWithStats = async (
 
 /**
  * Get all collections with stats for a user
- * 
- * ⚠️ CRITICAL: Logic theo chuẩn Anki
- * - NEW: Giới hạn số cards được giới thiệu (25/ngày)
- * - REVIEW: Giới hạn số cards đã graduate cần ôn (50/ngày)
+ *
+ * ⚠️ CRITICAL: Logic theo chuẩn Anki - PER COLLECTION LIMITS
+ * - NEW: Giới hạn 25 cards/ngày PER COLLECTION
+ * - REVIEW: Giới hạn 50 cards/ngày PER COLLECTION
  * - LEARNING: KHÔNG GIỚI HẠN (vì là kết quả của việc học New/Review)
- * 
+ *
  * Home screen hiển thị:
- * - New: Remaining quota sau khi trừ cards đã học
+ * - New: Remaining quota của TỪNG collection
  * - Learning: TẤT CẢ due cards (không giới hạn)
- * - Review: Remaining quota sau khi trừ cards đã học
+ * - Review: Remaining quota của TỪNG collection
  */
-export const getCollectionsWithStats = async (userId: string): Promise<any[]> => {
+export const getCollectionsWithStats = async (
+  userId: string
+): Promise<any[]> => {
   try {
     const now = new Date().toISOString();
-    const today = new Date().toISOString().split('T')[0];
-    
+    const today = new Date().toISOString().split("T")[0];
+
     // 1. Lấy user settings (daily limits)
     const userRes = await executeQuery(
       "SELECT daily_new_cards_limit, daily_review_cards_limit FROM users WHERE id = ?",
       [userId]
     );
-    
+
     if (userRes.rows.length === 0) {
       throw new Error("User not found");
     }
-    
+
     const settings = userRes.rows.item(0);
     const limitNew = settings.daily_new_cards_limit || 25;
     const limitReview = settings.daily_review_cards_limit || 50;
-    
-    // 2. Đếm số cards ĐÃ HỌC hôm nay (từ bảng reviews) - TOÀN BỘ user
-    // New: old_interval = 0
-    const countNewDoneRes = await executeQuery(
-      `SELECT COUNT(DISTINCT card_id) as count 
-       FROM reviews r
-       INNER JOIN cards c ON r.card_id = c.id
-       WHERE r.user_id = ? 
-       AND DATE(r.reviewed_at) = ?
-       AND r.old_interval = 0
-       AND c.is_deleted = 0`,
-      [userId, today]
-    );
-    
-    // Review: old_interval >= 1 (KHÔNG bao gồm Learning 0 < interval < 1)
-    const countReviewDoneRes = await executeQuery(
-      `SELECT COUNT(DISTINCT card_id) as count 
-       FROM reviews r
-       INNER JOIN cards c ON r.card_id = c.id
-       WHERE r.user_id = ? 
-       AND DATE(r.reviewed_at) = ?
-       AND r.old_interval >= 1
-       AND c.is_deleted = 0`,
-      [userId, today]
-    );
-    
-    const countNewDone = countNewDoneRes.rows.item(0).count || 0;
-    const countReviewDone = countReviewDoneRes.rows.item(0).count || 0;
-    
-    // 3. Tính remaining quota cho hôm nay (CHUNG cho tất cả collections)
-    const remainingNew = Math.max(0, limitNew - countNewDone);
-    const remainingReview = Math.max(0, limitReview - countReviewDone);
-    
-    // 4. Query collections với stats
-    // Learning: Hiển thị TẤT CẢ due cards (không giới hạn)
-    // New/Review: Áp dụng remaining limits
+
+    // 2. Query collections với stats
     const query = `
       SELECT 
         c.*,
@@ -236,41 +204,69 @@ export const getCollectionsWithStats = async (userId: string): Promise<any[]> =>
       WHERE c.user_id = ? AND c.is_deleted = 0
       ORDER BY c.created_at DESC
     `;
-    
+
     const result = await executeQuery(query, [now, now, userId]);
-    
-    // 5. Convert result to array
-    // Learning: Hiển thị tất cả (không giới hạn)
-    // New/Review: Phân bổ remaining quota theo thứ tự collection
+
+    // 3. Đếm số cards ĐÃ HỌC hôm nay cho TỪNG collection
     const collections = [];
-    let cumulativeNew = 0;
-    let cumulativeReview = 0;
-    
+
     for (let i = 0; i < result.rows.length; i++) {
       const item = result.rows.item(i);
-      
-      // NEW: Áp dụng remaining limit
+      const collectionId = item.id;
+
+      // Đếm new cards đã học trong collection này
+      const countNewDoneRes = await executeQuery(
+        `SELECT COUNT(DISTINCT card_id) as count 
+         FROM reviews r
+         INNER JOIN cards c ON r.card_id = c.id
+         WHERE r.user_id = ? 
+         AND c.collection_id = ?
+         AND DATE(r.reviewed_at) = ?
+         AND r.old_interval = 0
+         AND c.is_deleted = 0`,
+        [userId, collectionId, today]
+      );
+
+      // Đếm review cards đã học trong collection này
+      const countReviewDoneRes = await executeQuery(
+        `SELECT COUNT(DISTINCT card_id) as count 
+         FROM reviews r
+         INNER JOIN cards c ON r.card_id = c.id
+         WHERE r.user_id = ? 
+         AND c.collection_id = ?
+         AND DATE(r.reviewed_at) = ?
+         AND r.old_interval >= 1
+         AND c.is_deleted = 0`,
+        [userId, collectionId, today]
+      );
+
+      const countNewDone = countNewDoneRes.rows.item(0).count || 0;
+      const countReviewDone = countReviewDoneRes.rows.item(0).count || 0;
+
+      // Tính remaining quota cho collection này
+      const remainingNew = Math.max(0, limitNew - countNewDone);
+      const remainingReview = Math.max(0, limitReview - countReviewDone);
+
+      // NEW: Hiển thị số lượng available (giới hạn bởi quota)
       const collectionNew = item.count_new || 0;
-      const displayNew = Math.min(collectionNew, Math.max(0, remainingNew - cumulativeNew));
-      cumulativeNew += displayNew;
-      
+      const displayNew = Math.min(collectionNew, remainingNew);
+
       // LEARNING: Hiển thị TẤT CẢ (không giới hạn)
       const displayLearning = item.count_learning || 0;
-      
-      // REVIEW: Áp dụng remaining limit
+
+      // REVIEW: Hiển thị số lượng available (giới hạn bởi quota)
       const collectionReview = item.count_review || 0;
-      const displayReview = Math.min(collectionReview, Math.max(0, remainingReview - cumulativeReview));
-      cumulativeReview += displayReview;
-      
+      const displayReview = Math.min(collectionReview, remainingReview);
+
       collections.push({
         ...item,
         title: item.name,
         new: displayNew,
         learning: displayLearning,
-        review: displayReview
+        review: displayReview,
       });
     }
-    
+
     return collections;
   } catch (error) {
     console.error("Error fetching collections with stats:", error);

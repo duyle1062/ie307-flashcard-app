@@ -9,6 +9,8 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -17,6 +19,7 @@ import {
   reauthenticateWithCredential,
   updatePassword,
 } from "firebase/auth";
+import { useTranslation } from "react-i18next";
 
 import AntDesign from "@expo/vector-icons/AntDesign";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
@@ -32,6 +35,7 @@ import DottedBackground from "@/components/DottedBackground";
 export default function ChangePassword() {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   const [isUpdating, setIsUpdating] = useState(false);
   const [oldPassword, setOldPassword] = useState("");
@@ -39,75 +43,69 @@ export default function ChangePassword() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleChangePassword = async () => {
-    // Validation
     if (!oldPassword || !newPassword || !confirmPassword) {
-      Alert.alert("Error", "Please fill in all fields");
+      Alert.alert(t("common.error"), t("auth.fillAllFields"));
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      Alert.alert("Error", "New password and confirmation do not match");
+      Alert.alert(t("common.error"), t("auth.newPasswordMismatch"));
       return;
     }
 
     if (newPassword.length < 8) {
-      Alert.alert("Error", "Password must be at least 8 characters long");
+      Alert.alert(t("common.error"), t("auth.passwordTooShort"));
       return;
     }
 
     if (oldPassword === newPassword) {
-      Alert.alert("Error", "New password must be different from old password");
+      Alert.alert(t("common.error"), t("auth.newPasswordMustDiffer"));
       return;
     }
 
     if (!user || !user.email) {
-      Alert.alert("Error", "User not authenticated");
+      Alert.alert(t("common.error"), t("alerts.userNotAuthenticated"));
       return;
     }
 
     try {
       setIsUpdating(true);
 
-      // Step 1: Re-authenticate user with old password
-      // Firebase requires recent authentication before changing password
       const credential = EmailAuthProvider.credential(user.email, oldPassword);
       await reauthenticateWithCredential(user, credential);
 
-      // Step 2: Update password
       await updatePassword(user, newPassword);
 
-      // Clear form
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
 
-      Alert.alert("Success", "Password changed successfully", [
+      Alert.alert(t("common.success"), t("auth.passwordChangeSuccess"), [
         {
-          text: "OK",
+          text: t("common.ok"),
           onPress: () => navigation.goBack(),
         },
       ]);
     } catch (error: any) {
-      let errorMessage = "Failed to change password. Please try again.";
+      let errorMessage = t("auth.passwordChangeFailed");
 
       if (
         error.code === "auth/wrong-password" ||
         error.code === "auth/invalid-credential" ||
         error.code === "auth/invalid-login-credentials"
       ) {
-        errorMessage = "Old password is incorrect. Please try again.";
+        errorMessage = t("auth.oldPasswordIncorrect");
       } else if (error.code === "auth/weak-password") {
-        errorMessage = "New password is too weak";
+        errorMessage = t("auth.passwordTooWeak");
       } else if (error.code === "auth/requires-recent-login") {
-        errorMessage =
-          "Please log out and log in again before changing password";
+        errorMessage = t("auth.requiresRecentLogin");
       } else if (error.code === "auth/too-many-requests") {
-        errorMessage = "Too many attempts. Please try again later";
+        errorMessage = t("auth.tooManyRequests");
       } else if (error.code === "auth/network-request-failed") {
-        errorMessage = "Network error. Please check your connection";
+        errorMessage = t("auth.networkError");
       }
 
-      Alert.alert("Error", errorMessage);
+      Alert.alert(t("common.error"), errorMessage);
     } finally {
       setIsUpdating(false);
     }
@@ -121,14 +119,18 @@ export default function ChangePassword() {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <AntDesign name="arrow-left" size={24} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Change Password</Text>
+        <Text style={styles.headerTitle}>{t("auth.changePassword")}</Text>
         <View style={{ width: 100 }} />
       </View>
 
-      <View style={styles.contentContainer}>
+      <KeyboardAvoidingView
+        style={styles.contentContainer}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <View style={styles.card}>
             <View style={styles.topSection}>
@@ -137,35 +139,34 @@ export default function ChangePassword() {
               </View>
             </View>
 
-            <Text style={styles.label}>Old Password</Text>
-
+            <Text style={styles.label}>{t("auth.oldPassword")}</Text>
             <AuthInput
-              icon={<Fontisto name="key" size={18} color={Colors.black} />}
+              icon={<Fontisto name="key" size={18} color={Colors.title} />}
               value={oldPassword}
               onChangeText={setOldPassword}
-              placeholder="Input your old password"
+              placeholder={t("auth.oldPasswordPlaceholder")}
               secureTextEntry
               editable={!isUpdating}
               placeholderTextColor={Colors.subText}
             />
 
-            <Text style={styles.label}>New Password</Text>
-
+            <Text style={styles.label}>{t("auth.newPassword")}</Text>
             <AuthInput
-              icon={<Fontisto name="key" size={18} color={Colors.black} />}
+              icon={<Fontisto name="key" size={18} color={Colors.title} />}
               value={newPassword}
               onChangeText={setNewPassword}
-              placeholder="Input your new password"
+              placeholder={t("auth.newPasswordPlaceholder")}
               secureTextEntry
               editable={!isUpdating}
               placeholderTextColor={Colors.subText}
             />
-            <Text style={styles.label}>Confirm Password</Text>
+
+            <Text style={styles.label}>{t("auth.confirmNewPassword")}</Text>
             <AuthInput
-              icon={<Fontisto name="key" size={18} color={Colors.black} />}
+              icon={<Fontisto name="key" size={18} color={Colors.title} />}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
-              placeholder="Confirm your new password"
+              placeholder={t("auth.confirmNewPasswordPlaceholder")}
               secureTextEntry
               editable={!isUpdating}
               placeholderTextColor={Colors.subText}
@@ -181,10 +182,12 @@ export default function ChangePassword() {
           {isUpdating ? (
             <ActivityIndicator size="small" color={Colors.white} />
           ) : (
-            <Text style={styles.updateButtonText}>UPDATE</Text>
+            <Text style={styles.updateButtonText}>
+              {t("card.update").toUpperCase()}
+            </Text>
           )}
         </TouchableOpacity>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -247,15 +250,14 @@ const styles = StyleSheet.create({
 
   infoText: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: Colors.subText,
   },
 
   label: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: Colors.title,
-    marginBottom: 8,
     marginTop: 15,
   },
 

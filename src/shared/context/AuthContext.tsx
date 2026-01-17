@@ -1,6 +1,16 @@
-import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { Alert } from "react-native";
+import { useTranslation } from "react-i18next";
+
 import { toFirestoreData } from "../../core/utils/mapper";
+
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -9,6 +19,7 @@ import {
   User as FirebaseUser,
 } from "firebase/auth";
 import { doc, setDoc, getDoc } from "firebase/firestore";
+
 import { auth, db } from "../../core/config/firebaseConfig";
 import {
   upsertUser,
@@ -21,19 +32,20 @@ import {
 } from "../../core/database/storage";
 import { logTableData } from "../../core/utils/dbDebug";
 import { getDatabase } from "../../core/database";
-import { User } from "../../core/database/types"
+import { User } from "../../core/database/types";
 import { clearLocalDatabase } from "../../core/database/helpers";
+
 import { syncService } from "../../features/sync/services/syncService";
 
 type AuthContextType = {
   user: FirebaseUser | null;
-  userData: User | null;     // User của App (SQLite - chứa streak, settings)
+  userData: User | null; // User của App (SQLite - chứa streak, settings)
   isAuthenticated: boolean;
   isLoading: boolean;
   register: (email: string, password: string) => Promise<boolean>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
-  refreshUser: () => Promise<void>; // Hàm mới để reload data
+  refreshUser: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -42,8 +54,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<FirebaseUser | null>(null);
   const [userData, setUserData] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  
-  // Biến cờ để tránh sync nhiều lần không cần thiết trong cùng 1 session
+  const { t } = useTranslation();
+
   const isSyncedRef = useRef<boolean>(false);
 
   /**
@@ -55,7 +67,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const userDoc = await getDoc(doc(db, "users", uid));
       if (userDoc.exists()) {
         const cloudData = userDoc.data();
-        
+
         // Map data từ Firestore sang cấu trúc Local
         // Sử dụng Partial để an toàn kiểu dữ liệu
         const userToSave: Partial<User> & { id: string } = {
@@ -70,15 +82,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         };
 
         const savedUser = await upsertUser(userToSave);
-        
+
         // Cập nhật state ngay lập tức nếu có sự thay đổi
         if (savedUser) {
           setUserData(savedUser);
         }
-        console.log("✅ User synced from Cloud to SQLite:", uid);
+        console.log("User synced from Cloud to SQLite:", uid);
       }
     } catch (error) {
-      console.error("❌ Error internal syncing user:", error);
+      console.error("Error internal syncing user:", error);
     }
   };
 
@@ -111,7 +123,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           // 3. Sync Cloud (Chạy background, không cần await block UI lâu)
           if (!isSyncedRef.current) {
             syncCloudUserToLocal(currentUser.uid).then(() => {
-               isSyncedRef.current = true;
+              isSyncedRef.current = true;
             });
           }
 
@@ -126,7 +138,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isSyncedRef.current = false;
         setUser(null);
       }
-      
+
       setIsLoading(false);
     });
 
@@ -170,7 +182,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       console.log("Registered successfully:", firebaseUser.uid);
 
-      // 🐛 DEBUG: Log dữ liệu users sau khi register
+      // DEBUG: Log dữ liệu users sau khi register
       const sqliteDb = await getDatabase();
       await logTableData(sqliteDb, "users");
 
@@ -199,57 +211,58 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       );
       const firebaseUser = userCredential.user;
 
-      // Khi login chủ động, ta buộc phải sync từ cloud về để đảm bảo data mới nhất
       await syncCloudUserToLocal(firebaseUser.uid);
       await saveCurrentUserId(firebaseUser.uid);
       isSyncedRef.current = true;
 
-      // 🐛 DEBUG: Log dữ liệu users sau khi login (Lưu session vào AsyncStorage)
       const sqliteDb = await getDatabase();
       await logTableData(sqliteDb, "users");
 
       return true;
     } catch (error: any) {
-      Alert.alert("Login Failed", "Incorrect email or password.");
+      Alert.alert(t("auth.loginFailed"), t("auth.incorrectCredentials"));
       return false;
     }
   };
 
   const logout = async () => {
     try {
-    setIsLoading(true);
+      setIsLoading(true);
 
-    // 1. Cố gắng PUSH thay đổi lên Cloud trước khi xóa (Best Effort)
-    // Chỉ PUSH, không Pull (tiết kiệm thời gian)
-    // Nếu đang không có mạng hoặc lỗi, bước này sẽ fail nhanh chóng
-    try {
-      console.log("📤 Attempting final push before logout...");
-      await syncService.sync(user?.uid || "", { push: true, pull: false });
-      console.log("✅ Final push complete.");
-    } catch (syncError) {
-      console.warn("⚠️ Final push failed (Network issue?), proceeding to logout anyway.", syncError);
-      // Không throw error, vẫn cho phép logout tiếp
+      // 1. Cố gắng PUSH thay đổi lên Cloud trước khi xóa (Best Effort)
+      // Chỉ PUSH, không Pull (tiết kiệm thời gian)
+      // Nếu đang không có mạng hoặc lỗi, bước này sẽ fail nhanh chóng
+      try {
+        console.log("Attempting final push before logout...");
+        await syncService.sync(user?.uid || "", { push: true, pull: false });
+        console.log("Final push complete.");
+      } catch (syncError) {
+        console.warn(
+          "Final push failed (Network issue?), proceeding to logout anyway.",
+          syncError
+        );
+      }
+
+      setUser(null);
+      setUserData(null);
+
+      await signOut(auth);
+      await clearAllData();
+      await clearFirebaseAuthToken();
+      await clearLocalDatabase();
+
+      console.log("Logout successful & clean.");
+    } catch (error) {
+      console.error("Logout error:", error);
+      Alert.alert(
+        "Logout Error",
+        "Something went wrong, but local session is cleared"
+      );
+    } finally {
+      setIsLoading(false);
     }
-
-    // 2. Tiến hành Logout & Dọn dẹp
-    setUser(null);
-    setUserData(null);
-    
-    await signOut(auth);
-    await clearAllData();
-    await clearFirebaseAuthToken();
-    await clearLocalDatabase(); 
-    
-    console.log("Logout successful & clean.");
-  } catch (error) {
-    console.error("Logout error:", error);
-    Alert.alert("Logout Error", "Something went wrong, but local session is cleared.");
-  } finally {
-    setIsLoading(false);
-  }
   };
 
-  // Context Provider: Chia sẻ trạng thái auth cho toàn app
   return (
     <AuthContext.Provider
       value={{

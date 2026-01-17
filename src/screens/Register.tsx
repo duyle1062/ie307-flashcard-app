@@ -7,6 +7,7 @@ import {
   Platform,
   Alert,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { Colors } from "../shared/constants/Color";
 
@@ -24,8 +25,10 @@ import AuthNavigate from "../components/AuthNavigate";
 import AuthSocial from "../components/AuthSocial";
 
 import { useAuth } from "../shared/context/AuthContext";
+import DottedBackground from "@/components/DottedBackground";
 
 export default function Register() {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const navigation =
     useNavigation<NativeStackNavigationProp<AuthStackParamList>>();
@@ -38,33 +41,22 @@ export default function Register() {
 
   const handleRegister = async () => {
     if (!email || !password || !confirmPassword) {
-      Alert.alert("Missing Information", "Please fill in all fields.");
+      Alert.alert(t("auth.missingInformation"), t("auth.fillAllFields"));
       return;
     }
 
     if (password.length < 8) {
-      Alert.alert(
-        "Weak Password",
-        "Password must be at least 8 characters long."
-      );
+      Alert.alert(t("auth.weakPassword"), t("auth.passwordTooShort"));
       return;
     }
 
     if (password !== confirmPassword) {
-      Alert.alert(
-        "Password Mismatch",
-        "The passwords you entered do not match."
-      );
+      Alert.alert(t("common.error"), t("auth.passwordMismatch"));
       return;
     }
-    setLoading(true); // Bắt đầu loading
+    setLoading(true);
     const success = await register(email, password);
     setLoading(false);
-
-    if (success) {
-      // User đã được authenticate và tự động login, AuthContext sẽ navigate sang AppStack
-      // Không cần navigate manually vì isAuthenticated đã true
-    }
   };
 
   return (
@@ -72,13 +64,15 @@ export default function Register() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <AuthHeader title="Sign up" />
+      <DottedBackground />
+
+      <AuthHeader title={t("auth.signUp")} />
 
       <View style={styles.field}>
-        <Text style={styles.label}>Email</Text>
+        <Text style={styles.label}>{t("auth.email")}</Text>
         <AuthInput
-          icon={<Fontisto name="email" size={18} color={Colors.black} />}
-          placeholder="example@gmail.com"
+          icon={<Fontisto name="email" size={18} color={Colors.title} />}
+          placeholder={t("auth.emailPlaceholder")}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
@@ -87,10 +81,10 @@ export default function Register() {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Create a password</Text>
+        <Text style={styles.label}>{t("auth.createPassword")}</Text>
         <AuthInput
-          icon={<Fontisto name="key" size={18} color={Colors.black} />}
-          placeholder="Must be 8 characters"
+          icon={<Fontisto name="key" size={18} color={Colors.title} />}
+          placeholder={t("auth.passwordPlaceholder")}
           secureTextEntry
           value={password}
           onChangeText={setPassword}
@@ -98,10 +92,10 @@ export default function Register() {
       </View>
 
       <View style={styles.field}>
-        <Text style={styles.label}>Confirm password</Text>
+        <Text style={styles.label}>{t("auth.confirmPassword")}</Text>
         <AuthInput
-          icon={<Fontisto name="key" size={18} color={Colors.black} />}
-          placeholder="Repeat password"
+          icon={<Fontisto name="key" size={18} color={Colors.title} />}
+          placeholder={t("auth.repeatPasswordPlaceholder")}
           secureTextEntry
           value={confirmPassword}
           onChangeText={setConfirmPassword}
@@ -109,22 +103,22 @@ export default function Register() {
       </View>
 
       <AuthButton
-        title={loading ? "Creating account..." : "Sign up"}
+        title={loading ? t("auth.creatingAccount") : t("auth.signUp")}
         onPress={handleRegister}
         disabled={loading}
       />
 
       <View style={styles.dividerContainer}>
         <View style={styles.line} />
-        <Text style={styles.dividerText}>Or Register with</Text>
+        <Text style={styles.dividerText}>{t("auth.orRegisterWith")}</Text>
         <View style={styles.line} />
       </View>
 
       <AuthSocial />
 
       <AuthNavigate
-        text="Already have an account?"
-        linkText="Log in"
+        text={t("auth.haveAccount")}
+        linkText={t("auth.signIn")}
         onPress={() => navigation.navigate("Login")}
       />
     </KeyboardAvoidingView>
@@ -147,7 +141,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: "500",
-    color: Colors.black,
+    color: Colors.primary,
   },
 
   dividerContainer: {
@@ -167,6 +161,6 @@ const styles = StyleSheet.create({
   dividerText: {
     marginHorizontal: 10,
     fontSize: 14,
-    color: Colors.black,
+    color: Colors.subText,
   },
 });

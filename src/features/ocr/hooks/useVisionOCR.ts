@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Alert } from "react-native";
+import { useTranslation } from "react-i18next";
 import * as ImagePicker from "expo-image-picker";
 import { TextBlock, ImageDimensions } from "../services/OCRService";
 import { VisionAIService } from "../services/VisionAIService";
@@ -31,8 +32,12 @@ interface UseVisionOCRReturn {
  * Custom hook to manage Vision AI OCR state and operations
  */
 export function useVisionOCR(onCancel?: () => void): UseVisionOCRReturn {
+  const { t } = useTranslation();
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [imageDimensions, setImageDimensions] = useState<ImageDimensions>({ width: 0, height: 0 });
+  const [imageDimensions, setImageDimensions] = useState<ImageDimensions>({
+    width: 0,
+    height: 0,
+  });
   const [textBlocks, setTextBlocks] = useState<TextBlock[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedBlocks, setSelectedBlocks] = useState<string[]>([]);
@@ -43,30 +48,28 @@ export function useVisionOCR(onCancel?: () => void): UseVisionOCRReturn {
     // Check if API key is configured
     if (!VisionAIService.isConfigured()) {
       Alert.alert(
-        "Configuration Required",
-        "Google Cloud Vision API key is not configured. Please add your API key in VisionAIService.ts",
-        [
-          { text: "OK", onPress: onCancel },
-        ]
+        t("ocr.configurationRequired"),
+        t("ocr.visionApiKeyNotConfigured"),
+        [{ text: t("common.ok"), onPress: onCancel }]
       );
       return;
     }
 
-    Alert.alert("Choose Image Source", "Select where to get the image from", [
+    Alert.alert(t("ocr.chooseImageSource"), t("ocr.selectImageSource"), [
       {
-        text: "Camera",
+        text: t("ocr.camera"),
         onPress: () => {
           openCamera();
         },
       },
       {
-        text: "Gallery",
+        text: t("ocr.gallery"),
         onPress: () => {
           openGallery();
         },
       },
       {
-        text: "Cancel",
+        text: t("common.cancel"),
         style: "cancel",
         onPress: onCancel,
       },
@@ -75,9 +78,13 @@ export function useVisionOCR(onCancel?: () => void): UseVisionOCRReturn {
 
   const openCamera = async () => {
     try {
-      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      const permissionResult =
+        await ImagePicker.requestCameraPermissionsAsync();
       if (!permissionResult.granted) {
-        Alert.alert("Permission Required", "Camera permission is required");
+        Alert.alert(
+          t("ocr.permissionRequired"),
+          t("ocr.cameraPermissionRequired")
+        );
         return;
       }
 
@@ -92,7 +99,7 @@ export function useVisionOCR(onCancel?: () => void): UseVisionOCRReturn {
       }
     } catch (error) {
       console.error("Camera error:", error);
-      Alert.alert("Error", "Failed to open camera");
+      Alert.alert(t("common.error"), t("ocr.failedToOpenCamera"));
     }
   };
 
@@ -109,7 +116,7 @@ export function useVisionOCR(onCancel?: () => void): UseVisionOCRReturn {
       }
     } catch (error) {
       console.error("Gallery error:", error);
-      Alert.alert("Error", "Failed to open gallery");
+      Alert.alert(t("common.error"), t("ocr.failedToOpenGallery"));
     }
   };
 
@@ -128,21 +135,18 @@ export function useVisionOCR(onCancel?: () => void): UseVisionOCRReturn {
       setTextBlocks(result.blocks);
 
       if (result.blocks.length === 0) {
-        Alert.alert("No Text Found", "No text was detected in the image. Please try another image.");
+        Alert.alert(t("ocr.noTextFound"), t("ocr.noTextFoundMessage"));
       } else {
         Alert.alert(
-          "Success",
-          `Detected ${result.blocks.length} text blocks using Google Cloud Vision API`
+          t("common.success"),
+          t("ocr.detectedTextBlocks", { count: result.blocks.length })
         );
       }
     } catch (error) {
       console.error("Process image error:", error);
       setImageUri(null);
       setTextBlocks([]);
-      Alert.alert(
-        "Processing Failed",
-        "Failed to process image with Vision AI. Please check your internet connection and API key."
-      );
+      Alert.alert(t("ocr.processingFailed"), t("ocr.processingFailedMessage"));
     } finally {
       setIsProcessing(false);
     }
@@ -159,14 +163,18 @@ export function useVisionOCR(onCancel?: () => void): UseVisionOCRReturn {
 
   const handleBlockPress = (blockId: string) => {
     setSelectedBlocks((prev) =>
-      prev.includes(blockId) ? prev.filter((id) => id !== blockId) : [...prev, blockId]
+      prev.includes(blockId)
+        ? prev.filter((id) => id !== blockId)
+        : [...prev, blockId]
     );
   };
 
   const assignToFront = () => {
     setTextBlocks((prev) =>
       prev.map((block) =>
-        selectedBlocks.includes(block.id) ? { ...block, type: "front", selected: false } : block
+        selectedBlocks.includes(block.id)
+          ? { ...block, type: "front", selected: false }
+          : block
       )
     );
     setSelectedBlocks([]);
@@ -175,7 +183,9 @@ export function useVisionOCR(onCancel?: () => void): UseVisionOCRReturn {
   const assignToBack = () => {
     setTextBlocks((prev) =>
       prev.map((block) =>
-        selectedBlocks.includes(block.id) ? { ...block, type: "back", selected: false } : block
+        selectedBlocks.includes(block.id)
+          ? { ...block, type: "back", selected: false }
+          : block
       )
     );
     setSelectedBlocks([]);
@@ -197,7 +207,9 @@ export function useVisionOCR(onCancel?: () => void): UseVisionOCRReturn {
     const blocksToUpdate = textBlocks.filter((b) => b.type === editingType);
 
     setTextBlocks((prev) => {
-      const updated = prev.map((block) => (block.type === editingType ? { ...block, type: null } : block));
+      const updated = prev.map((block) =>
+        block.type === editingType ? { ...block, type: null } : block
+      );
       const newBlocks = lines.map((line, index) => ({
         ...(blocksToUpdate[index] || blocksToUpdate[0]),
         text: line,
@@ -216,7 +228,9 @@ export function useVisionOCR(onCancel?: () => void): UseVisionOCRReturn {
   };
 
   const resetSelections = () => {
-    setTextBlocks((prev) => prev.map((block) => ({ ...block, type: null, selected: false })));
+    setTextBlocks((prev) =>
+      prev.map((block) => ({ ...block, type: null, selected: false }))
+    );
     setSelectedBlocks([]);
   };
 

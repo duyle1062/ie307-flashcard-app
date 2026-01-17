@@ -1,20 +1,22 @@
 import { View, TouchableOpacity, StyleSheet } from "react-native";
+
 import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
+
 import { Colors } from "../shared/constants/Color";
 
 export default function AuthSocial() {
   return (
     <View style={styles.container}>
       <TouchableOpacity style={styles.iconBtn}>
-        <FontAwesome5 name="facebook" size={30} color="black" />
+        <FontAwesome5 name="facebook" size={30} color={Colors.title} />
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.iconBtn}>
-        <FontAwesome5 name="google" size={30} color="black" />
+        <FontAwesome5 name="google" size={30} color={Colors.title} />
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.iconBtn}>
-        <FontAwesome5 name="apple" size={30} color="black" />
+        <FontAwesome5 name="apple" size={30} color={Colors.title} />
       </TouchableOpacity>
     </View>
   );

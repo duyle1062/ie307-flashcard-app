@@ -9,12 +9,18 @@ import {
   Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
+
 import { Colors } from "../shared/constants/Color";
+
 import Feather from "@expo/vector-icons/Feather";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
+
 import { useAuth } from "../shared/context/AuthContext";
+
 import { UserService } from "../features/user/services/UserService";
+
 import StreakModal from "./StreakModal";
 
 interface HeaderProps {
@@ -34,19 +40,17 @@ const Header: React.FC<HeaderProps> = ({
   pendingChanges = 0,
 }) => {
   const insets = useSafeAreaInsets();
-  const { userData } = useAuth(); // Lấy streak từ Global State
+  const { userData } = useAuth();
+  const { t } = useTranslation();
   const displayStreak = userData?.streak_days || 0;
 
-  // STATE STREAK MODAL
   const [isStreakModalVisible, setStreakModalVisible] = useState(false);
   const [studyHistory, setStudyHistory] = useState<string[]>([]);
 
-  // Animation for pulse effect
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     if (pendingChanges > 0 && !isSyncing) {
-      // Pulse animation when có pending changes
       const animation = Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -73,12 +77,10 @@ const Header: React.FC<HeaderProps> = ({
     setStreakModalVisible(true);
     if (userData?.id) {
       try {
-        // Lấy lịch sử học tập thực tế từ DB
         const history = await UserService.getStudyHistory(userData.id);
         setStudyHistory(history);
       } catch (error) {
         console.error("Failed to load streak history", error);
-        // Vẫn mở modal dù lỗi (hiển thị lịch trống)
         setStreakModalVisible(true);
       }
     }
@@ -91,15 +93,15 @@ const Header: React.FC<HeaderProps> = ({
   const handleRefreshLongPress = () => {
     if (pendingChanges > 0) {
       Alert.alert(
-        "Pending Changes",
-        `You have ${pendingChanges} change${
-          pendingChanges > 1 ? "s" : ""
-        } waiting to sync.\n\nTap to sync now!`,
-        [{ text: "OK" }]
+        t("components.pendingChanges"),
+        `${t("components.waitingToSync", { count: pendingChanges })}\n\n${t(
+          "components.tapToSync"
+        )}`,
+        [{ text: t("common.confirm") }]
       );
     } else {
-      Alert.alert("All Synced", "All your changes are synced to cloud", [
-        { text: "OK" },
+      Alert.alert(t("components.allSynced"), t("components.allChangesSynced"), [
+        { text: t("common.confirm") },
       ]);
     }
   };
@@ -142,9 +144,7 @@ const Header: React.FC<HeaderProps> = ({
                     name="refresh-ccw"
                     size={22}
                     color={
-                      pendingChanges > 0
-                        ? Colors.redLight // Red when có pending
-                        : Colors.primary
+                      pendingChanges > 0 ? Colors.redLight : Colors.primary
                     }
                   />
                 </Animated.View>
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
   streakText: {
     color: Colors.primary,
     marginLeft: 6,
-    fontWeight: "600",
+    fontWeight: "bold",
     fontSize: 16,
   },
 

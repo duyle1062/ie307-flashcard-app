@@ -3,6 +3,8 @@ import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
 import AntDesign from "@expo/vector-icons/AntDesign";
 
+import { useTranslation } from "react-i18next";
+
 import { Colors } from "../shared/constants/Color";
 
 interface UserMenuModalProps {
@@ -20,6 +22,8 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
   onAccountPress,
   onChangePassword,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <Modal
       visible={visible}
@@ -40,8 +44,8 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
               onAccountPress();
             }}
           >
-            <Feather name="user" size={18} color={Colors.black} />
-            <Text style={styles.menuText}>Account</Text>
+            <Feather name="user" size={18} color={Colors.title} />
+            <Text style={styles.menuText}>{t("components.account")}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -51,8 +55,8 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
               onChangePassword();
             }}
           >
-            <AntDesign name="lock" size={18} color={Colors.black} />
-            <Text style={styles.menuText}>Change Password</Text>
+            <AntDesign name="lock" size={18} color={Colors.title} />
+            <Text style={styles.menuText}>{t("auth.changePassword")}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -62,8 +66,8 @@ const UserMenuModal: React.FC<UserMenuModalProps> = ({
               onClose();
             }}
           >
-            <AntDesign name="logout" size={18} color={Colors.black} />
-            <Text style={styles.menuText}>Sign Out</Text>
+            <AntDesign name="logout" size={18} color={Colors.title} />
+            <Text style={styles.menuText}>{t("components.signOut")}</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -81,13 +85,16 @@ const styles = StyleSheet.create({
 
   popupMenu: {
     position: "absolute",
-    top: 50,
+    top: 90,
     right: 20,
     backgroundColor: Colors.white,
     borderRadius: 12,
     paddingHorizontal: 10,
     shadowColor: Colors.black,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 5,
@@ -102,7 +109,7 @@ const styles = StyleSheet.create({
   menuText: {
     marginLeft: 10,
     fontSize: 15,
-    color: Colors.black,
+    color: Colors.title,
   },
 });
 

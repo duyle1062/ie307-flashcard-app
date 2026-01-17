@@ -1,7 +1,9 @@
-import React from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useTranslation } from "react-i18next";
+
 import { Colors } from "../shared/constants/Color";
+
 import { TextBlock } from "../features/ocr/services";
 
 interface OCRActionBarProps {
@@ -12,9 +14,6 @@ interface OCRActionBarProps {
   onCreateCard: () => void;
 }
 
-/**
- * OCR Action Bar - Bottom bar with action buttons
- */
 export function OCRActionBar({
   selectedBlocks,
   textBlocks,
@@ -22,6 +21,7 @@ export function OCRActionBar({
   onAssignToBack,
   onCreateCard,
 }: Readonly<OCRActionBarProps>) {
+  const { t } = useTranslation();
   const insets = useSafeAreaInsets();
   const frontBlocks = textBlocks.filter((b) => b.type === "front");
   const backBlocks = textBlocks.filter((b) => b.type === "back");
@@ -31,20 +31,32 @@ export function OCRActionBar({
     <View style={[styles.container, { paddingBottom: insets.bottom + 10 }]}>
       {selectedBlocks.length > 0 ? (
         <View style={styles.assignButtons}>
-          <TouchableOpacity style={[styles.button, styles.frontButton]} onPress={onAssignToFront}>
-            <Text style={styles.buttonText}>To Front</Text>
+          <TouchableOpacity
+            style={[styles.button, styles.frontButton]}
+            onPress={onAssignToFront}
+          >
+            <Text style={styles.buttonText}>{t("ocr.toFront")}</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.button, styles.backButton]} onPress={onAssignToBack}>
-            <Text style={styles.buttonText}>To Back</Text>
+          <TouchableOpacity
+            style={[styles.button, styles.backButton]}
+            onPress={onAssignToBack}
+          >
+            <Text style={styles.buttonText}>{t("ocr.toBack")}</Text>
           </TouchableOpacity>
         </View>
       ) : (
         <TouchableOpacity
-          style={[styles.button, styles.createButton, !canCreateCard && styles.buttonDisabled]}
+          style={[
+            styles.button,
+            styles.createButton,
+            !canCreateCard && styles.buttonDisabled,
+          ]}
           onPress={onCreateCard}
           disabled={!canCreateCard}
         >
-          <Text style={styles.buttonText}>Create Card</Text>
+          <Text style={styles.buttonText}>
+            {t("components.createCard").toUpperCase()}
+          </Text>
         </TouchableOpacity>
       )}
     </View>
@@ -59,35 +71,43 @@ const styles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 16,
     paddingTop: 12,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.surface,
     borderTopWidth: 1,
     borderTopColor: Colors.border,
     zIndex: 20,
   },
+
   assignButtons: {
     flexDirection: "row",
     gap: 12,
   },
+
   button: {
     paddingVertical: 14,
     borderRadius: 8,
     alignItems: "center",
     justifyContent: "center",
   },
+
   frontButton: {
     flex: 1,
     backgroundColor: Colors.green,
   },
+
   backButton: {
     flex: 1,
     backgroundColor: Colors.blue,
   },
+
   createButton: {
     backgroundColor: Colors.primary,
   },
+
   buttonDisabled: {
-    backgroundColor: Colors.subText,
+    backgroundColor: Colors.primary,
+    opacity: 0.8,
   },
+
   buttonText: {
     fontSize: 16,
     fontWeight: "700",

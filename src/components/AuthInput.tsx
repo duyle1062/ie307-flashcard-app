@@ -6,7 +6,9 @@ import {
   TextInputProps,
   TouchableOpacity,
 } from "react-native";
+
 import { Colors } from "../shared/constants/Color";
+
 import { Ionicons } from "@expo/vector-icons";
 
 interface AuthInputProps extends TextInputProps {
@@ -46,7 +48,7 @@ export default function AuthInput({
           <Ionicons
             name={isPasswordVisible ? "eye-off" : "eye"}
             size={20}
-            color={Colors.black}
+            color={Colors.title}
           />
         </TouchableOpacity>
       )}
@@ -77,5 +79,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
+    color: Colors.subText,
   },
 });

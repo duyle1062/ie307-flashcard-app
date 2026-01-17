@@ -11,32 +11,28 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
-import Feather from "@expo/vector-icons/Feather";
+import { useTranslation } from "react-i18next";
+
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import AntDesign from "@expo/vector-icons/AntDesign";
+
 import { Colors } from "../shared/constants/Color";
 import { Shadows } from "../shared/constants/Shadow";
+
 import DottedBackground from "@/components/DottedBackground";
+
 import { useUserProfile } from "../features/user";
 
 export default function UserProfile() {
   const navigation = useNavigation();
-  
-  // Use custom hook for user profile management
+  const { t } = useTranslation();
+
   const { userData, isLoading, isUpdating, updateProfile } = useUserProfile();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [streakDays, setStreakDays] = useState(0);
-  const [showCollections, setShowCollections] = useState(false);
 
-  const mockCollections = [
-    "Collection A - Basic",
-    "Collection B - Intermediate",
-    "Collection C - Advanced",
-  ];
-
-  // Update local state when userData changes
   useEffect(() => {
     if (userData) {
       setName(userData.display_name || "");
@@ -47,11 +43,14 @@ export default function UserProfile() {
 
   const handleUpdateProfile = async () => {
     if (!userData) {
-      Alert.alert("Error", "User data not available");
+      Alert.alert(t("common.error"), t("alerts.userNotAuthenticated"));
       return;
     }
     if (!name.trim()) {
-      Alert.alert("Error", "Name cannot be empty");
+      Alert.alert(
+        t("common.error"),
+        t("profile.username") + " " + t("auth.emailRequired")
+      );
       return;
     }
     await updateProfile(name, userData.picture);
@@ -62,7 +61,7 @@ export default function UserProfile() {
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={Colors.primary} />
-          <Text style={styles.loadingText}>Loading user data...</Text>
+          <Text style={styles.loadingText}>{t("common.loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -71,11 +70,12 @@ export default function UserProfile() {
   return (
     <SafeAreaView style={styles.container}>
       <DottedBackground />
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <AntDesign name="arrow-left" size={24} color={Colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>User Information</Text>
+        <Text style={styles.headerTitle}>{t("profile.title")}</Text>
         <View style={{ width: 100 }} />
       </View>
 
@@ -93,58 +93,30 @@ export default function UserProfile() {
 
               <View style={styles.streakContainer}>
                 <Text style={styles.streakLabel}>
-                  Streak: {streakDays} days
+                  {t("profile.streak")}:{" "}
+                  {t("card.daysInterval", { count: streakDays })}
                 </Text>
                 <AntDesign name="fire" size={24} color="orange" />
               </View>
             </View>
 
             {/* Form Fields */}
-            <Text style={styles.label}>Name</Text>
+            <Text style={styles.label}>{t("profile.username")}</Text>
             <TextInput
               style={styles.input}
               value={name}
               onChangeText={setName}
-              placeholder="Enter your name"
+              placeholder={t("profile.username")}
               editable={!isUpdating}
             />
 
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>{t("profile.email")}</Text>
             <TextInput
               style={[styles.input, styles.disabledInput]}
               value={email}
               editable={false}
               keyboardType="email-address"
             />
-
-            {/* Collection Dropdown */}
-            <TouchableOpacity
-              style={styles.collectionButton}
-              onPress={() => setShowCollections(!showCollections)}
-            >
-              <Text style={styles.collectionButtonText}>Collection</Text>
-              <Feather
-                name={showCollections ? "chevron-up" : "chevron-down"}
-                size={20}
-                color={Colors.black}
-              />
-            </TouchableOpacity>
-
-            {showCollections && (
-              <View style={styles.dropdownList}>
-                {mockCollections.map((col) => (
-                  <View key={col} style={styles.dropdownItem}>
-                    <Text style={styles.dropdownText}>{col}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
-
-            {/* Chart Section */}
-            <Text style={styles.label}>Chart / Progress</Text>
-            <View style={styles.chartPlaceholder}>
-              <Text style={{ color: Colors.subText }}>Biểu đồ .....</Text>
-            </View>
           </View>
         </ScrollView>
 
@@ -156,7 +128,9 @@ export default function UserProfile() {
           {isUpdating ? (
             <ActivityIndicator size="small" color={Colors.white} />
           ) : (
-            <Text style={styles.updateButtonText}>UPDATE</Text>
+            <Text style={styles.updateButtonText}>
+              {t("card.update").toUpperCase()}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -243,13 +217,13 @@ const styles = StyleSheet.create({
 
   streakLabel: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: Colors.subText,
   },
 
   label: {
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "bold",
     color: Colors.title,
     marginBottom: 8,
     marginTop: 15,
@@ -267,50 +241,6 @@ const styles = StyleSheet.create({
   disabledInput: {
     backgroundColor: Colors.silver,
     color: Colors.subText,
-  },
-
-  collectionButton: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.gray,
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 10,
-    marginTop: 25,
-  },
-
-  collectionButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: Colors.title,
-  },
-
-  dropdownList: {
-    marginTop: 10,
-    backgroundColor: Colors.silver,
-    borderRadius: 10,
-    padding: 10,
-  },
-
-  dropdownItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E0E0E0",
-  },
-
-  dropdownText: {
-    fontSize: 15,
-    color: Colors.subText,
-  },
-
-  chartPlaceholder: {
-    borderWidth: 1,
-    borderColor: Colors.gray,
-    borderRadius: 10,
-    marginTop: 5,
-    padding: 10,
   },
 
   updateButton: {

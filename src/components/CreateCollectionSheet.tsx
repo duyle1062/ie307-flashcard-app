@@ -11,9 +11,11 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import { Colors } from "../shared/constants/Color";
 import { Shadows } from "../shared/constants/Shadow";
+import DottedBackground from "./DottedBackground";
 
 const { height: SCREEN_HEIGHT } = Dimensions.get("window");
 
@@ -28,6 +30,7 @@ const CreateCollectionSheet: React.FC<Props> = ({
   onClose,
   onCreate,
 }) => {
+  const { t } = useTranslation();
   const [collectionName, setCollectionName] = useState("");
 
   const handleCreate = () => {
@@ -60,11 +63,13 @@ const CreateCollectionSheet: React.FC<Props> = ({
 
           <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Create Collection</Text>
+              <Text style={styles.modalTitle}>
+                {t("collection.createCollection")}
+              </Text>
 
               <TextInput
                 style={styles.input}
-                placeholder="Collection Name"
+                placeholder={t("collection.collectionName")}
                 placeholderTextColor={Colors.gray}
                 value={collectionName}
                 onChangeText={setCollectionName}
@@ -78,7 +83,9 @@ const CreateCollectionSheet: React.FC<Props> = ({
                   style={styles.cancelButton}
                   onPress={handleClose}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
+                  <Text style={styles.cancelButtonText}>
+                    {t("common.cancel").toUpperCase()}
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -89,7 +96,9 @@ const CreateCollectionSheet: React.FC<Props> = ({
                   onPress={handleCreate}
                   disabled={!collectionName.trim()}
                 >
-                  <Text style={styles.createButtonText}>Create</Text>
+                  <Text style={styles.createButtonText}>
+                    {t("common.save").toUpperCase()}
+                  </Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -103,7 +112,7 @@ const CreateCollectionSheet: React.FC<Props> = ({
 const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: Colors.modalbg,
     justifyContent: "flex-end",
   },
 
@@ -112,13 +121,13 @@ const styles = StyleSheet.create({
   },
 
   modalContainer: {
-    height: SCREEN_HEIGHT * 0.45,
-    backgroundColor: Colors.white,
+    height: SCREEN_HEIGHT * 0.4,
+    backgroundColor: Colors.surface,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingTop: 12,
     paddingHorizontal: 24,
-    paddingBottom: 40,
+    paddingBottom: 60,
     ...Shadows.strong,
   },
 
@@ -130,7 +139,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 24,
     fontWeight: "700",
-    color: Colors.title,
+    color: Colors.primary,
     textAlign: "center",
     marginBottom: 32,
   },
@@ -145,6 +154,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     backgroundColor: Colors.background,
     marginBottom: 32,
+    color: Colors.subText,
   },
 
   buttonRow: {
@@ -155,7 +165,7 @@ const styles = StyleSheet.create({
 
   cancelButton: {
     flex: 1,
-    backgroundColor: Colors.silver,
+    backgroundColor: Colors.background,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
@@ -164,26 +174,26 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: Colors.title,
     fontSize: 17,
-    fontWeight: "600",
+    fontWeight: "bold",
   },
 
   createButton: {
     flex: 1,
-    backgroundColor: Colors.blue,
+    backgroundColor: Colors.primary,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: "center",
   },
 
   createButtonDisabled: {
-    backgroundColor: Colors.blueLight,
+    backgroundColor: Colors.primary,
     opacity: 0.6,
   },
 
   createButtonText: {
     color: Colors.white,
     fontSize: 17,
-    fontWeight: "600",
+    fontWeight: "bold",
   },
 });
 

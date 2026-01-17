@@ -24,6 +24,7 @@ interface UseCollectionsReturn {
   isLoading: boolean;
   loadCollections: () => Promise<void>;
   createCollection: (name: string) => Promise<boolean>;
+  renameCollection: (collectionId: string, newName: string) => Promise<boolean>;
   deleteCollection: (collectionId: string) => Promise<boolean>;
   refreshCollections: () => Promise<void>;
 }
@@ -33,7 +34,7 @@ export const useCollections = (): UseCollectionsReturn => {
   const { checkAndSyncIfNeeded, syncStatus } = useSync();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // ✅ Track if initial sync-triggered load has completed
   const hasLoadedAfterSyncRef = useRef(false);
 
@@ -45,9 +46,9 @@ export const useCollections = (): UseCollectionsReturn => {
 
     try {
       setIsLoading(true);
-      
+
       const data = await CollectionService.getCollections(user.uid);
-      
+
       setCollections(data);
       hasLoadedAfterSyncRef.current = true;
     } catch (error) {
@@ -104,6 +105,51 @@ export const useCollections = (): UseCollectionsReturn => {
       } catch (error) {
         console.error("Error creating collection:", error);
         Alert.alert("Error", "Failed to create collection");
+        return false;
+      }
+    },
+    [user, checkAndSyncIfNeeded]
+  );
+
+  /**
+   * Rename a collection
+   */
+  const renameCollection = useCallback(
+    async (collectionId: string, newName: string): Promise<boolean> => {
+      if (!user) {
+        Alert.alert("Error", "User not authenticated");
+        return false;
+      }
+
+      if (!newName.trim()) {
+        Alert.alert("Error", "Collection name cannot be empty");
+        return false;
+      }
+
+      try {
+        const updated = await CollectionService.renameCollection(
+          collectionId,
+          newName.trim()
+        );
+
+        if (updated) {
+          // Update local state
+          setCollections((prev) =>
+            prev.map((col) =>
+              col.id === collectionId ? { ...col, title: newName.trim() } : col
+            )
+          );
+
+          // Check if sync is needed
+          await checkAndSyncIfNeeded();
+
+          return true;
+        } else {
+          throw new Error("Failed to rename collection");
+        }
+      } catch (error) {
+        console.error("Error renaming collection:", error);
+        Alert.alert("Error", "Failed to rename collection");
         return false;
       }
     },
@@ -171,6 +217,7 @@ export const useCollections = (): UseCollectionsReturn => {
     isLoading,
     loadCollections,
     createCollection,
+    renameCollection,
     deleteCollection,
     refreshCollections,
   };

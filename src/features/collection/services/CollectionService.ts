@@ -7,6 +7,7 @@ import {
   getCollectionsByUserId,
   getCollectionsWithStats,
   createCollection as createCollectionRepo,
+  updateCollection as updateCollectionRepo,
   deleteCollection as deleteCollectionRepo,
   getCollectionById,
 } from "../../../core/database/repositories/CollectionRepository";
@@ -32,7 +33,7 @@ export class CollectionService {
       throw error;
     }
   }
-  
+
   /**
    * Create a new collection
    */
@@ -44,6 +45,21 @@ export class CollectionService {
       return await createCollectionRepo(userId, name);
     } catch (error) {
       console.error("CollectionService: Error creating collection:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Rename a collection
+   */
+  static async renameCollection(
+    collectionId: string,
+    newName: string
+  ): Promise<CollectionData | null> {
+    try {
+      return await updateCollectionRepo(collectionId, newName);
+    } catch (error) {
+      console.error("CollectionService: Error renaming collection:", error);
       throw error;
     }
   }
@@ -69,7 +85,10 @@ export class CollectionService {
     try {
       return await getCollectionById(collectionId);
     } catch (error) {
-      console.error("CollectionService: Error getting collection by ID:", error);
+      console.error(
+        "CollectionService: Error getting collection by ID:",
+        error
+      );
       throw error;
     }
   }

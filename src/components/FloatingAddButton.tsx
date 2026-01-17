@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { TouchableOpacity, StyleSheet, View, Text } from "react-native";
+import { useTranslation } from "react-i18next";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -16,7 +17,6 @@ import CreateCollectionSheet from "./CreateCollectionSheet";
 import CreateCardSheet from "./CreateCardSheet";
 import ImportActionModal from "./ImportActionModal";
 
-// Separate MenuItem component to follow React Hooks rules
 interface MenuItemProps {
   item: {
     id: string;
@@ -67,30 +67,6 @@ const MenuItem: React.FC<MenuItemProps> = ({ item, isOpen, onPress }) => {
   );
 };
 
-const MENU_ITEMS = [
-  {
-    id: "create-collection",
-    label: "Create Collection",
-    icon: "form" as const,
-    angle: 305,
-    right: -20,
-  },
-  {
-    id: "create-card",
-    label: "Create Card",
-    icon: "edit" as const,
-    angle: 191,
-    right: 35,
-  },
-  {
-    id: "import",
-    label: "Import Collection",
-    icon: "upload" as const,
-    angle: 151,
-    right: -5,
-  },
-] as const;
-
 const RADIUS = 85;
 
 interface Props {
@@ -106,20 +82,47 @@ const FloatingAddButton: React.FC<Props> = ({
   onImport,
   collections = [],
 }) => {
+  const { t } = useTranslation();
   const isOpen = useSharedValue(0);
+  const [menuOpen, setMenuOpen] = useState(false);
   const [showCollectionSheet, setShowCollectionSheet] = useState(false);
   const [showCardSheet, setShowCardSheet] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
 
+  const MENU_ITEMS = [
+    {
+      id: "create-collection",
+      label: t("components.createCollection"),
+      icon: "form" as const,
+      angle: 305,
+      right: -20,
+    },
+    {
+      id: "create-card",
+      label: t("components.createCard"),
+      icon: "edit" as const,
+      angle: 191,
+      right: 35,
+    },
+    {
+      id: "import",
+      label: t("components.importCollection"),
+      icon: "upload" as const,
+      angle: 151,
+      right: -5,
+    },
+  ] as const;
+
   const closeAll = () => {
     isOpen.value = withTiming(0, { duration: 280 });
+    setMenuOpen(false);
     setShowCollectionSheet(false);
     setShowCardSheet(false);
     setShowImportModal(false);
   };
 
   const shouldShowOverlay = () =>
-    isOpen.value > 0 || showCollectionSheet || showCardSheet;
+    menuOpen || showCollectionSheet || showCardSheet || showImportModal;
 
   const overlayOpacity = useAnimatedStyle(() => ({
     opacity: interpolate(isOpen.value, [0, 1], [0, 0.5]),
@@ -133,8 +136,10 @@ const FloatingAddButton: React.FC<Props> = ({
     <>
       {shouldShowOverlay() && (
         <Animated.View
-          style={[styles.overlay, overlayOpacity]}
-          pointerEvents="auto"
+          style={[styles.overlay, menuOpen ? overlayOpacity : { opacity: 0.5 }]}
+          pointerEvents={
+            menuOpen || showCollectionSheet || showCardSheet ? "auto" : "none"
+          }
         >
           <TouchableOpacity
             activeOpacity={1}
@@ -167,11 +172,11 @@ const FloatingAddButton: React.FC<Props> = ({
         visible={showImportModal}
         onClose={closeAll}
         onImportCSV={() => {
-          onImport?.("csv"); 
+          onImport?.("csv");
           closeAll();
         }}
         onImportJSON={() => {
-          onImport?.("json"); 
+          onImport?.("json");
           closeAll();
         }}
       />
@@ -185,12 +190,15 @@ const FloatingAddButton: React.FC<Props> = ({
             onPress={(itemId) => {
               if (itemId === "create-collection") {
                 isOpen.value = withTiming(0, { duration: 280 });
+                setMenuOpen(false);
                 setTimeout(() => setShowCollectionSheet(true), 300);
               } else if (itemId === "create-card") {
                 isOpen.value = withTiming(0, { duration: 280 });
+                setMenuOpen(false);
                 setTimeout(() => setShowCardSheet(true), 300);
               } else if (itemId === "import") {
                 isOpen.value = withTiming(0, { duration: 280 });
+                setMenuOpen(false);
                 setTimeout(() => setShowImportModal(true), 300);
               }
             }}
@@ -199,11 +207,13 @@ const FloatingAddButton: React.FC<Props> = ({
 
         <TouchableOpacity
           style={styles.mainButton}
-          onPress={() =>
-            (isOpen.value = withTiming(isOpen.value === 1 ? 0 : 1, {
-              duration: 320,
-            }))
-          }
+          accessibilityRole="button"
+          accessibilityLabel={t("common.add")}
+          onPress={() => {
+            const next = isOpen.value === 1 ? 0 : 1;
+            setMenuOpen(next === 1);
+            isOpen.value = withTiming(next, { duration: 320 });
+          }}
           activeOpacity={0.85}
         >
           <Animated.View style={fabRotation}>
@@ -261,16 +271,16 @@ const styles = StyleSheet.create({
     width: 35,
     height: 35,
     borderRadius: 20,
-    backgroundColor: `${Colors.primary}14`,
+    backgroundColor: Colors.primary + "14",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 4,
   },
 
   menuLabel: {
-    fontSize: 15.5,
+    fontSize: 15,
     color: Colors.title,
-    fontWeight: "600",
+    fontWeight: "bold",
   },
 });
 

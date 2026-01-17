@@ -5,18 +5,21 @@ import Feather from "@expo/vector-icons/Feather";
 import { Colors } from "../shared/constants/Color";
 import { Shadows } from "../shared/constants/Shadow";
 
+import { useTranslation } from "react-i18next";
+
 interface SearchBarProps {
   value: string;
   onChangeText: (text: string) => void;
 }
 
 const SearchBar: React.FC<SearchBarProps> = ({ value, onChangeText }) => {
+  const { t } = useTranslation();
   return (
     <View style={styles.searchBar}>
       <Feather name="search" size={18} color={Colors.gray} />
       <TextInput
         style={styles.searchInput}
-        placeholder="Search"
+        placeholder={t("common.search")}
         placeholderTextColor={Colors.gray}
         value={value}
         onChangeText={onChangeText}
@@ -41,7 +44,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     marginLeft: 6,
-    color: Colors.black,
+    color: Colors.subText,
   },
 });
 

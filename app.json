@@ -15,7 +15,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.thanhdanhdo1701.flashcardapp"
+      "bundleIdentifier": "com.thanhdanhdo1701.flashcardapp",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -23,7 +26,12 @@
         "backgroundColor": "#ffffff"
       },
       "package": "com.thanhdanhdo1701.flashcardapp",
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.WAKE_LOCK"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -34,16 +42,18 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The application needs access to the image library to scan the text.",
-          "cameraPermission": "The application needs access to the camera to take photos and scan the text."
+          "photosPermission": "The application needs access to the image library to scan the text",
+          "cameraPermission": "The application needs access to the camera to take photos and scan the text"
         }
-      ]
+      ],
+      "expo-localization",
+      "expo-background-task"
     ],
     "extra": {
       "eas": {
-        "projectId": "70cd2f55-fc1b-4049-b43e-762abb2103e9"
+        "projectId": "f11c7432-37c3-445c-8e5d-e1b94563193f"
       }
     },
-    "owner": "thanhdanhdo1701"
+    "owner": "duyle1062"
   }
 }

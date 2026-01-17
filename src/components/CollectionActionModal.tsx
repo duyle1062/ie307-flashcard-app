@@ -7,9 +7,11 @@ import {
   StyleSheet,
   TouchableWithoutFeedback,
 } from "react-native";
+import { useTranslation } from "react-i18next";
 
 import Feather from "@expo/vector-icons/Feather";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+
 import { Colors } from "../shared/constants/Color";
 import { Shadows } from "../shared/constants/Shadow";
 
@@ -42,6 +44,8 @@ const CollectionActionModal: React.FC<CollectionActionModalProps> = ({
   onExportJSON,
   onDelete,
 }) => {
+  const { t } = useTranslation();
+
   if (!collection) return null;
 
   const ActionItem = ({
@@ -60,7 +64,7 @@ const CollectionActionModal: React.FC<CollectionActionModalProps> = ({
       <Text
         style={[
           styles.actionLabel,
-          isDestructive && { color: Colors.red, fontWeight: "600" },
+          isDestructive && { color: Colors.red, fontWeight: "bold" },
         ]}
       >
         {label}
@@ -83,7 +87,9 @@ const CollectionActionModal: React.FC<CollectionActionModalProps> = ({
                 <Text style={styles.collectionTitle} numberOfLines={1}>
                   {collection.title}
                 </Text>
-                <Text style={styles.subText}>Select an action</Text>
+                <Text style={styles.subText}>
+                  {t("collection.selectAction")}
+                </Text>
               </View>
 
               <View style={styles.divider} />
@@ -96,49 +102,53 @@ const CollectionActionModal: React.FC<CollectionActionModalProps> = ({
                     color={Colors.primary}
                   />
                 }
-                label="Add card"
+                label={t("collection.addCard")}
                 onPress={onAddCard}
               />
               <ActionItem
-                icon={
-                  <Feather name="image" size={20} color={Colors.primary} />
-                }
-                label="Add card by image (offline)"
+                icon={<Feather name="image" size={20} color={Colors.primary} />}
+                label={t("collection.addCardByImageOffline")}
                 onPress={onAddCardByImage}
               />
               <ActionItem
-                icon={
-                  <Feather name="cloud" size={20} color={Colors.primary} />
-                }
-                label="Add card by image (Google Vision)"
+                icon={<Feather name="cloud" size={20} color={Colors.primary} />}
+                label={t("collection.addCardByImageOnline")}
                 onPress={onAddCardByImageOnline}
               />
               <ActionItem
                 icon={
                   <Feather name="layers" size={20} color={Colors.primary} />
                 }
-                label="View all cards"
+                label={t("collection.viewAllCards")}
                 onPress={onViewCards}
               />
               <ActionItem
                 icon={
                   <Feather name="edit-2" size={20} color={Colors.primary} />
                 }
-                label="Rename"
+                label={t("collection.rename")}
                 onPress={onRename}
               />
               <ActionItem
                 icon={
-                  <MaterialCommunityIcons name="file-delimited-outline" size={20} color={Colors.primary} />
+                  <MaterialCommunityIcons
+                    name="file-delimited-outline"
+                    size={20}
+                    color={Colors.primary}
+                  />
                 }
-                label="Export as CSV"
+                label={t("collection.exportAsCSV")}
                 onPress={onExportCSV}
               />
               <ActionItem
                 icon={
-                  <MaterialCommunityIcons name="code-json" size={20} color={Colors.primary} />
+                  <MaterialCommunityIcons
+                    name="code-json"
+                    size={20}
+                    color={Colors.primary}
+                  />
                 }
-                label="Export as JSON"
+                label={t("collection.exportAsJSON")}
                 onPress={onExportJSON}
               />
 
@@ -146,7 +156,7 @@ const CollectionActionModal: React.FC<CollectionActionModalProps> = ({
 
               <ActionItem
                 icon={<Feather name="trash-2" size={20} color={Colors.red} />}
-                label="Delete collection"
+                label={t("collection.deleteCollection")}
                 onPress={onDelete}
                 isDestructive
               />
@@ -168,7 +178,7 @@ const styles = StyleSheet.create({
   },
 
   modalContainer: {
-    width: "90%",
+    width: "100%",
     backgroundColor: Colors.white,
     borderRadius: 16,
     paddingVertical: 15,

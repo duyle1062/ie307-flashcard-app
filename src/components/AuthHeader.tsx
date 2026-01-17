@@ -1,3 +1,4 @@
+import { Colors } from "@/shared/constants/Color";
 import { View, Text, StyleSheet } from "react-native";
 
 export default function AuthHeader({ title }: Readonly<{ title: string }>) {
@@ -24,5 +25,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     fontWeight: "bold",
     marginVertical: 10,
+    color: Colors.primary,
   },
 });

@@ -1,7 +1,14 @@
-import React from "react";
-import { View, Image, TouchableOpacity, StyleSheet, Dimensions } from "react-native";
+import {
+  View,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+} from "react-native";
+
 import { Shadows } from "../shared/constants/Shadow";
 import { Colors } from "../shared/constants/Color";
+
 import { TextBlock, ImageDimensions } from "../features/ocr/services";
 
 const SCREEN_WIDTH = Dimensions.get("window").width;
@@ -17,9 +24,6 @@ interface OCRImagePreviewProps {
   onBlockPress: (blockId: string) => void;
 }
 
-/**
- * OCR Image Preview - Displays image with text block overlays
- */
 export function OCRImagePreview({
   imageUri,
   imageDimensions,
@@ -149,17 +153,20 @@ const styles = StyleSheet.create({
     marginVertical: 16,
     width: "100%",
   },
+
   container: {
     borderRadius: 8,
     overflow: "hidden",
-    backgroundColor: "#333",
+    backgroundColor: Colors.surface,
     ...Shadows.medium,
     position: "relative",
   },
+
   overlayContainer: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 1,
   },
+
   overlay: {
     position: "absolute",
     justifyContent: "center",
