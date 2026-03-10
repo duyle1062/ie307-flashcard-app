@@ -25,6 +25,9 @@
 ## ĐỀ TÀI: FLASHCARD APP
 Ứng dụng Flashcard trên thiết bị di động hỗ trợ học tập và ghi nhớ kiến thức thông qua phương pháp **Spaced Repetition (Lặp lại ngắt quãng)**. Ứng dụng được thiết kế theo kiến trúc **Offline-first**, cho phép học mọi lúc mọi nơi và tự động đồng bộ dữ liệu khi có kết nối mạng.
 
+## DEMO:
+[Video Demo](https://drive.google.com/file/d/1a-J-K9EoLF0CE5Cczp4VUw3pimLIptbp/view?usp=sharing)
+
 ## TÍNH NĂNG NỔI BẬT 
 
 ### Quản lý học tập
